@@ -1,0 +1,4 @@
+SELECT * FROM sales.customers
+ORDER BY customer_id 
+OFFSET 10 ROWS FETCH NEXT 12 ROWS ONLY 
+
