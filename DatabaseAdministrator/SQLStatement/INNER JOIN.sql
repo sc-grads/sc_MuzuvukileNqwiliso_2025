@@ -1,0 +1,8 @@
+-- THIS SQL QUERY RETRIEVES THE FIRST NAME, LAST NAME, EMAIL, AND PHONE NUMBER OF STAFF MEMBERS,  
+-- ALONG WITH THE STORE THEY WORK FOR.  
+SELECT stf.first_name, stf.last_name, stf.email, stf.phone, [str].store_name  
+FROM sales.staffs stf  
+-- SQUARE BRACKETS [] ARE USED AROUND "STR" BECAUSE "STR" IS A RESERVED KEYWORD IN SQL.  
+-- ENCLOSING IT IN BRACKETS PREVENTS SYNTAX ERRORS.  
+INNER JOIN sales.stores [str]  
+ON [str].store_id = stf.store_id; 
