@@ -44,7 +44,7 @@ ON c.customer_id = o.customer_id
 SELECT stf.first_name, stf.last_name,[str].store_name
 FROM sales.staffs stf 
 INNER JOIN sales.stores [str]
-ON stf.staff_id = [str].store_id
+ON stf.store_id = [str].store_id
 
 -- 3: Tables - orders, products, item_orders,
 -- THE * MEANS I WANT TO RETURN EVERYTHING FROM THE ORDERS TABLE
