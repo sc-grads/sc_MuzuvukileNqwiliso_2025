@@ -8,5 +8,8 @@ GO
 CREATE USER mzuUser FOR LOGIN mzuLogin; -- Creates user at database level
 GO
 
-GRANT SELECT, UPDATE, INSERT ON customers TO mzuUser; -- Grants permissions to the user
+GRANT SELECT, UPDATE, INSERT ON sales.customers TO mzuUser; -- Grants permissions to the user
+GO
+GRANT SELECT ON SCHEMA :: sales TO mzuUser;
+GRANT SELECT ON SCHEMA :: production TO mzuUser;
 GO
