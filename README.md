@@ -1,2 +1,2 @@
 # my repo
-This is where the megic happens😂
+This is where the magic happens😂
