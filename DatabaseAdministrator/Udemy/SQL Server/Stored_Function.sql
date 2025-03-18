@@ -11,7 +11,7 @@ SELECT * FROM production.products;
 SELECT * FROM production.categories;
 SELECT * FROM production.stocks;
 
-CREATE FUNCTION AllOrdersByDate(@date DATE)
+CREATE FUNCTION AllOrdersByDate(@date DATE) -- this code returns a table order details with the specified date
 RETURNS TABLE
 AS 
 RETURN 
@@ -27,4 +27,22 @@ RETURN
     WHERE CAST(ord.shipped_date AS DATE) = @date 
 );
 
-SELECT * FROM dbo.AllOrdersByDate('2016-01-06');
+SELECT * FROM dbo.AllOrdersByDate('2016-01-06'); -- this statement excecutes the function 
+
+
+CREATE FUNCTION getAverageOfYear(@year INT)
+RETURNS TABLE 
+AS 
+RETURN 
+		(
+		SELECT model_year,FORMAT(AVG(list_price),'N2') AS [Average] -- the FORMAT function is a system funtion used to round the decimal to 2 points
+		FROM production.products
+		WHERE model_year = @year
+		GROUP BY model_year
+		)
+
+SELECT * FROM dbo.getAverageOfYear(2017) -- this is used to run getAverageOfYear function
+
+DROP FUNCTION dbo.getAverageOfYear -- this is used to delete getAverageOfYear
+
+
