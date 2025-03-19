@@ -1,0 +1,21 @@
+name: Notify MS Teams on PR
+
+on:
+  pull_request:
+    types: [opened, reopened, closed]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send notification to Teams
+        uses: dorowu/ms-teams-webhook-action@v1.0.2
+        with:
+          webhook_url: ${{ secrets.TEAMS_WEBHOOK_URL }}
+          title: "GitHub Pull Request Notification"
+          message: |
+            **PR Status:** ${{ github.event.action }}
+            **Title:** [${{ github.event.pull_request.title }}](${{ github.event.pull_request.html_url }})
+            **Author:** ${{ github.event.pull_request.user.login }}
+            **Branch:** ${{ github.event.pull_request.head.ref }}
+            **Repository:** ${{ github.repository }}
