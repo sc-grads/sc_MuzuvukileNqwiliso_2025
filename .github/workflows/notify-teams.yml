@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Send notification to Teams
-        uses: dorowu/ms-teams-webhook-action@v1.0.2
+        uses: dorowu/ms-teams-webhook-action@v1
         with:
           webhook_url: ${{ secrets.TEAMS_WEBHOOK_URL }}
           title: "GitHub Pull Request Notification"
