@@ -1,21 +1,53 @@
-name: Notify MS Teams on PR
+name: Notify Microsoft Teams on Pull Request Success
 
 on:
   pull_request:
-    types: [opened, reopened, closed]
+    types: [closed]  # Trigger when a pull request is closed
 
 jobs:
-  notify:
+  notify-teams:
+    if: github.event.pull_request.merged == true  # Only run if the PR was merged
     runs-on: ubuntu-latest
     steps:
-      - name: Send notification to Teams
-        uses: dorowu/ms-teams-webhook-action@v1
+      - name: Send notification to Microsoft Teams
+        uses: actions/github-script@v6
         with:
-          webhook_url: ${{ secrets.TEAMS_WEBHOOK_URL }}
-          title: "GitHub Pull Request Notification"
-          message: |
-            **PR Status:** ${{ github.event.action }}
-            **Title:** [${{ github.event.pull_request.title }}](${{ github.event.pull_request.html_url }})
-            **Author:** ${{ github.event.pull_request.user.login }}
-            **Branch:** ${{ github.event.pull_request.head.ref }}
-            **Repository:** ${{ github.repository }}
+          script: |
+            const webhookUrl = process.env.TEAMS_WEBHOOK_URL;
+            const payload = {
+              "@type": "MessageCard",
+              "@context": "http://schema.org/extensions",
+              "themeColor": "0076D7",
+              "summary": "Pull Request Notification",
+              "sections": [
+                {
+                  "activityTitle": "Pull Request Success",
+                  "activitySubtitle": "The pull request was successfully merged.",
+                  "facts": [
+                    {
+                      "name": "Repository",
+                      "value": "${{ github.repository }}"
+                    },
+                    {
+                      "name": "Pull Request",
+                      "value": "#${{ github.event.pull_request.number }}"
+                    },
+                    {
+                      "name": "Merged by",
+                      "value": "${{ github.event.pull_request.merged_by.login }}"
+                    }
+                  ],
+                  "markdown": true
+                }
+              ]
+            };
+
+            await fetch(webhookUrl, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify(payload)
+            });
+        env:
+          TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
