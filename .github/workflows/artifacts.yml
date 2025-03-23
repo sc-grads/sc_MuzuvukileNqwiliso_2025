@@ -24,6 +24,10 @@ jobs:
   build:
     needs: testing
     runs-on: ubuntu-latest
+    # Job-level permissions
+    permissions:
+      contents: read
+      actions: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -41,7 +45,7 @@ jobs:
         run: npm run build
         working-directory: DevOps/GithubActions
 
-      - name: Create Artifact
+      - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
           name: my-artifact
