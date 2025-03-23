@@ -1,0 +1,21 @@
+name: Environment Variables
+on: [push, workflow_dispatch]
+
+jobs:
+  testing:
+    runs-on: ubuntu-latest
+    env:
+      MONGODB_URI: "mongodb+srv://mzunqwiliso:${{ secrets.MONGODB_PASSWORD }}@cluster0.dc5tz.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+      MONGODB_DB: ${{ secrets.MONGODB_DB }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Verify Environment Variables
+        run: |
+          echo "MONGODB_URI=${MONGODB_URI}"
+          echo "MONGODB_DB=${MONGODB_DB}"
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_PASSWORD }}
+          MONGODB_DB: ${{ secrets.MONGODB_DB }}
