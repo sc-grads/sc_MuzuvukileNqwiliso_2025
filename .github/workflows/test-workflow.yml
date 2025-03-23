@@ -4,11 +4,13 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - name: Install Node.js
-        uses: actions/setup-node@v1
+      - name: Checkout # this is used to fetch the code from the repository
+        uses: actions/checkout@v2 # this is the action that checks out the code
+      - name: Install Node.js 
+        uses: actions/setup-node@v1 # this is the action that sets up Node.js
         with:
-          node-version: "16"
+          node-version: "16" # this is the version of Node.js to use
       - name: Install dependencies
-        run: npm install
+        run: npm install # this is the command to install the dependencies
       - name: Run tests
-        run: npm test
+        run: npm test # this is the command to run the tests
