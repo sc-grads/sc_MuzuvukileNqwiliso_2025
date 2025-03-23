@@ -12,6 +12,6 @@ jobs:
           node-version: "16" # this is the version of Node.js to use
       - name: Install dependencies
         run: npm install # this is the command to install the dependencies
-        working-directory: ./DevOps/GitHubActions
+        working-directory: ../../DevOps/GitHubActions # this is the directory where the command should be run
       - name: Run tests
         run: npm test # this is the command to run the tests
