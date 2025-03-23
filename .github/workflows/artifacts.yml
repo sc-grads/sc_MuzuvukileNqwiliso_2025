@@ -1,18 +1,23 @@
 name: Artifact Workflow
+
 on: workflow_dispatch
+
 jobs:
   testing:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+
       - name: Install Node.js
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v3
         with:
           node-version: "16"
+
       - name: Install dependencies
         run: npm install
         working-directory: DevOps/GithubActions
+
       - name: Done
         run: echo "All done! ${{ github.event_name }} triggered this workflow."
 
@@ -22,21 +27,26 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+
       - name: Install Node.js
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v3
         with:
           node-version: "16"
+
       - name: Install dependencies
         run: npm install
         working-directory: DevOps/GithubActions
+
       - name: Build
         run: npm run build
         working-directory: DevOps/GithubActions
+
       - name: Create Artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: my-artifact
           path: DevOps/GithubActions/dist
+
       - name: Done
         run: echo "All done! ${{ github.event_name }} triggered this workflow."
 
@@ -44,13 +54,15 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-      - name: Install Node.js
-        uses: actions/setup-node@v1
-        with:
-          node-version: "16"
       - name: Download Artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: my-artifact
+          path: DevOps/GithubActions/dist
+
+      - name: Deploy
+        run: echo "Deploying the artifact..."
+        working-directory: DevOps/GithubActions/dist
+
+      - name: Done
+        run: echo "All done! ${{ github.event_name }} triggered this workflow."
