@@ -6,17 +6,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3  # Checkout the code from the repository
+        uses: actions/checkout@v3  
 
       - name: Install Node.js
-        uses: actions/setup-node@v1  # Setup Node.js
+        uses: actions/setup-node@v1  
         with:
-          node-version: "16"  # Specify the Node.js version
+          node-version: "16"  
 
       - name: Install dependencies
-        run: npm install  # Install dependencies using npm
-        working-directory: DevOps/GithubActions  # Adjust to the correct folder path
+        run: npm install 
+        working-directory: DevOps/GithubActions  
 
       - name: Run tests
-        run: npm test  # Run the tests
-        working-directory: DevOps/GithubActions  # Ensure it's in the correct folder for testing
+        run: npm test  
+        working-directory: DevOps/GithubActions 
