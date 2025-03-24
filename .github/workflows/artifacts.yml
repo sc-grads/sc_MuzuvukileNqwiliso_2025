@@ -46,9 +46,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: my-artifact
-          path: |
-            'DevOps/GithubActions/01 Starting Project/dist'
-            'DevOps/GithubActions/01 Starting Project/package.json'
+          path: DevOps/GithubActions/01 Starting Project/dist
 
       - name: Done
         run: echo "All done! ${{ github.event_name }} triggered this workflow."
@@ -58,10 +56,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download Artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: my-artifact
-          path: "DevOps/GithubActions/01 Starting Project/dist"
+          path: DevOps/GithubActions/01 Starting Project/dist
 
       - name: Deploy
         run: echo "Deploying the artifact..."
