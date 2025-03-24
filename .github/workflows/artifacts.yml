@@ -1,71 +1,83 @@
-name: Artifact Workflow
+name: Artifacts Workflow
 
-on: workflow_dispatch
+on:
+  push:
+    branches:
+      - main
 
 jobs:
-  testing:
+  test:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Get code
         uses: actions/checkout@v3
 
-      - name: Install Node.js
-        uses: actions/setup-node@v4
+      - name: Cache dependencies
+        uses: actions/cache@v4
         with:
-          node-version: "16"
+          path: ~/.npm
+          key: deps-node-modules-${{ hashFiles('**/package-lock.json') }}
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
         working-directory: 'DevOps/GithubActions/01 Starting Project'
 
-      - name: Done
-        run: echo "All done! ${{ github.event_name }} triggered this workflow."
+      - name: Lint code
+        run: npm run lint
+        working-directory: 'DevOps/GithubActions/01 Starting Project'
+
+      - name: Test code
+        run: npm run test
+        working-directory: 'DevOps/GithubActions/01 Starting Project'
 
   build:
-    needs: testing
+    needs: test
     runs-on: ubuntu-latest
-
+    outputs:
+      script-file: ${{ steps.publish.outputs.script-file }}
     steps:
-      - name: Checkout repository
+      - name: Get code
         uses: actions/checkout@v3
 
-      - name: Install Node.js
-        uses: actions/setup-node@v3
+      - name: Cache dependencies
+        uses: actions/cache@v4
         with:
-          node-version: "16"
+          path: ~/.npm
+          key: deps-node-modules-${{ hashFiles('**/package-lock.json') }}
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
         working-directory: 'DevOps/GithubActions/01 Starting Project'
 
-      - name: Build
-        run: npm run build # ------ This is a custom script
+      - name: Build website
+        run: npm run build
         working-directory: 'DevOps/GithubActions/01 Starting Project'
 
-      - name: Create Artifact
+      - name: Publish JS filename
+        id: publish
+        run: find dist/assets/*.js -type f -execdir echo 'script-file={}' >> $GITHUB_OUTPUT ';'
+
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: my-artifact
-          path: |
-            'DevOps/GithubActions/01 Starting Project/dist'
-            'DevOps/GithubActions/01 Starting Project/package.json'
-
-      - name: Done
-        run: echo "All done! ${{ github.event_name }} triggered this workflow."
+          name: dist-files
+          path: 'DevOps/GithubActions/01 Starting Project/dist'
 
   deploy:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Download Artifact
-        uses: actions/download-artifact@v3
+      - name: Get build artifacts
+        uses: actions/download-artifact@v4
         with:
-          name: my-artifact
-          path: 'DevOps/GithubActions/01 Starting Project/dist'
+          name: dist-files
 
-      - name: Deploy
-        run: echo "Deploying the artifact..."
+      - name: Output contents
+        run: ls
         working-directory: 'DevOps/GithubActions/01 Starting Project/dist'
 
-      - name: Done
-        run: echo "All done! ${{ github.event_name }} triggered this workflow."
+      - name: Output filename
+        run: echo "${{ needs.build.outputs.script-file }}"
+
+      - name: Deploy
+        run: echo "Deploying..."
