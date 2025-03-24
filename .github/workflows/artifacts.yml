@@ -16,7 +16,7 @@ jobs:
 
       - name: Install dependencies
         run: npm install
-        working-directory: DevOps/GithubActions/01\ Starting\ Project
+        working-directory: "DevOps/GithubActions/01 Starting Project"
 
       - name: Done
         run: echo "All done! ${{ github.event_name }} triggered this workflow."
@@ -36,19 +36,19 @@ jobs:
 
       - name: Install dependencies
         run: npm install
-        working-directory: DevOps/GithubActions/01\ Starting\ Project
+        working-directory: "DevOps/GithubActions/01 Starting Project"
 
       - name: Build
-        run: npm run build # ------ This is a custom script
-        working-directory: DevOps/GithubActions/01\ Starting\ Project
+        run: npm run build 
+        working-directory: "DevOps/GithubActions/01 Starting Project"
 
       - name: Create Artifact
         uses: actions/upload-artifact@v4
         with:
           name: my-artifact
           path: |
-            DevOps/GithubActions/01\ Starting\ Project/dist
-            DevOps/GithubActions/01\ Starting\ Project/package.json
+            'DevOps/GithubActions/01 Starting Project/dist'
+            'DevOps/GithubActions/01 Starting Project/package.json'
 
       - name: Done
         run: echo "All done! ${{ github.event_name }} triggered this workflow."
@@ -61,11 +61,11 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: my-artifact
-          path: DevOps/GithubActions/01\ Starting\ Project/dist
+          path: "DevOps/GithubActions/01 Starting Project/dist"
 
       - name: Deploy
         run: echo "Deploying the artifact..."
-        working-directory: DevOps/GithubActions/01\ Starting\ Project/dist
+        working-directory: "DevOps/GithubActions/01 Starting Project/dist"
 
       - name: Done
         run: echo "All done! ${{ github.event_name }} triggered this workflow."

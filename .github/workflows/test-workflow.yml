@@ -15,7 +15,7 @@ jobs:
 
       - name: Install dependencies
         run: npm install
-        working-directory: DevOps/GithubActions
+        working-directory: "DevOps/GithubActions/01 Starting Project"
 
       - name: Done
         run: echo "All done! ${{ github.event_name }} triggered this workflow."
