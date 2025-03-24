@@ -1,0 +1,44 @@
+name: Job Outputs
+on: [push, workflow_dispatch]
+jobs:
+  testing:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm install
+        working-directory: "DevOps/GithubActions/01 Starting Project"
+
+      - name: Done
+        run: echo "All done! ${{ github.event_name }} triggered this workflow."
+
+  build:
+    runs-on: ubuntu-latest
+    needs: testing
+    outputs:
+      my-output: ${{ steps.step1.outputs.my-output }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm install
+        working-directory: "DevOps/GithubActions/01 Starting Project"
+      - name: Puslish Js file
+        id: step1
+        run: echo "::set-output name=my-output::Hello from the build job"
+
+      - name: Done
+        run: echo "All done! ${{ github.event_name }} triggered this workflow."
