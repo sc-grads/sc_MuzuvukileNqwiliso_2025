@@ -24,10 +24,7 @@ jobs:
   build:
     needs: testing
     runs-on: ubuntu-latest
-    # Job-level permissions
-    permissions:
-      contents: read
-      actions: write
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
