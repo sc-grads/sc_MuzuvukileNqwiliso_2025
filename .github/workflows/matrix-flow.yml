@@ -1,0 +1,127 @@
+name: Testing Matrix Flow
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  testing:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node: [12, 14, 16, 20]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Log OS (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        run: echo "Running on Ubuntu"
+
+      - name: Log OS (Windows)
+        if: matrix.os == 'windows-latest'
+        run: echo "Running on Windows"
+
+      - name: Log OS (macOS)
+        if: matrix.os == 'macos-latest'
+        run: echo "Running on macOS"
+
+      - name: Check for Failure
+        continue-on-error: true
+        if: failure()
+        run: exit 1
+
+      - name: Cache Dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ matrix.node }}-${{ hashFiles('**/package-lock.json') }}
+
+      - name: Install Dependencies
+        run: npm install
+        working-directory: "DevOps/GitHubActions/01 Starting Project"
+
+      - name: Run Tests
+        run: npm test
+        working-directory: "DevOps/GitHubActions/01 Starting Project"
+
+      - name: Set Job Outputs
+        id: set-outputs
+        run: |
+          echo "os=${{ matrix.os }}" >> $GITHUB_OUTPUT
+          echo "node_version=${{ matrix.node }}" >> $GITHUB_OUTPUT
+
+      - name: Done
+        run: echo "All done! ${{ github.event_name }} triggered this workflow."
+
+  summary:
+    needs: testing
+    runs-on: ubuntu-latest
+    steps:
+      - name: Use Outputs
+        run: |
+          echo "OS from testing job: ${{ needs.testing.outputs.os }}"
+          echo "Node version from testing job: ${{ needs.testing.outputs.node_version }}"
+          echo "All done! ${{ github.event_name }} triggered this workflow."
+
+  build:
+    needs: testing
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Cache Dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-20-${{ hashFiles('**/package-lock.json') }}
+
+      - name: Install Dependencies
+        run: npm install
+        working-directory: "DevOps/GitHubActions/01 Starting Project"
+
+      - name: Build
+        run: npm run build
+        working-directory: "DevOps/GitHubActions/01 Starting Project"
+
+      - name: Create Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: my-artifact
+          path: "DevOps/GitHubActions/01 Starting Project/dist"
+
+  deploy:
+    needs: [testing, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: my-artifact
+          path: "DevOps/GitHubActions/01 Starting Project/dist"
+
+      - name: Done
+        run: echo "All done! ${{ github.event_name }} triggered this workflow."
+
+  reports:
+    needs: [testing, build, deploy]
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    if: failure()
+    steps:
+      - name: Use Outputs
+        run: echo "The was an error in the previous jobs."
