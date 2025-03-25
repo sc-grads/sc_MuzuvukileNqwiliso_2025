@@ -22,3 +22,26 @@ jobs:
         run: |
           echo "This step will run only when the workflow is triggered by a schedule"
           echo 'The previous step was successful'
+      - name: Third Conditional Step
+        if: ${{ runner.name == 'ubuntu-lastest' }}
+        run: echo "This step runs only on the ubuntu-latest runner"
+
+  test-another-runner:
+    needs: conditional-flow
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+      - name: Conditional Step
+        id: conditional-step
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: echo "This step will run only when the workflow is triggered manually"
+
+      - name: Seconda Conditional Step
+        if: ${{ steps.conditional-step.outcome == 'success' }}
+        run: |
+          echo "This step will run only when the workflow is triggered by a schedule"
+          echo 'The previous step was successful'
+      - name: Third Conditional Step
+        if: ${{ runner.name == 'windows-lastest' }}
+        run: echo "This step runs only on the windows-latest runner"
