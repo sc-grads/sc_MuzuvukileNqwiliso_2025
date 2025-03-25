@@ -100,7 +100,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: my-artifact
-          path: "DevOps/GitHubActions/01 Starting Project/dist"
+          path: DevOps/GitHubActions/01 Starting Project/dist
 
   deploy:
     needs: [testing, build]
@@ -110,7 +110,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: my-artifact
-          path: "DevOps/GitHubActions/01 Starting Project/dist"
+          path: DevOps/GitHubActions/01 Starting Project/dist
 
       - name: Done
         run: echo "All done! ${{ github.event_name }} triggered this workflow."
