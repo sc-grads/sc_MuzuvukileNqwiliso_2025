@@ -1,0 +1,68 @@
+name: Execution Flow
+on: workflow_dispatch
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Cache node modules
+        uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+      - name: Install dependencies
+        run: npm install
+        working-directory: "DevOps/GithubActions/01 Starting Project"
+      - name: Lint
+        run: npm run lint
+        working-directory: "DevOps/GithubActions/01 Starting Project"
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Cache node modules
+        uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+      - name: Install dependencies
+        run: npm install
+        working-directory: "DevOps/GithubActions/01 Starting Project"
+      - name: Test
+        run: npm run test
+        working-directory: "DevOps/GithubActions/01 Starting Project"
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Cache node modules
+        uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+      - name: Install dependencies
+        run: npm install
+        working-directory: "DevOps/GithubActions/01 Starting Project"
+      - name: Build
+        run: npm run build
+        working-directory: "DevOps/GithubActions/01 Starting Project"
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [lint, test, build]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Cache node modules
+        uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+      - name: Install dependencies
+        run: npm install
+        working-directory: "DevOps/GithubActions/01 Starting Project"
+      - name: Deploy
+        run: echo "Deploying to production"
+        working-directory: "DevOps/GithubActions/01 Starting Project"
