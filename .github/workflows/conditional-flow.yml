@@ -23,7 +23,7 @@ jobs:
           echo "This step will run only when the workflow is triggered by a schedule"
           echo 'The previous step was successful'
       - name: Third Conditional Step
-        if: ${{ runner.name == 'ubuntu-lastest' }}
+        if: ${{ runner.name == 'ubuntu-latest' }} #This is the runner name
         run: echo "This step runs only on the ubuntu-latest runner"
 
   test-another-runner:
