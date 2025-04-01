@@ -24,3 +24,16 @@ echo "Listing files in 'test_dir':"
 ls  # List files in the current directory
 echo "Writing 'Hello, Linux!' to 'test_file.txt':"
 echo "Hello, Linux!" > test_file.txt  # Write to the file
+
+if [ -f test_file.txt ]; then  # Check if the file exists
+    echo "'test_file.txt' exists."
+else
+    echo "'test_file.txt' does not exist."
+fi
+echo "Reading contents of 'test_file.txt':"
+cat test_file.txt  # Display the contents of the file
+echo "Copying 'test_file.txt' to 'copy_test_file.txt':"
+cp test_file.txt copy_test_file.txt  # Copy the file
+echo "Listing files after copying:"
+ls  # List files again
+echo "Moving 'copy_test_file.txt' to 'moved_test_file.txt':"
