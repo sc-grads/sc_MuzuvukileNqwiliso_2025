@@ -37,3 +37,7 @@ cp test_file.txt copy_test_file.txt  # Copy the file
 echo "Listing files after copying:"
 ls  # List files again
 echo "Moving 'copy_test_file.txt' to 'moved_test_file.txt':"
+
+rm copy_test_file.txt  # Remove the copied file
+rm -r dir # Remove the directory
+rm -f test_file.txt  # Remove the file
