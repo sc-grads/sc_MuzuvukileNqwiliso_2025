@@ -1,43 +1,41 @@
 #!/bin/bash
-# This script demonstrates the use of various Linux commands.
+# Linux Fundamentals Script
+# Demonstrates core commands every beginner should know
 
-echo "Hello, World!"  # Print a message to the console
-echo "Current date and time:"
-date  # Display the current date and time
-echo "Current working directory:"
-pwd  # Print the current working directory
-echo "List of files in the current directory:"
-ls  # List files in the current directory
-ls -l  # List files with detailed information
-chmod +x linux-commands.sh  # Make the script executable
-echo "File permissions for this script:"
-ls -l linux-commands.sh  # Show file permissions
-echo "Creating a new directory named 'test_dir':"   
-mkdir test_dir  # Create a new directory
-echo "Changing into 'test_dir' directory:"
-cd test_dir  # Change into the new directory
-echo "Current working directory after changing:"
-pwd  # Print the current working directory again
-echo "Creating a new file named 'test_file.txt':"
-touch test_file.txt  # Create a new file
-echo "Listing files in 'test_dir':"
-ls  # List files in the current directory
-echo "Writing 'Hello, Linux!' to 'test_file.txt':"
-echo "Hello, Linux!" > test_file.txt  # Write to the file
+# 1. Navigation
+echo "1. NAVIGATION COMMANDS"
+pwd                  # Show current directory
+ls                   # List files
+ls -l                # List files with details
+cd ~                 # Go to home directory
+cd ..                # Go up one directory
 
-if [ -f test_file.txt ]; then  # Check if the file exists
-    echo "'test_file.txt' exists."
-else
-    echo "'test_file.txt' does not exist."
-fi
-echo "Reading contents of 'test_file.txt':"
-cat test_file.txt  # Display the contents of the file
-echo "Copying 'test_file.txt' to 'copy_test_file.txt':"
-cp test_file.txt copy_test_file.txt  # Copy the file
-echo "Listing files after copying:"
-ls  # List files again
-echo "Moving 'copy_test_file.txt' to 'moved_test_file.txt':"
+# 2. File Operations
+echo -e "\n2. FILE OPERATIONS"
+touch file.txt       # Create empty file
+echo "Hello" > file.txt  # Write to file
+cat file.txt         # View file contents
+cp file.txt copy.txt # Copy file
+mv copy.txt moved.txt # Rename/move file
+rm moved.txt         # Remove file
 
-rm copy_test_file.txt  # Remove the copied file
-rm -r dir # Remove the directory
-rm -f test_file.txt  # Remove the file
+# 3. Directory Operations
+echo -e "\n3. DIRECTORY OPERATIONS"
+mkdir test_dir       # Create directory
+cd test_dir          # Enter directory
+touch test_file      # Create file in new directory
+cd ..                # Go back
+rmdir test_dir       # Remove EMPTY directory
+rm -r test_dir       # Remove directory and contents (if not empty)
+
+# 4. System Info
+echo -e "\n4. SYSTEM INFORMATION"
+date                 # Show current date/time
+whoami               # Show current user
+df -h                # Show disk space
+free -h              # Show memory usage
+
+# 5. Help
+echo -e "\n5. HELP COMMANDS"
+man ls               # View manual (press 'q' to quit)
+ls --help            # Brief command help
