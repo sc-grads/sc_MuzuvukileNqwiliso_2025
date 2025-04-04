@@ -1,0 +1,25 @@
+name: Setup SQL Server Database
+
+on:
+  workflow_dispatch:
+
+jobs:
+  development:
+    uses: ./.github/workflows/sql-template.yml
+    with:
+      sql_file: "setup-database.sql"
+    secrets:
+      sql_server: ${{ secrets.SQL_SERVER }}
+      sql_user: ${{ secrets.SQL_USER }}
+      sql_password: ${{ secrets.SQL_PASSWORD }}
+
+  deploy:
+    needs: development
+    uses: ./.github/workflows/sql-template.yml
+    with:
+      sql_file: "setup-database.sql"
+      environment_name: "production"
+    secrets:
+      sql_server: ${{ secrets.DEPLOY_SQL_SERVER }}
+      sql_user: ${{ secrets.DEPLOY_SQL_USER }}
+      sql_password: ${{ secrets.DEPLOY_SQL_PASSWORD }}

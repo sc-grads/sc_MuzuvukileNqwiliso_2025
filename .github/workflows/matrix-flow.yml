@@ -1,8 +1,7 @@
 name: Testing Matrix Flow
 on:
-  push:
-    branches:
-      - master
+  workflow_dispatch:
+  
 
 jobs:
   testing:
