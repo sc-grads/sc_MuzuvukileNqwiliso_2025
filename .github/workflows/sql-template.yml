@@ -1,0 +1,52 @@
+name: SQL Setup Template
+
+on:
+  workflow_call:
+    inputs:
+      sql_file:
+        description: 'Path to the SQL file relative to the scripts directory'
+        required: true
+        type: string
+      environment_name:
+        description: 'Name of the environment to deploy to'
+        required: false
+        type: string
+    secrets:
+      sql_server:
+        description: 'SQL Server address'
+        required: true
+      sql_user:
+        description: 'SQL Server username'
+        required: true
+      sql_password:
+        description: 'SQL Server password'
+        required: true
+
+jobs:
+  run-sql:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment_name }} 
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Verify SQL file exists
+        run: |
+          cd scripts
+          if [ -f "${{ inputs.sql_file }}" ]; then
+            echo "SQL file ${{ inputs.sql_file }} found in scripts"
+          else
+            echo "SQL file ${{ inputs.sql_file }} NOT found in scripts"
+            exit 1
+          fi
+
+      - name: Run SQL Script with Docker
+        env:
+          SQL_SERVER: ${{ secrets.sql_server }}
+          SQL_USER: ${{ secrets.sql_user }}
+          SQL_PASSWORD: ${{ secrets.sql_password }}
+        run: |
+          echo "Starting SQL execution at $(date)"
+          docker run --rm -v $(pwd):/work mcr.microsoft.com/mssql/server:2019-latest \
+            bash -c "echo 'Running sqlcmd' && /opt/mssql-tools18/bin/sqlcmd -S ${SQL_SERVER} -U ${SQL_USER} -P '${SQL_PASSWORD}' -C -b -t 30 -i /work/scripts/${{ inputs.sql_file }} || echo 'sqlcmd failed'"
+          echo "Finished at $(date)"
