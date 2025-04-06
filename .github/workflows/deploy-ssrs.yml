@@ -15,46 +15,56 @@ jobs:
 
       - name: Validate RDL files
         run: |
+          # Verify RDL files exist
           if (-not (Test-Path ./Reports/*.rdl)) {
-            Write-Error "No RDL files found in Reports directory!"
+            Write-Error "❌ No RDL files found in Reports directory!"
             exit 1
           }
+          Write-Host "✅ Found RDL files:"
           Get-ChildItem ./Reports/*.rdl | ForEach-Object {
-            Write-Host "Found RDL file: $($_.Name)"
+            Write-Host "  - $($_.Name)"
           }
 
-      - name: Deploy to SSRS
+      - name: Deploy via SSRS REST API
         env:
-          SSRS_URL: "http://laptop-62jj49t4/reportserver"
+          SSRS_URL: "http://laptop-62jj49t4/Reports/api/v2.0"  # Updated API endpoint
+          SSRS_USER: "${{ secrets.SSRS_USERNAME }}"
+          SSRS_PASS: "${{ secrets.SSRS_PASSWORD }}"
         run: |
-          # Debug: Verify connectivity
-          Test-NetConnection -ComputerName laptop-62jj49t4 -Port 80 -InformationLevel Detailed
-
-          # Updated for SQL Server 2022 (version 160)
-          $rsPath = "C:\Program Files (x86)\Microsoft SQL Server\160\Tools\Binn\rs.exe"
-          
-          if (-not (Test-Path $rsPath)) {
-            Write-Error "rs.exe not found at $rsPath"
-            Get-ChildItem "C:\Program Files (x86)\Microsoft SQL Server\" -Recurse -Filter rs.exe -ErrorAction SilentlyContinue
+          # Test connectivity
+          Write-Host "Testing connection to SSRS server..."
+          $pingTest = Test-NetConnection -ComputerName laptop-62jj49t4 -Port 80 -InformationLevel Quiet
+          if (-not $pingTest) {
+            Write-Error "❌ Cannot reach SSRS server! Check network/firewall."
             exit 1
+          }
+          Write-Host "✅ Server connection successful"
+
+          # Deploy each report
+          $base64Auth = [Convert]::ToBase64String(
+            [Text.Encoding]::ASCII.GetBytes("$env:SSRS_USER:$env:SSRS_PASS")
+          )
+          $headers = @{
+            "Authorization" = "Basic $base64Auth"
+            "Content-Type" = "application/octet-stream"
           }
 
           foreach ($rdlFile in Get-ChildItem ./Reports/*.rdl) {
-            Write-Host "Deploying $($rdlFile.Name)..."
-            
-            & $rsPath `
-              -i $rdlFile.FullName `
-              -s $env:SSRS_URL `
-              -u "${{ secrets.SSRS_USERNAME }}" `
-              -p "${{ secrets.SSRS_PASSWORD }}" `
-              -e Exec2022 `  # Updated execution mode
-              -v "Overwrite=true" `
-              -l 600  # Timeout in seconds
+            try {
+              Write-Host "📤 Deploying $($rdlFile.Name)..."
+              $bytes = [System.IO.File]::ReadAllBytes($rdlFile.FullName)
+              
+              $response = Invoke-RestMethod `
+                -Uri "$env:SSRS_URL/CatalogItems?Path=%2F$($rdlFile.BaseName)" `
+                -Method Post `
+                -Headers $headers `
+                -Body $bytes
 
-            if ($LASTEXITCODE -ne 0) {
-              Write-Error "Failed to deploy $($rdlFile.Name)"
-              exit $LASTEXITCODE
+              Write-Host "✅ Success! Report available at:"
+              Write-Host "   http://laptop-62jj49t4/Reports?%2F$($rdlFile.BaseName)"
             }
-            
-            Write-Host "Successfully deployed $($rdlFile.Name)"
+            catch {
+              Write-Error "❌ Failed to deploy $($rdlFile.Name): $($_.Exception.Message)"
+              exit 1
+            }
           }
