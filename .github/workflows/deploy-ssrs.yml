@@ -33,7 +33,7 @@ jobs:
         run: |
           # Test connectivity
           Write-Host "Testing connection to SSRS server..."
-          $pingTest = Test-NetConnection -ComputerName laptop-62jj49t4 -Port 80 -InformationLevel Quiet
+          $pingTest = Test-NetConnection -ComputerName LAPTOP-62JJ49T4 -Port 80 -InformationLevel Quiet
           if (-not $pingTest) {
             Write-Error "❌ Cannot reach SSRS server! Check network/firewall."
             exit 1
