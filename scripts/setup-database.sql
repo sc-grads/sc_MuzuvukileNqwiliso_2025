@@ -1,7 +1,7 @@
 BEGIN TRY
-    IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'AutoTest_MN_04April')
-        CREATE DATABASE AutoTest_MN_04April;
-    PRINT 'Database AutoTest_MN_04April created successfully or already exists.';
+    IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'AutoTest_MN_07April')
+        CREATE DATABASE AutoTest_MN_07April;
+    PRINT 'Database AutoTest_MN_07April created successfully or already exists.';
 END TRY
 BEGIN CATCH
     PRINT 'Error creating database: ' + ERROR_MESSAGE();
@@ -10,8 +10,8 @@ END CATCH;
 GO
 
 BEGIN TRY
-    USE AutoTest_MN_04April;
-    PRINT 'Switched to AutoTest_MN_04April database.';
+    USE AutoTest_MN_07April;
+    PRINT 'Switched to AutoTest_MN_07April database.';
 END TRY
 BEGIN CATCH
     PRINT 'Error switching to database: ' + ERROR_MESSAGE();

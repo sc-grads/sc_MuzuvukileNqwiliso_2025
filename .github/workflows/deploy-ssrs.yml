@@ -1,36 +1,31 @@
 name: Deploy SSRS Reports
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:  # Allow manual triggers
   push:
     branches: [ main ]
-    paths: [ 'Reports/**/*.rdl' ] 
+    paths: [ 'Reports/**/*.rdl' ]
 
 jobs:
   deploy-reports:
-    runs-on: windows-latest
+    runs-on: self-hosted  # MUST run on your local machine
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Upload RDL files
+      - name: Deploy Reports
         run: |
-          mkdir -p ./artifacts
-          cp ./Reports/**/*.rdl ./artifacts/
+          # Simple deployment using local paths
+          $ssrsUrl = "http://localhost/reportserver"
+          $rdlFiles = Get-ChildItem ./Reports/*.rdl
 
-      - name: Deploy to SSRS
-        run: |
-          $ssrsUrl = "http://laptop-62jj49t4/reportserver"
-          $username = "${{ secrets.SSRS_USERNAME }}"  # LAPTOP-62JJ49T4\MuzuvukileNqwiliso
-          $password = "${{ secrets.SSRS_PASSWORD }}"  # Your Windows password
-          
-          foreach ($rdlFile in Get-ChildItem ./artifacts/*.rdl) {
-            $reportName = [System.IO.Path]::GetFileNameWithoutExtension($rdlFile)
-            & "C:\Program Files (x86)\Microsoft SQL Server\150\Tools\Binn\rs.exe" `
-              -i $rdlFile.FullName `
+          foreach ($file in $rdlFiles) {
+            Write-Host "Deploying $($file.Name)..."
+            & "C:\Program Files (x86)\Microsoft SQL Server\160\Tools\Binn\rs.exe" `
+              -i $file.FullName `
               -s $ssrsUrl `
-              -u $username `
-              -p $password `
-              -e Exec2005 `
+              -e Exec2022 `
               -v "Overwrite=true"
           }
+          Write-Host "✅ All reports deployed!"
