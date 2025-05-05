@@ -18,3 +18,9 @@ print(type(numbers))  # This is going to <class 'list'>
 numbers = (1, 2, 3, 4, 5)
 print(type(numbers))  # This is going to <class 'tuple'>
 numbers = range(1, 10)
+
+
+users = { "name": "Naruto", "age": 20, "village": "Konoha"}
+print(type(numbers))  # This is going to <class 'range'>
+print(users["name"])
+print(users["age"])
