@@ -25,3 +25,20 @@ def add(a, b):
 
 result = add(5, 3)
 print(result)  
+
+
+def future_function():
+    pass  
+
+def show_names(*args):
+    for name in args:
+        print(name)
+
+show_names("Mzu", "Alex", "Sam")
+
+
+def show_info(**kwargs):
+    for key, value in kwargs.items():
+        print(f"{key}: {value}")
+
+show_info(name="Mzu", age=25, location="Cape Town")
