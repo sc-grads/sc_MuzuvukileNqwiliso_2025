@@ -15,3 +15,6 @@ print(type(tuple_to_list))
 tuple_to_list.append("Ben 10")
 list_to_tuple: tuple[str] = tuple(tuple_to_list)
 print(list_to_tuple)
+
+set_numbers = {3,56,}
+print(set_numbers)
