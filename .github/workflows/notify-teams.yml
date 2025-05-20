@@ -8,9 +8,7 @@ on:
 jobs:
   notify-teams:
     runs-on: ubuntu-latest
-    if: >
-      github.event_name == 'push' ||
-      (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
     steps:
       - name: Send notification to Microsoft Teams
         uses: actions/github-script@v6
