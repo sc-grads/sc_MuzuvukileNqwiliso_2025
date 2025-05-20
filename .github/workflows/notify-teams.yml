@@ -3,7 +3,7 @@ name: Notify Microsoft Teams on PR Merge or Push
 on:
   push:
   pull_request:
-    types: [closed] 
+    types: [closed]
 
 jobs:
   notify-teams:
@@ -30,7 +30,7 @@ jobs:
                     "facts": [
                       {
                         "name": "Repository",
-                        "value": "${{ github.repository }}"
+                        "value": context.payload.repository.full_name
                       },
                       {
                         "name": "Base Branch",
@@ -58,7 +58,7 @@ jobs:
                     "facts": [
                       {
                         "name": "Repository",
-                        "value": "${{ github.repository }}"
+                        "value": context.payload.repository.full_name
                       },
                       {
                         "name": "Branch",
@@ -73,3 +73,18 @@ jobs:
                         "value": context.payload.head_commit.id
                       }
                     ],
+                    "markdown": true
+                  }
+                ]
+              };
+            }
+
+            await fetch(webhookUrl, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify(payload)
+            });
+        env:
+          TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
