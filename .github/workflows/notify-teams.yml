@@ -1,9 +1,11 @@
 name: Notify Microsoft Teams on PR Merge or Push
 
 on:
-  push:  
+  push:
+    branches:
+      - 20May205  # Only trigger on push to this branch
   pull_request:
-    types: [closed]  
+    types: [closed]  # Trigger when a pull request is closed
 
 jobs:
   notify-teams:
@@ -35,8 +37,12 @@ jobs:
                         "value": "${{ github.repository }}"
                       },
                       {
-                        "name": "Branch",
+                        "name": "Base Branch",
                         "value": context.payload.pull_request.base.ref
+                      },
+                      {
+                        "name": "Merged At",
+                        "value": context.payload.pull_request.merged_at
                       }
                     ],
                     "markdown": true
@@ -65,20 +71,9 @@ jobs:
                       {
                         "name": "Commit Message",
                         "value": context.payload.head_commit.message
+                      },
+                      {
+                        "name": "Commit SHA",
+                        "value": context.payload.head_commit.id
                       }
                     ],
-                    "markdown": true
-                  }
-                ]
-              };
-            }
-
-            await fetch(webhookUrl, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify(payload)
-            });
-        env:
-          TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
