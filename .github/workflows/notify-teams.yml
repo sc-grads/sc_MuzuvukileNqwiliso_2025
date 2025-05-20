@@ -3,9 +3,9 @@ name: Notify Microsoft Teams on PR Merge or Push
 on:
   push:
     branches:
-      - 20May205  # Only trigger on push to this branch
+      - 20May2025 
   pull_request:
-    types: [closed]  # Trigger when a pull request is closed
+    types: [closed] 
 
 jobs:
   notify-teams:
