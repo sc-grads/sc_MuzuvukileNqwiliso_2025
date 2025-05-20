@@ -1,46 +1,77 @@
-name: Notify Microsoft Teams on Pull Request Success
+name: Notify Microsoft Teams on PR Merge or Push
 
 on:
+  push:  
   pull_request:
-    types: [closed]  # Trigger when a pull request is closed
+    types: [closed]  
 
 jobs:
   notify-teams:
-    if: github.event.pull_request.merged == true  # Only run if the PR was merged
     runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'push' ||
+      (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
     steps:
       - name: Send notification to Microsoft Teams
         uses: actions/github-script@v6
         with:
           script: |
             const webhookUrl = process.env.TEAMS_WEBHOOK_URL;
-            const payload = {
-              "@type": "MessageCard",
-              "@context": "http://schema.org/extensions",
-              "themeColor": "0076D7",
-              "summary": "Pull Request Notification",
-              "sections": [
-                {
-                  "activityTitle": "Pull Request Success",
-                  "activitySubtitle": "The pull request was successfully merged.",
-                  "facts": [
-                    {
-                      "name": "Repository",
-                      "value": "${{ github.repository }}"
-                    },
-                    {
-                      "name": "Pull Request",
-                      "value": "#${{ github.event.pull_request.number }}"
-                    },
-                    {
-                      "name": "Merged by",
-                      "value": "${{ github.event.pull_request.merged_by.login }}"
-                    }
-                  ],
-                  "markdown": true
-                }
-              ]
-            };
+
+            let payload;
+            if (context.eventName === 'pull_request') {
+              payload = {
+                "@type": "MessageCard",
+                "@context": "http://schema.org/extensions",
+                "themeColor": "0076D7",
+                "summary": "Pull Request Notification",
+                "sections": [
+                  {
+                    "activityTitle": "Pull Request Merged",
+                    "activitySubtitle": `#${context.payload.pull_request.number} was merged by ${context.payload.pull_request.merged_by.login}`,
+                    "facts": [
+                      {
+                        "name": "Repository",
+                        "value": "${{ github.repository }}"
+                      },
+                      {
+                        "name": "Branch",
+                        "value": context.payload.pull_request.base.ref
+                      }
+                    ],
+                    "markdown": true
+                  }
+                ]
+              };
+            } else {
+              payload = {
+                "@type": "MessageCard",
+                "@context": "http://schema.org/extensions",
+                "themeColor": "00AA00",
+                "summary": "Push Notification",
+                "sections": [
+                  {
+                    "activityTitle": "New Push to Branch",
+                    "activitySubtitle": `Pushed by ${context.actor}`,
+                    "facts": [
+                      {
+                        "name": "Repository",
+                        "value": "${{ github.repository }}"
+                      },
+                      {
+                        "name": "Branch",
+                        "value": context.ref.replace('refs/heads/', '')
+                      },
+                      {
+                        "name": "Commit Message",
+                        "value": context.payload.head_commit.message
+                      }
+                    ],
+                    "markdown": true
+                  }
+                ]
+              };
+            }
 
             await fetch(webhookUrl, {
               method: 'POST',
