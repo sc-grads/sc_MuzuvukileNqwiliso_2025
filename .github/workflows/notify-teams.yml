@@ -2,8 +2,6 @@ name: Notify Microsoft Teams on PR Merge or Push
 
 on:
   push:
-    branches:
-      - 20May2025 
   pull_request:
     types: [closed] 
 
