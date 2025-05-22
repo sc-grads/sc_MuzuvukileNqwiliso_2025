@@ -28,3 +28,41 @@ update ViewByDepartment set TotalAmount = 2.77 where EmployeeNumber = 132
 select * from ViewSummary
 
 delete from ViewByDepartment where EmployeeNumber = 123
+go
+
+CREATE OR  REPLACE VIEW cust_view as 
+SELECT * FROM [dbo].tblEmployee
+go
+-- Drop the view if it exists
+IF OBJECT_ID('vwEmployeeDepartment', 'V') IS NOT NULL
+    DROP VIEW vwEmployeeDepartment;
+GO
+-- Create the view
+CREATE VIEW vwEmployeeDepartment
+AS
+SELECT 
+    e.EmployeeNumber,
+    e.EmployeeFirstName,
+    e.EmployeeLastName,
+    d.Department
+FROM tblEmployee e
+JOIN tblDepartment d
+    ON e.Department = d.Department;
+
+
+	-- Drop the view if it exists
+IF OBJECT_ID('vwEmployeeDepartment', 'V') IS NOT NULL
+    DROP VIEW vwEmployeeDepartment;
+
+-- Create the view
+CREATE VIEW vwEmployeeDepartment
+AS
+SELECT 
+    e.EmployeeNumber,
+    e.EmployeeFirstName,
+    e.EmployeeLastName,
+    d.DepartmentName
+FROM tblEmployee e
+JOIN tblDepartment d
+    ON e.DepartmentID = d.DepartmentID;
+
