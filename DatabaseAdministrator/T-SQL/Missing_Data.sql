@@ -44,3 +44,13 @@ where ENumber is null
 order by ENumber, TNumber, EmployeeFirstName,
        EmployeeLastName
 
+
+
+UPDATE T
+SET T.Amount = -9999 -- or any placeholder value
+FROM tblTransaction AS T
+LEFT JOIN tblEmployee AS E
+    ON T.EmployeeNumber = E.EmployeeNumber
+WHERE E.EmployeeNumber IS NULL;
+
+
