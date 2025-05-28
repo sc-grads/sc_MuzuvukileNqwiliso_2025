@@ -1,0 +1,182 @@
+Name,StateProvinceID,StateProvinceCode,CountryRegionCode
+Alberta,1,AB ,CA
+Alaska,2,AK ,US
+Alabama,3,AL ,US
+Arkansas,4,AR ,US
+American Samoa,5,AS ,AS
+Arizona,6,AZ ,US
+British Columbia,7,BC ,CA
+Bayern,8,BY ,DE
+California,9,CA ,US
+Colorado,10,CO ,US
+Connecticut,11,CT ,US
+District of Columbia,12,DC ,US
+Delaware,13,DE ,US
+England,14,ENG,GB
+Florida,15,FL ,US
+Micronesia,16,FM ,FM
+Georgia,17,GA ,US
+Guam,18,GU ,US
+Hessen,19,HE ,DE
+Hamburg,20,HH ,DE
+Hawaii,21,HI ,US
+Iowa,22,IA ,US
+Idaho,23,ID ,US
+Illinois,24,IL ,US
+Indiana,25,IN ,US
+Kansas,26,KS ,US
+Kentucky,27,KY ,US
+Louisiana,28,LA ,US
+Labrador,29,LB ,CA
+Massachusetts,30,MA ,US
+Manitoba,31,MB ,CA
+Maryland,32,MD ,US
+Maine,33,ME ,US
+Marshall Islands,34,MH ,MH
+Michigan,35,MI ,US
+Minnesota,36,MN ,US
+Missouri,37,MO ,US
+Northern Mariana Islands,38,MP ,MP
+Mississippi,39,MS ,US
+Montana,40,MT ,US
+Brunswick,41,NB ,CA
+North Carolina,42,NC ,US
+North Dakota,43,ND ,US
+Nebraska,44,NE ,US
+Newfoundland,45,NF ,CA
+New Hampshire,46,NH ,US
+New Jersey,47,NJ ,US
+New Mexico,48,NM ,US
+Nova Scotia,49,NS ,CA
+New South Wales,50,NSW,AU
+Northwest Territories,51,NT ,CA
+Nevada,52,NV ,US
+Nordrhein-Westfalen,53,NW ,DE
+New York,54,NY ,US
+Ohio,55,OH ,US
+Oklahoma,56,OK ,US
+Ontario,57,ON ,CA
+Oregon,58,OR ,US
+Pennsylvania,59,PA ,US
+Prince Edward Island,60,PE ,CA
+Puerto Rico,61,PR ,US
+Palau,62,PW ,PW
+Quebec,63,QC ,CA
+Queensland,64,QLD,AU
+Rhode Island,65,RI ,US
+South Australia,66,SA ,AU
+South Carolina,67,SC ,US
+South Dakota,68,SD ,US
+Saskatchewan,69,SK ,CA
+Saarland,70,SL ,DE
+Tasmania,71,TAS,AU
+Tennessee,72,TN ,US
+Texas,73,TX ,US
+Utah,74,UT ,US
+Virginia,75,VA ,US
+Virgin Islands,76,VI ,VI
+Victoria,77,VIC,AU
+Vermont,78,VT ,US
+Washington,79,WA ,US
+Wisconsin,80,WI ,US
+West Virginia,81,WV ,US
+Wyoming,82,WY ,US
+Yukon Territory,83,YT ,CA
+France,84,FR ,FR
+Brandenburg,85,BB ,DE
+Saxony,86,SN ,DE
+Ain,87,01 ,FR
+Aisne,88,02 ,FR
+Allier,89,03 ,FR
+Alpes-de-Haute Provence,90,04 ,FR
+Alpes (Haute),91,05 ,FR
+Alpes-Maritimes,92,06 ,FR
+Ardèche,93,07 ,FR
+Ardennes,94,08 ,FR
+Ariège,95,09 ,FR
+Aube,96,10 ,FR
+Aude,97,11 ,FR
+Aveyron,98,12 ,FR
+Bouches du Rhône,99,13 ,FR
+Calvados,100,14 ,FR
+Cantal,101,15 ,FR
+Charente,102,16 ,FR
+Charente-Maritime,103,17 ,FR
+Cher,104,18 ,FR
+Corrèze,105,19 ,FR
+Corse,106,20 ,FR
+Côte d'Or,107,21 ,FR
+Côtes-d'Armor,108,22 ,FR
+Creuse,109,23 ,FR
+Dordogne,110,24 ,FR
+Toubs,111,25 ,FR
+Drôme,112,26 ,FR
+Eure,113,27 ,FR
+Eure et Loir,114,28 ,FR
+Finistère,115,29 ,FR
+Gard,116,30 ,FR
+Garonne (Haute),117,31 ,FR
+Gers,118,32 ,FR
+Gironde,119,33 ,FR
+Hérault,120,34 ,FR
+Ille et Vilaine,121,35 ,FR
+Indre,122,36 ,FR
+Indre et Loire,123,37 ,FR
+Isère,124,38 ,FR
+Jura,125,39 ,FR
+Landes,126,40 ,FR
+Loir et Cher,127,41 ,FR
+Loire,128,42 ,FR
+Loire (Haute),129,43 ,FR
+Loire Atlantique,130,44 ,FR
+Loiret,131,45 ,FR
+Lot,132,46 ,FR
+Lot et Garonne,133,47 ,FR
+Lozère,134,48 ,FR
+Maine et Loire,135,49 ,FR
+Manche,136,50 ,FR
+Marne,137,51 ,FR
+Marne (Haute),138,52 ,FR
+Mayenne,139,53 ,FR
+Meurthe et Moselle,140,54 ,FR
+Meuse,141,55 ,FR
+Morbihan,142,56 ,FR
+Moselle,143,57 ,FR
+Nièvre,144,58 ,FR
+Nord,145,59 ,FR
+Oise,146,60 ,FR
+Orne,147,61 ,FR
+Pas de Calais,148,62 ,FR
+Puy de Dôme,149,63 ,FR
+Pyrénées Atlantiques,150,64 ,FR
+Pyrénées (Hautes),151,65 ,FR
+Pyrénées Orientales,152,66 ,FR
+Rhin (Bas),153,67 ,FR
+Rhin (Haut),154,68 ,FR
+Rhône,155,69 ,FR
+Saône (Haute),156,70 ,FR
+Saône et Loire,157,71 ,FR
+Sarthe,158,72 ,FR
+Savoie,159,73 ,FR
+Savoie Haute,160,74 ,FR
+Seine (Paris),161,75 ,FR
+Seine Maritime,162,76 ,FR
+Seine et Marne,163,77 ,FR
+Yveline,164,78 ,FR
+Sèvres (Deux),165,79 ,FR
+Somme,166,80 ,FR
+Tarne,167,81 ,FR
+Tarne et Garonne,168,82 ,FR
+Var,169,83 ,FR
+Vaucluse,170,84 ,FR
+La Vendée,171,85 ,FR
+Vienne,172,86 ,FR
+Vienne (Haute),173,87 ,FR
+Vosges,174,88 ,FR
+Yonne,175,89 ,FR
+Belford (Territoire de),176,90 ,FR
+Essonne,177,91 ,FR
+Hauts de Seine,178,92 ,FR
+Seine Saint Denis,179,93 ,FR
+Val de Marne,180,94 ,FR
+Val d'Oise,181,95 ,FR
