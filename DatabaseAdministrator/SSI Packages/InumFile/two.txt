@@ -1,0 +1,6 @@
+ProductID, ProductName
+6, Wireless Charger
+7, Gaming Mouse
+8, Bluetooth Speaker
+9, Mechanical Keyboard
+10, External Hard Drive

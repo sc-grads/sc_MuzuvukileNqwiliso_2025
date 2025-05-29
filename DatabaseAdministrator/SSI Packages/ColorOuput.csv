@@ -1,0 +1,27 @@
+ProductID,Name,ProductNumber,Color,ListPrice
+711,Sport-100 Helmet, Blue,HL-U509-B,Blue,34.99
+864,Classic Vest, S,VE-C304-S,Blue,63.5
+865,Classic Vest, M,VE-C304-M,Blue,63.5
+866,Classic Vest, L,VE-C304-L,Blue,63.5
+890,HL Touring Frame - Blue, 46,FR-T98U-46,Blue,1003.91
+891,HL Touring Frame - Blue, 50,FR-T98U-50,Blue,1003.91
+892,HL Touring Frame - Blue, 54,FR-T98U-54,Blue,1003.91
+893,HL Touring Frame - Blue, 60,FR-T98U-60,Blue,1003.91
+895,LL Touring Frame - Blue, 50,FR-T67U-50,Blue,333.42
+896,LL Touring Frame - Blue, 54,FR-T67U-54,Blue,333.42
+897,LL Touring Frame - Blue, 58,FR-T67U-58,Blue,333.42
+898,LL Touring Frame - Blue, 62,FR-T67U-62,Blue,333.42
+903,LL Touring Frame - Blue, 44,FR-T67U-44,Blue,333.42
+953,Touring-2000 Blue, 60,BK-T44U-60,Blue,1214.85
+958,Touring-3000 Blue, 54,BK-T18U-54,Blue,742.35
+959,Touring-3000 Blue, 58,BK-T18U-58,Blue,742.35
+960,Touring-3000 Blue, 62,BK-T18U-62,Blue,742.35
+966,Touring-1000 Blue, 46,BK-T79U-46,Blue,2384.07
+967,Touring-1000 Blue, 50,BK-T79U-50,Blue,2384.07
+968,Touring-1000 Blue, 54,BK-T79U-54,Blue,2384.07
+969,Touring-1000 Blue, 60,BK-T79U-60,Blue,2384.07
+970,Touring-2000 Blue, 46,BK-T44U-46,Blue,1214.85
+971,Touring-2000 Blue, 50,BK-T44U-50,Blue,1214.85
+972,Touring-2000 Blue, 54,BK-T44U-54,Blue,1214.85
+978,Touring-3000 Blue, 44,BK-T18U-44,Blue,742.35
+979,Touring-3000 Blue, 50,BK-T18U-50,Blue,742.35
