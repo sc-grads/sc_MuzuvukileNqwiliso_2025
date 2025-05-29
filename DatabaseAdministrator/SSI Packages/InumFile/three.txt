@@ -1,0 +1,6 @@
+ProductID, ProductName
+11, Smart TV
+12, VR Headset
+13, Home Assistant Device
+14, Streaming Stick
+15, E-Reader

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<seriesCollection>
+    <series>
+        <title>Game of Thrones</title>
+        <genre>Action, Adventure, Fantasy</genre>
+        <year>2011</year>
+    </series>
+    <series>
+        <title>Stranger Things</title>
+        <genre>Action, Adventure, Sci-Fi</genre>
+        <year>2016</year>
+    </series>
+    <series>
+        <title>The Witcher</title>
+        <genre>Action, Adventure, Fantasy</genre>
+        <year>2019</year>
+    </series>
+    <series>
+        <title>Vikings</title>
+        <genre>Action, Adventure, Historical</genre>
+        <year>2013</year>
+    </series>
+    <series>
+        <title>Money Heist</title>
+        <genre>Action, Adventure, Crime</genre>
+        <year>2017</year>
+    </series>
+    <series>
+        <title>Breaking Bad</title>
+        <genre>Action, Adventure, Crime</genre>
+        <year>2008</year>
+    </series>
+</seriesCollection>
