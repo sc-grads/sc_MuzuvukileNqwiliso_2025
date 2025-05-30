@@ -1,0 +1,150 @@
+﻿<?xml version="1.0"?>
+<DTS:Executable xmlns:DTS="www.microsoft.com/SqlServer/Dts"
+  DTS:refId="Package"
+  DTS:CreationDate="5/29/2025 10:47:39 PM"
+  DTS:CreationName="Microsoft.Package"
+  DTS:CreatorComputerName="LAPTOP-62JJ49T4"
+  DTS:CreatorName="LAPTOP-62JJ49T4\MuzuvukileNqwiliso"
+  DTS:DTSID="{6117EBE6-1074-4FA2-B6AE-346272EA2363}"
+  DTS:ExecutableType="Microsoft.Package"
+  DTS:LastModifiedProductVersion="16.0.5685.0"
+  DTS:LocaleID="7177"
+  DTS:ObjectName="Package1"
+  DTS:PackageType="5"
+  DTS:VersionBuild="3"
+  DTS:VersionGUID="{44197224-9753-4703-B132-3267C91E982A}">
+  <DTS:Property
+    DTS:Name="PackageFormatVersion">8</DTS:Property>
+  <DTS:ConnectionManagers>
+    <DTS:ConnectionManager
+      DTS:refId="Package.ConnectionManagers[LocalHost.AdventureWorks2022]"
+      DTS:CreationName="OLEDB"
+      DTS:DTSID="{DEDCAC04-9B86-4F0E-BD05-4C2373BBD9FE}"
+      DTS:ObjectName="LocalHost.AdventureWorks2022">
+      <DTS:ObjectData>
+        <DTS:ConnectionManager
+          DTS:ConnectRetryCount="1"
+          DTS:ConnectRetryInterval="5"
+          DTS:ConnectionString="Data Source=.;Initial Catalog=AdventureWorks2022;Provider=MSOLEDBSQL.1;Integrated Security=SSPI;Application Name=SSIS-Package1-{DEDCAC04-9B86-4F0E-BD05-4C2373BBD9FE}LocalHost.AdventureWorks2022;Auto Translate=False;" />
+      </DTS:ObjectData>
+    </DTS:ConnectionManager>
+    <DTS:ConnectionManager
+      DTS:refId="Package.ConnectionManagers[LOG.txt]"
+      DTS:CreationName="FILE"
+      DTS:DTSID="{29DAD608-572E-4FF4-804C-90CBA78F82C9}"
+      DTS:ObjectName="LOG.txt">
+      <DTS:ObjectData>
+        <DTS:ConnectionManager
+          DTS:FileUsageType="1"
+          DTS:ConnectionString="C:\sc_MuzuvukileNqwiliso_2025\DatabaseAdministrator\SSI Packages\LOG.txt" />
+      </DTS:ObjectData>
+    </DTS:ConnectionManager>
+    <DTS:ConnectionManager
+      DTS:refId="Package.ConnectionManagers[XMLOG.xml]"
+      DTS:CreationName="FILE"
+      DTS:DTSID="{0E88BC46-8AAE-45CA-B9FB-92238D136EC7}"
+      DTS:ObjectName="XMLOG.xml">
+      <DTS:ObjectData>
+        <DTS:ConnectionManager
+          DTS:FileUsageType="1"
+          DTS:ConnectionString="C:\sc_MuzuvukileNqwiliso_2025\DatabaseAdministrator\SSI Packages\XMLOG.xml" />
+      </DTS:ObjectData>
+    </DTS:ConnectionManager>
+  </DTS:ConnectionManagers>
+  <DTS:LogProviders>
+    <DTS:LogProvider
+      DTS:ConfigString="LOG.txt"
+      DTS:CreationName="Microsoft.LogProviderTextFile"
+      DTS:Description="Writes log entries for events to a CSV file"
+      DTS:DTSID="{059E414F-8BB6-4AD3-9B25-E704EA49B545}"
+      DTS:ObjectName="SSIS log provider for Text files">
+      <DTS:ObjectData>
+        <InnerObject />
+      </DTS:ObjectData>
+    </DTS:LogProvider>
+    <DTS:LogProvider
+      DTS:ConfigString="XMLOG.xml"
+      DTS:CreationName="Microsoft.LogProviderXMLFile"
+      DTS:Description="Writes log entries for events to an XML file"
+      DTS:DTSID="{B2B41461-52F7-4005-B30C-2BB49859D5FE}"
+      DTS:ObjectName="SSIS log provider for XML files">
+      <DTS:ObjectData>
+        <InnerObject />
+      </DTS:ObjectData>
+    </DTS:LogProvider>
+  </DTS:LogProviders>
+  <DTS:Variables />
+  <DTS:LoggingOptions
+    DTS:FilterKind="0"
+    DTS:LoggingMode="1">
+    <DTS:Property
+      DTS:DataType="8"
+      DTS:Name="EventFilter">1,7,OnError</DTS:Property>
+    <DTS:Property
+      DTS:EventName="OnError"
+      DTS:Name="ColumnFilter">
+      <DTS:Property
+        DTS:Name="Computer">-1</DTS:Property>
+      <DTS:Property
+        DTS:Name="Operator">-1</DTS:Property>
+      <DTS:Property
+        DTS:Name="SourceName">-1</DTS:Property>
+      <DTS:Property
+        DTS:Name="SourceID">-1</DTS:Property>
+      <DTS:Property
+        DTS:Name="ExecutionID">0</DTS:Property>
+      <DTS:Property
+        DTS:Name="MessageText">-1</DTS:Property>
+      <DTS:Property
+        DTS:Name="DataBytes">0</DTS:Property>
+    </DTS:Property>
+    <DTS:SelectedLogProviders>
+      <DTS:SelectedLogProvider
+        DTS:InstanceID="{059E414F-8BB6-4AD3-9B25-E704EA49B545}" />
+      <DTS:SelectedLogProvider
+        DTS:InstanceID="{B2B41461-52F7-4005-B30C-2BB49859D5FE}" />
+    </DTS:SelectedLogProviders>
+  </DTS:LoggingOptions>
+  <DTS:Executables>
+    <DTS:Executable
+      DTS:refId="Package\Execute SQL Task"
+      DTS:CreationName="Microsoft.ExecuteSQLTask"
+      DTS:Description="Execute SQL Task"
+      DTS:DTSID="{4BB7B29E-0993-4E95-AAE2-CBF765C10CA5}"
+      DTS:ExecutableType="Microsoft.ExecuteSQLTask"
+      DTS:LocaleID="-1"
+      DTS:ObjectName="Execute SQL Task"
+      DTS:TaskContact="Execute SQL Task; Microsoft Corporation; SQL Server 2022; © 2022 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1"
+      DTS:ThreadHint="0">
+      <DTS:Variables />
+      <DTS:LoggingOptions
+        DTS:FilterKind="0"
+        DTS:LoggingMode="2" />
+      <DTS:ObjectData>
+        <SQLTask:SqlTaskData
+          SQLTask:Connection="{DEDCAC04-9B86-4F0E-BD05-4C2373BBD9FE}"
+          SQLTask:SqlStatementSource="SELECT 1/ 0" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
+      </DTS:ObjectData>
+    </DTS:Executable>
+  </DTS:Executables>
+  <DTS:DesignTimeProperties><![CDATA[<?xml version="1.0"?>
+<!--This CDATA section contains the layout information of the package. The section includes information such as (x,y) coordinates, width, and height.-->
+<!--If you manually edit this section and make a mistake, you can delete it. -->
+<!--The package will still be able to load normally but the previous layout information will be lost and the designer will automatically re-arrange the elements on the design surface.-->
+<Objects
+  Version="8">
+  <!--Each node below will contain properties that do not affect runtime behavior.-->
+  <Package
+    design-time-name="Package">
+    <LayoutInfo>
+      <GraphLayout
+        Capacity="4" xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph">
+        <NodeLayout
+          Size="164.8,41.6"
+          Id="Package\Execute SQL Task"
+          TopLeft="343.833314847616,82.6333327969578" />
+      </GraphLayout>
+    </LayoutInfo>
+  </Package>
+</Objects>]]></DTS:DesignTimeProperties>
+</DTS:Executable>

@@ -1,0 +1,263 @@
+﻿<?xml version="1.0"?>
+<DTS:Executable xmlns:DTS="www.microsoft.com/SqlServer/Dts"
+  DTS:refId="Package"
+  DTS:CreationDate="5/30/2025 9:12:27 AM"
+  DTS:CreationName="Microsoft.Package"
+  DTS:CreatorComputerName="LAPTOP-62JJ49T4"
+  DTS:CreatorName="LAPTOP-62JJ49T4\MuzuvukileNqwiliso"
+  DTS:DTSID="{CBD07369-749F-4806-9B27-A592B4209F3D}"
+  DTS:ExecutableType="Microsoft.Package"
+  DTS:LastModifiedProductVersion="16.0.5685.0"
+  DTS:LocaleID="7177"
+  DTS:ObjectName="Package1"
+  DTS:PackageType="5"
+  DTS:VersionBuild="5"
+  DTS:VersionGUID="{1AFA76DE-6EDA-4B70-B679-1915EB438895}">
+  <DTS:Property
+    DTS:Name="PackageFormatVersion">8</DTS:Property>
+  <DTS:ConnectionManagers>
+    <DTS:ConnectionManager
+      DTS:refId="Package.ConnectionManagers[HelloWolrd.txt]"
+      DTS:CreationName="FILE"
+      DTS:DTSID="{03D5CC42-71B9-42A4-B306-276F073CF6AC}"
+      DTS:ObjectName="HelloWolrd.txt">
+      <DTS:ObjectData>
+        <DTS:ConnectionManager
+          DTS:FileUsageType="1"
+          DTS:ConnectionString="C:\sc_MuzuvukileNqwiliso_2025\DatabaseAdministrator\SSI Packages\HelloWolrd.txt" />
+      </DTS:ObjectData>
+    </DTS:ConnectionManager>
+    <DTS:ConnectionManager
+      DTS:refId="Package.ConnectionManagers[Product_20250529_2130.txt]"
+      DTS:CreationName="FILE"
+      DTS:DTSID="{DACE4FC9-541F-468D-BB63-0125802D6C56}"
+      DTS:ObjectName="Product_20250529_2130.txt">
+      <DTS:ObjectData>
+        <DTS:ConnectionManager
+          DTS:ConnectionString="C:\sc_MuzuvukileNqwiliso_2025\DatabaseAdministrator\SSI Packages\Output Folder\Product_20250529_2130.txt" />
+      </DTS:ObjectData>
+    </DTS:ConnectionManager>
+    <DTS:ConnectionManager
+      DTS:refId="Package.ConnectionManagers[Product_20250529_2131.txt]"
+      DTS:CreationName="FILE"
+      DTS:DTSID="{45FA7E57-67E0-4AEE-B6B6-D3DC4999BC93}"
+      DTS:ObjectName="Product_20250529_2131.txt">
+      <DTS:ObjectData>
+        <DTS:ConnectionManager
+          DTS:ConnectionString="C:\sc_MuzuvukileNqwiliso_2025\DatabaseAdministrator\SSI Packages\Output Folder\Product_20250529_2131.txt" />
+      </DTS:ObjectData>
+    </DTS:ConnectionManager>
+    <DTS:ConnectionManager
+      DTS:refId="Package.ConnectionManagers[WMI Connection Manager]"
+      DTS:CreationName="WMI"
+      DTS:DTSID="{132562A6-03CC-4CF3-92F2-EE37FE49E8B8}"
+      DTS:ObjectName="WMI Connection Manager">
+      <DTS:ObjectData>
+        <WmiConnectionManager
+          ConnectionString="ServerName=\\localhost;Namespace=\root\cimv2;UseNtAuth=True;UserName=;"
+          ConnectByProxy="False" />
+      </DTS:ObjectData>
+    </DTS:ConnectionManager>
+    <DTS:ConnectionManager
+      DTS:refId="Package.ConnectionManagers[wmi_datacopying.txt]"
+      DTS:CreationName="FILE"
+      DTS:DTSID="{3C886C30-489C-4976-927F-0EB8023CC739}"
+      DTS:ObjectName="wmi_datacopying.txt">
+      <DTS:ObjectData>
+        <DTS:ConnectionManager
+          DTS:FileUsageType="1"
+          DTS:ConnectionString="C:\sc_MuzuvukileNqwiliso_2025\DatabaseAdministrator\SSI Packages\wmi_datacopying.txt" />
+      </DTS:ObjectData>
+    </DTS:ConnectionManager>
+  </DTS:ConnectionManagers>
+  <DTS:Variables>
+    <DTS:Variable
+      DTS:CreationName=""
+      DTS:DTSID="{C3288D12-937A-4D04-A5BA-13A7F7DB0BEC}"
+      DTS:IncludeInDebugDump="2345"
+      DTS:Namespace="User"
+      DTS:ObjectName="VarFileSize">
+      <DTS:VariableValue
+        DTS:DataType="8"
+        xml:space="preserve"></DTS:VariableValue>
+    </DTS:Variable>
+    <DTS:Variable
+      DTS:CreationName=""
+      DTS:DTSID="{2D136431-FB19-478A-B0EE-4C71A783502B}"
+      DTS:IncludeInDebugDump="2345"
+      DTS:Namespace="User"
+      DTS:ObjectName="VarFreeSpace">
+      <DTS:VariableValue
+        DTS:DataType="8"
+        xml:space="preserve"></DTS:VariableValue>
+    </DTS:Variable>
+  </DTS:Variables>
+  <DTS:Executables>
+    <DTS:Executable
+      DTS:refId="Package\Copy Database"
+      DTS:CreationName="Microsoft.FileSystemTask"
+      DTS:Description="File System Task"
+      DTS:DTSID="{84515D65-8B69-44F2-BDD4-4ECDBE25B0BA}"
+      DTS:ExecutableType="Microsoft.FileSystemTask"
+      DTS:LocaleID="-1"
+      DTS:ObjectName="Copy Database"
+      DTS:TaskContact="File System Task;Microsoft Corporation; SQL Server 2022; © 2022 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1"
+      DTS:ThreadHint="0">
+      <DTS:Variables />
+      <DTS:ObjectData>
+        <FileSystemData
+          TaskOverwriteDestFile="True"
+          TaskSourcePath="{45FA7E57-67E0-4AEE-B6B6-D3DC4999BC93}"
+          TaskDestinationPath="{03D5CC42-71B9-42A4-B306-276F073CF6AC}" />
+      </DTS:ObjectData>
+    </DTS:Executable>
+    <DTS:Executable
+      DTS:refId="Package\Get DB Size"
+      DTS:CreationName="Microsoft.WmiDataReaderTask"
+      DTS:Description="WMI Data Reader Task"
+      DTS:DTSID="{96E3A666-70FC-401F-8BB2-0CB9E49186DE}"
+      DTS:ExecutableType="Microsoft.WmiDataReaderTask"
+      DTS:LocaleID="-1"
+      DTS:ObjectName="Get DB Size"
+      DTS:TaskContact="WMI Data Reader Task; Microsoft Corporation; SQL Server 2022; © 2022 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1"
+      DTS:ThreadHint="0">
+      <DTS:Variables />
+      <DTS:ObjectData>
+        <WMIDRTaskData
+          WQLQuerySource="SELECT FileSize FROM CIM_DataFile WHERE Name = &quot;C:\\sc_MuzuvukileNqwiliso_2025\\DatabaseAdministrator\\SSI Packages\\Output Folder\\Product_20250529_2131.txt&quot;"
+          DestinationType="Variable"
+          Destination="User::VarFileSize"
+          OverwriteDestination="OverwriteDestination"
+          OutputType="PropertyNameAndValue"
+          WMIConnectionName="{132562A6-03CC-4CF3-92F2-EE37FE49E8B8}" />
+      </DTS:ObjectData>
+    </DTS:Executable>
+    <DTS:Executable
+      DTS:refId="Package\Get G Drive Size"
+      DTS:CreationName="Microsoft.WmiDataReaderTask"
+      DTS:Description="WMI Data Reader Task"
+      DTS:DTSID="{A5EDEB06-4457-4BE6-A08E-CFC8D92AFF53}"
+      DTS:ExecutableType="Microsoft.WmiDataReaderTask"
+      DTS:LocaleID="-1"
+      DTS:ObjectName="Get G Drive Size"
+      DTS:TaskContact="WMI Data Reader Task; Microsoft Corporation; SQL Server 2022; © 2022 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1"
+      DTS:ThreadHint="0">
+      <DTS:Variables />
+      <DTS:ObjectData>
+        <WMIDRTaskData
+          WQLQuerySource="SELECT FreeSpace FROM Win32_LogicalDisk WHERE DeviceID = 'C:'"
+          DestinationType="Variable"
+          Destination="User::VarFreeSpace"
+          OverwriteDestination="OverwriteDestination"
+          OutputType="PropertyNameAndValue"
+          WMIConnectionName="{132562A6-03CC-4CF3-92F2-EE37FE49E8B8}" />
+      </DTS:ObjectData>
+    </DTS:Executable>
+  </DTS:Executables>
+  <DTS:PrecedenceConstraints>
+    <DTS:PrecedenceConstraint
+      DTS:refId="Package.PrecedenceConstraints[Constraint]"
+      DTS:CreationName=""
+      DTS:DTSID="{CD3AA29B-DD0A-48F4-BFB2-BE02492BCAA3}"
+      DTS:From="Package\Get DB Size"
+      DTS:LogicalAnd="True"
+      DTS:ObjectName="Constraint"
+      DTS:To="Package\Get G Drive Size" />
+    <DTS:PrecedenceConstraint
+      DTS:refId="Package.PrecedenceConstraints[Constraint 1]"
+      DTS:CreationName=""
+      DTS:DTSID="{434E081E-C5DB-4B4D-8B4C-A9D6CB7F2C31}"
+      DTS:EvalOp="3"
+      DTS:Expression="@[User::VarFreeSpace] &gt;  @[User::VarFileSize]"
+      DTS:From="Package\Get G Drive Size"
+      DTS:LogicalAnd="True"
+      DTS:ObjectName="Constraint 1"
+      DTS:To="Package\Copy Database" />
+  </DTS:PrecedenceConstraints>
+  <DTS:DesignTimeProperties><![CDATA[<?xml version="1.0"?>
+<!--This CDATA section contains the layout information of the package. The section includes information such as (x,y) coordinates, width, and height.-->
+<!--If you manually edit this section and make a mistake, you can delete it. -->
+<!--The package will still be able to load normally but the previous layout information will be lost and the designer will automatically re-arrange the elements on the design surface.-->
+<Objects
+  Version="8">
+  <!--Each node below will contain properties that do not affect runtime behavior.-->
+  <Package
+    design-time-name="Package">
+    <LayoutInfo>
+      <GraphLayout
+        Capacity="8" xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph" xmlns:mssgle="clr-namespace:Microsoft.SqlServer.Graph.LayoutEngine;assembly=Microsoft.SqlServer.Graph" xmlns:assembly="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:mssgm="clr-namespace:Microsoft.SqlServer.Graph.Model;assembly=Microsoft.SqlServer.Graph">
+        <NodeLayout
+          Size="135.2,41.6"
+          Id="Package\Get DB Size"
+          TopLeft="439.999975959461,43.3333330319988" />
+        <NodeLayout
+          Size="156,41.6"
+          Id="Package\Get G Drive Size"
+          TopLeft="447.499975549679,149.066665630076" />
+        <NodeLayout
+          Size="149.6,41.6"
+          Id="Package\Copy Database"
+          TopLeft="454.166641852095,241.799998318553" />
+        <EdgeLayout
+          Id="Package.PrecedenceConstraints[Constraint]"
+          TopLeft="507.599975959461,84.9333330319988">
+          <EdgeLayout.Curve>
+            <mssgle:Curve
+              StartConnector="{assembly:Null}"
+              EndConnector="17.8999995902179,64.1333325980769"
+              Start="0,0"
+              End="17.8999995902179,56.6333325980769">
+              <mssgle:Curve.Segments>
+                <mssgle:SegmentCollection
+                  Capacity="5">
+                  <mssgle:LineSegment
+                    End="0,28.0666662990385" />
+                  <mssgle:CubicBezierSegment
+                    Point1="0,28.0666662990385"
+                    Point2="0,32.0666662990385"
+                    Point3="4,32.0666662990385" />
+                  <mssgle:LineSegment
+                    End="13.8999995902179,32.0666662990385" />
+                  <mssgle:CubicBezierSegment
+                    Point1="13.8999995902179,32.0666662990385"
+                    Point2="17.8999995902179,32.0666662990385"
+                    Point3="17.8999995902179,36.0666662990385" />
+                  <mssgle:LineSegment
+                    End="17.8999995902179,56.6333325980769" />
+                </mssgle:SegmentCollection>
+              </mssgle:Curve.Segments>
+            </mssgle:Curve>
+          </EdgeLayout.Curve>
+          <EdgeLayout.Labels>
+            <EdgeLabelCollection />
+          </EdgeLayout.Labels>
+        </EdgeLayout>
+        <EdgeLayout
+          Id="Package.PrecedenceConstraints[Constraint 1]"
+          TopLeft="527.233308700887,190.666665630076">
+          <EdgeLayout.Curve>
+            <mssgle:Curve
+              StartConnector="{assembly:Null}"
+              EndConnector="0,51.1333326884773"
+              Start="0,0"
+              End="0,43.6333326884773">
+              <mssgle:Curve.Segments>
+                <mssgle:SegmentCollection
+                  Capacity="5">
+                  <mssgle:LineSegment
+                    End="0,43.6333326884773" />
+                </mssgle:SegmentCollection>
+              </mssgle:Curve.Segments>
+            </mssgle:Curve>
+          </EdgeLayout.Curve>
+          <EdgeLayout.Labels>
+            <mssgm:EdgeLabel
+              BoundingBox="-8,13.8166663442387,16,16"
+              RelativePosition="Any" />
+          </EdgeLayout.Labels>
+        </EdgeLayout>
+      </GraphLayout>
+    </LayoutInfo>
+  </Package>
+</Objects>]]></DTS:DesignTimeProperties>
+</DTS:Executable>

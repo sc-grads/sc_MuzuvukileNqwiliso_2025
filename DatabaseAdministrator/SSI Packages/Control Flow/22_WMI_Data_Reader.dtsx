@@ -1,0 +1,85 @@
+﻿<?xml version="1.0"?>
+<DTS:Executable xmlns:DTS="www.microsoft.com/SqlServer/Dts"
+  DTS:refId="Package"
+  DTS:CreationDate="5/30/2025 8:48:22 AM"
+  DTS:CreationName="Microsoft.Package"
+  DTS:CreatorComputerName="LAPTOP-62JJ49T4"
+  DTS:CreatorName="LAPTOP-62JJ49T4\MuzuvukileNqwiliso"
+  DTS:DTSID="{6E4C01EC-B530-4551-A769-FF3901A16737}"
+  DTS:ExecutableType="Microsoft.Package"
+  DTS:LastModifiedProductVersion="16.0.5685.0"
+  DTS:LocaleID="7177"
+  DTS:ObjectName="22_WMI_Data_Reader"
+  DTS:PackageType="5"
+  DTS:VersionBuild="8"
+  DTS:VersionGUID="{E45131C2-2E02-467C-9D2F-A661D2353A84}">
+  <DTS:Property
+    DTS:Name="PackageFormatVersion">8</DTS:Property>
+  <DTS:ConnectionManagers>
+    <DTS:ConnectionManager
+      DTS:refId="Package.ConnectionManagers[WMI Connection Manager]"
+      DTS:CreationName="WMI"
+      DTS:DTSID="{796D3D73-1549-438C-8346-C90CFB7BC95B}"
+      DTS:ObjectName="WMI Connection Manager">
+      <DTS:ObjectData>
+        <WmiConnectionManager
+          ConnectionString="ServerName=\\localhost;Namespace=\root\cimv2;UseNtAuth=True;UserName=;"
+          ConnectByProxy="False" />
+      </DTS:ObjectData>
+    </DTS:ConnectionManager>
+    <DTS:ConnectionManager
+      DTS:refId="Package.ConnectionManagers[WMI.txt]"
+      DTS:CreationName="FILE"
+      DTS:DTSID="{640CEB82-C8EE-4524-BF67-92586CD6AEE5}"
+      DTS:ObjectName="WMI.txt">
+      <DTS:ObjectData>
+        <DTS:ConnectionManager
+          DTS:FileUsageType="1"
+          DTS:ConnectionString="C:\sc_MuzuvukileNqwiliso_2025\DatabaseAdministrator\SSI Packages\WMI.txt" />
+      </DTS:ObjectData>
+    </DTS:ConnectionManager>
+  </DTS:ConnectionManagers>
+  <DTS:Variables />
+  <DTS:Executables>
+    <DTS:Executable
+      DTS:refId="Package\WMI Data Reader Task"
+      DTS:CreationName="Microsoft.WmiDataReaderTask"
+      DTS:Description="WMI Data Reader Task"
+      DTS:DTSID="{7261A8CB-F05E-47F2-93BE-EF3486D34941}"
+      DTS:ExecutableType="Microsoft.WmiDataReaderTask"
+      DTS:LocaleID="-1"
+      DTS:ObjectName="WMI Data Reader Task"
+      DTS:TaskContact="WMI Data Reader Task; Microsoft Corporation; SQL Server 2022; © 2022 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1"
+      DTS:ThreadHint="0">
+      <DTS:Variables />
+      <DTS:ObjectData>
+        <WMIDRTaskData
+          WQLQuerySource="SELECT FileSystem, FreeSpace, Size FROM Win32_LogicalDisk WHERE DeviceID = 'C:'&#xA;"
+          Destination="{640CEB82-C8EE-4524-BF67-92586CD6AEE5}"
+          OverwriteDestination="OverwriteDestination"
+          OutputType="PropertyNameAndValue"
+          WMIConnectionName="{796D3D73-1549-438C-8346-C90CFB7BC95B}" />
+      </DTS:ObjectData>
+    </DTS:Executable>
+  </DTS:Executables>
+  <DTS:DesignTimeProperties><![CDATA[<?xml version="1.0"?>
+<!--This CDATA section contains the layout information of the package. The section includes information such as (x,y) coordinates, width, and height.-->
+<!--If you manually edit this section and make a mistake, you can delete it. -->
+<!--The package will still be able to load normally but the previous layout information will be lost and the designer will automatically re-arrange the elements on the design surface.-->
+<Objects
+  Version="8">
+  <!--Each node below will contain properties that do not affect runtime behavior.-->
+  <Package
+    design-time-name="Package">
+    <LayoutInfo>
+      <GraphLayout
+        Capacity="4" xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph">
+        <NodeLayout
+          Size="186.4,41.6"
+          Id="Package\WMI Data Reader Task"
+          TopLeft="411.666644174193,92.7333326884773" />
+      </GraphLayout>
+    </LayoutInfo>
+  </Package>
+</Objects>]]></DTS:DesignTimeProperties>
+</DTS:Executable>
