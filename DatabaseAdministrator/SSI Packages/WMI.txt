@@ -1,0 +1,3 @@
+FileSystem, NTFS
+FreeSpace, 255694352384
+Size, 510958497792
