@@ -291,3 +291,101 @@ GO
 -- Execute table creation
 EXEC Timesheet.CreateTimesheetTables;
 GO
+
+
+--  Employee (uses SEQUENCE, start at 1000)
+CREATE OR ALTER PROCEDURE Timesheet.ResetEmployee
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DELETE FROM Timesheet.Employee;
+    ALTER SEQUENCE Timesheet.EmployeeSeq RESTART WITH 1000;
+END;
+GO
+
+--  Client (uses SEQUENCE, start at 2000)
+CREATE OR ALTER PROCEDURE Timesheet.ResetClient
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DELETE FROM Timesheet.Client;
+    ALTER SEQUENCE Timesheet.ClientSeq RESTART WITH 2000;
+END;
+GO
+
+--  Project (uses SEQUENCE, start at 3000)
+CREATE OR ALTER PROCEDURE Timesheet.ResetProject
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DELETE FROM Timesheet.Project;
+    ALTER SEQUENCE Timesheet.ProjectSeq RESTART WITH 3000;
+END;
+GO
+
+--  LeaveType (uses SEQUENCE, start at 4000)
+CREATE OR ALTER PROCEDURE Timesheet.ResetLeaveType
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DELETE FROM Timesheet.LeaveType;
+    ALTER SEQUENCE Timesheet.LeaveTypeSeq RESTART WITH 4000;
+END;
+GO
+
+--  Activity (uses SEQUENCE, start at 5000)
+CREATE OR ALTER PROCEDURE Timesheet.ResetActivity
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DELETE FROM Timesheet.Activity;
+    ALTER SEQUENCE Timesheet.ActivitySeq RESTART WITH 5000;
+END;
+GO
+
+--  Timesheet (uses SEQUENCE, start at 6000)
+CREATE OR ALTER PROCEDURE Timesheet.ResetTimesheet
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DELETE FROM Timesheet.Timesheet;
+    ALTER SEQUENCE Timesheet.TimesheetSeq RESTART WITH 6000;
+END;
+GO
+
+--  Leave (uses IDENTITY, so reseed to 0 or desired base)
+CREATE OR ALTER PROCEDURE Timesheet.ResetLeave
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DELETE FROM Timesheet.Leave;
+    DBCC CHECKIDENT ('Timesheet.Leave', RESEED, 0);
+END;
+GO
+
+-- Forecast (uses IDENTITY, reseed to 0 or relevant base)
+CREATE OR ALTER PROCEDURE Timesheet.ResetForecast
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DELETE FROM Timesheet.Forecast;
+    DBCC CHECKIDENT ('Timesheet.Forecast', RESEED, 0);
+END;
+GO
+
+
+
+CREATE OR ALTER PROCEDURE Timesheet.ResetAll
+AS
+BEGIN
+    EXEC Timesheet.ResetForecast;
+    EXEC Timesheet.ResetLeave;
+    EXEC Timesheet.ResetTimesheet;
+    EXEC Timesheet.ResetActivity;
+    EXEC Timesheet.ResetLeaveType;
+    EXEC Timesheet.ResetProject;
+    EXEC Timesheet.ResetClient;
+    EXEC Timesheet.ResetEmployee;
+END;
+GO
+
