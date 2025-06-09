@@ -284,25 +284,29 @@ BEGIN
 END
 
     -- Timesheet_Staging Table
-    IF OBJECT_ID('Timesheet.Timesheet_Staging', 'U') IS NULL
-    BEGIN
-        CREATE TABLE Timesheet.TimesheetStaging (
-            Date DATE,
-            [DayOfWeek] VARCHAR(10),
-            ClientName VARCHAR(100),
-            ProjectName VARCHAR(100),
-            ActivityName VARCHAR(50),
-            BillableStatus VARCHAR(20),
-            Comments TEXT,
-            TotalHours DECIMAL(5,2),
-            SartTime TIME,
-            EndTime TIME,
-            FileName VARCHAR(255),
-            EmployeeID INT,
-            Sequence INT
-        );
-        PRINT 'Timesheet_Staging table created.';
-    END
+IF OBJECT_ID('Timesheet.TimesheetStaging', 'U') IS NOT NULL
+    DROP TABLE Timesheet.TimesheetStaging;
+
+CREATE TABLE Timesheet.TimesheetStaging (
+    StagingID INT IDENTITY(1,1) PRIMARY KEY,
+    [Date] NVARCHAR(50),           -- Raw string to handle Excel date formats
+    [DayOfWeek] VARCHAR(10),
+    ClientName VARCHAR(100),
+    ProjectName VARCHAR(100),
+    ActivityName VARCHAR(50),
+    BillableStatus VARCHAR(20),
+    Comments NVARCHAR(MAX),         -- TEXT is deprecated, use NVARCHAR(MAX)
+    TotalHours NVARCHAR(50),        -- Raw string to validate later
+    StartTime NVARCHAR(50),         -- Raw string for time
+    EndTime NVARCHAR(50),           -- Raw string for time
+    EmployeeName NVARCHAR(255),     -- From User::EmployeeName
+    FileName NVARCHAR(255),         -- From User::ExcelFilePath
+    ProcessedDate DATETIME DEFAULT GETDATE(),
+    IsValid BIT DEFAULT 0,          -- Flag for valid rows
+    --ErrorMessage NVARCHAR(1000)     -- Validation errors
+);
+
+PRINT 'Timesheet.TimesheetStaging table created.';
 
     -- FileEmployeeMapping Table
     IF OBJECT_ID('Timesheet.FileEmployeeMapping', 'U') IS NULL
