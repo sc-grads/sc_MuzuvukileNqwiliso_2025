@@ -166,9 +166,8 @@ BEGIN
             BillableStatus VARCHAR(20) NOT NULL CHECK (BillableStatus IN ('Billable', 'Non-Billable')),
             Comments TEXT,
             TotalHours DECIMAL(5,2),
-            SartTime TIME,
+            StartTime TIME,
             EndTime TIME,
-            Sequence INT,
             FOREIGN KEY (EmployeeID) REFERENCES Timesheet.Employee(EmployeeID),
             FOREIGN KEY (ClientID) REFERENCES Timesheet.Client(ClientID),
             FOREIGN KEY (ProjectID) REFERENCES Timesheet.Project(ProjectID),
@@ -181,7 +180,7 @@ BEGIN
                 (ActivityID IS NULL AND LeaveType IS NOT NULL)
             )
         );
-        CREATE INDEX IX_Timesheet_Employee_Date ON Timesheet.Timesheet(EmployeeID, Date, Sequence);
+        CREATE INDEX IX_Timesheet_Employee_Date ON Timesheet.Timesheet(EmployeeID, Date);
         PRINT 'Timesheet table created.';
     END
 

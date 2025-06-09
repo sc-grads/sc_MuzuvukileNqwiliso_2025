@@ -11,8 +11,8 @@
   DTS:LocaleID="7177"
   DTS:ObjectName="TimesheetStaging"
   DTS:PackageType="5"
-  DTS:VersionBuild="25"
-  DTS:VersionGUID="{69224BA2-E6A2-46BF-8C15-58D19277AA51}">
+  DTS:VersionBuild="39"
+  DTS:VersionGUID="{AE98282A-575C-4AAB-8047-79C471628D94}">
   <DTS:Property
     DTS:Name="PackageFormatVersion">8</DTS:Property>
   <DTS:ConnectionManagers>
@@ -132,6 +132,57 @@
   </DTS:Variables>
   <DTS:Executables>
     <DTS:Executable
+      DTS:refId="Package\Clean and Validate Timesheet Data"
+      DTS:CreationName="Microsoft.ExecuteSQLTask"
+      DTS:Description="Execute SQL Task"
+      DTS:DTSID="{CA296DBD-D257-4140-A2FB-97F23CD87798}"
+      DTS:ExecutableType="Microsoft.ExecuteSQLTask"
+      DTS:LocaleID="-1"
+      DTS:ObjectName="Clean and Validate Timesheet Data"
+      DTS:TaskContact="Execute SQL Task; Microsoft Corporation; SQL Server 2022; © 2022 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1"
+      DTS:ThreadHint="0">
+      <DTS:Variables />
+      <DTS:ObjectData>
+        <SQLTask:SqlTaskData
+          SQLTask:Connection="{4A2109E3-0D28-4887-9BCF-89C18EE42177}"
+          SQLTask:SqlStatementSource="-- Step 1: Clean data&#xA;UPDATE Timesheet.TimesheetStaging&#xA;SET [Date] = NULLIF(TRIM([Date]), ''),&#xA;    [DayOfWeek] = NULLIF(TRIM(UPPER([DayOfWeek])), ''),&#xA;    ClientName = NULLIF(TRIM(ClientName), ''),&#xA;    ProjectName = NULLIF(TRIM(ProjectName), ''),&#xA;    ActivityName = NULLIF(TRIM(ActivityName), ''),&#xA;    BillableStatus = NULLIF(TRIM(UPPER(BillableStatus)), ''),&#xA;    Comments = NULLIF(TRIM(Comments), ''),&#xA;    TotalHours = NULLIF(TRIM(TotalHours), ''),&#xA;    StartTime = NULLIF(TRIM(StartTime), ''),&#xA;    EndTime = NULLIF(TRIM(EndTime), ''),&#xA;    EmployeeName = NULLIF(TRIM(EmployeeName), '')&#xA;WHERE ProcessedDate &gt;= DATEADD(DAY, -1, GETDATE());&#xA;&#xA;-- Step 2: Fill forward Date&#xA;WITH DateFill AS (&#xA;    SELECT StagingID, [Date], EmployeeName, FileName,&#xA;           LAG([Date]) OVER (PARTITION BY EmployeeName, FileName ORDER BY StagingID) AS PrevDate&#xA;    FROM Timesheet.TimesheetStaging&#xA;    WHERE ProcessedDate &gt;= DATEADD(DAY, -1, GETDATE())&#xA;)&#xA;UPDATE Timesheet.TimesheetStaging&#xA;SET [Date] = COALESCE(s.[Date], df.PrevDate)&#xA;FROM Timesheet.TimesheetStaging s&#xA;JOIN DateFill df ON s.StagingID = df.StagingID&#xA;WHERE s.ProcessedDate &gt;= DATEADD(DAY, -1, GETDATE());&#xA;&#xA;-- Step 3: Validate and standardize values&#xA;UPDATE Timesheet.TimesheetStaging&#xA;SET [DayOfWeek] = CASE &#xA;        WHEN [DayOfWeek] IN ('MON', 'MONDAY') THEN 'Monday'&#xA;        WHEN [DayOfWeek] IN ('TUE', 'TUESDAY') THEN 'Tuesday'&#xA;        WHEN [DayOfWeek] IN ('WED', 'WEDNESDAY') THEN 'Wednesday'&#xA;        WHEN [DayOfWeek] IN ('THU', 'THURSDAY') THEN 'Thursday'&#xA;        WHEN [DayOfWeek] IN ('FRI', 'FRIDAY') THEN 'Friday'&#xA;        WHEN [DayOfWeek] IN ('SAT', 'SATURDAY') THEN 'Saturday'&#xA;        WHEN [DayOfWeek] IN ('SUN', 'SUNDAY') THEN 'Sunday'&#xA;        ELSE NULL&#xA;    END,&#xA;    BillableStatus = CASE &#xA;        WHEN BillableStatus IN ('BILLABLE', 'B') THEN 'Billable'&#xA;        WHEN BillableStatus IN ('NON-BILLABLE', 'NON BILLABLE', 'NB') THEN 'Non-Billable'&#xA;        ELSE NULL&#xA;    END,&#xA;    TotalHours = CASE &#xA;        WHEN ISNUMERIC(TotalHours) = 1 AND CAST(TotalHours AS DECIMAL(5,2)) &gt;= 0 &#xA;        THEN TotalHours&#xA;        ELSE NULL&#xA;    END&#xA;WHERE ProcessedDate &gt;= DATEADD(DAY, -1, GETDATE());&#xA;&#xA;-- 🔄 Step 3.5: Calculate missing TotalHours from StartTime and EndTime&#xA;UPDATE Timesheet.TimesheetStaging&#xA;SET TotalHours = &#xA;    CAST(&#xA;        CAST(DATEDIFF(MINUTE, TRY_CONVERT(TIME, StartTime), TRY_CONVERT(TIME, EndTime)) / 60.0 AS DECIMAL(5,2))&#xA;        AS NVARCHAR(10)&#xA;    )&#xA;WHERE &#xA;    (TotalHours IS NULL OR TRY_CONVERT(DECIMAL(5,2), TotalHours) IS NULL)&#xA;    AND TRY_CONVERT(TIME, StartTime) IS NOT NULL&#xA;    AND TRY_CONVERT(TIME, EndTime) IS NOT NULL&#xA;    AND DATEDIFF(MINUTE, TRY_CONVERT(TIME, StartTime), TRY_CONVERT(TIME, EndTime)) &gt;= 0&#xA;    AND ProcessedDate &gt;= DATEADD(DAY, -1, GETDATE());&#xA;&#xA;-- Step 4: Mark valid rows&#xA;UPDATE Timesheet.TimesheetStaging&#xA;SET IsValid = 1&#xA;WHERE TRY_CONVERT(DATE, [Date]) IS NOT NULL&#xA;  AND [DayOfWeek] IS NOT NULL&#xA;  AND BillableStatus IS NOT NULL&#xA;  AND ActivityName IS NOT NULL&#xA;  AND EmployeeName IS NOT NULL&#xA;  AND TRY_CONVERT(DECIMAL(5,2), TotalHours) &gt;= 0&#xA;  AND ProcessedDate &gt;= DATEADD(DAY, -1, GETDATE());&#xA;&#xA;-- Step 5: Log invalid rows&#xA;INSERT INTO Timesheet.AuditLog (&#xA;    EventType,&#xA;    Source,&#xA;    EmployeeName,&#xA;    FileName,&#xA;    ColumnName,&#xA;    Value,&#xA;    Message,&#xA;    ProcessedDate&#xA;)&#xA;SELECT &#xA;    'Error',&#xA;    'TimesheetStaging',&#xA;    EmployeeName,&#xA;    FileName,&#xA;    'Timesheet Data',&#xA;    COALESCE(ProjectName, 'Unknown') + ', ' + COALESCE(TotalHours, '0'),&#xA;    'Invalid or missing fields',&#xA;    ProcessedDate&#xA;FROM Timesheet.TimesheetStaging&#xA;WHERE IsValid = 0&#xA;  AND ProcessedDate &gt;= DATEADD(DAY, -1, GETDATE());&#xA;" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
+      </DTS:ObjectData>
+    </DTS:Executable>
+    <DTS:Executable
+      DTS:refId="Package\Clear Timesheet Staging Data"
+      DTS:CreationName="Microsoft.ExecuteSQLTask"
+      DTS:Description="Execute SQL Task"
+      DTS:DTSID="{4D1D1360-E315-4D3F-85CA-B2432F787B56}"
+      DTS:ExecutableType="Microsoft.ExecuteSQLTask"
+      DTS:LocaleID="-1"
+      DTS:ObjectName="Clear Timesheet Staging Data"
+      DTS:TaskContact="Execute SQL Task; Microsoft Corporation; SQL Server 2022; © 2022 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1"
+      DTS:ThreadHint="0">
+      <DTS:Variables />
+      <DTS:ObjectData>
+        <SQLTask:SqlTaskData
+          SQLTask:Connection="{4A2109E3-0D28-4887-9BCF-89C18EE42177}"
+          SQLTask:SqlStatementSource="TRUNCATE TABLE [TimesheetDB].[Timesheet].[TimesheetStaging]" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
+      </DTS:ObjectData>
+    </DTS:Executable>
+    <DTS:Executable
+      DTS:refId="Package\Load Timesheet Data"
+      DTS:CreationName="Microsoft.ExecuteSQLTask"
+      DTS:Description="Execute SQL Task"
+      DTS:DTSID="{51EA0D9A-6499-404A-9E64-C524B9649A13}"
+      DTS:ExecutableType="Microsoft.ExecuteSQLTask"
+      DTS:LocaleID="-1"
+      DTS:ObjectName="Load Timesheet Data"
+      DTS:TaskContact="Execute SQL Task; Microsoft Corporation; SQL Server 2022; © 2022 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1"
+      DTS:ThreadHint="0">
+      <DTS:Variables />
+      <DTS:ObjectData>
+        <SQLTask:SqlTaskData
+          SQLTask:Connection="{4A2109E3-0D28-4887-9BCF-89C18EE42177}"
+          SQLTask:SqlStatementSource="INSERT INTO Timesheet.Timesheet (&#xA;    EmployeeID, [Date], [DayOfWeek], ClientID, ProjectID, ActivityID, LeaveType,&#xA;    BillableStatus, Comments, TotalHours, StartTime, EndTime&#xA;)&#xA;SELECT &#xA;    e.EmployeeID,&#xA;    TRY_CONVERT(DATE, s.[Date]),&#xA;    s.[DayOfWeek],&#xA;    c.ClientID,&#xA;    p.ProjectID,&#xA;    a.ActivityID,&#xA;    lt.LeaveType,&#xA;    s.BillableStatus,&#xA;    s.Comments,&#xA;    TRY_CONVERT(DECIMAL(5,2), s.TotalHours),&#xA;    TRY_CONVERT(TIME, s.StartTime),&#xA;    TRY_CONVERT(TIME, s.EndTime)&#xA;FROM Timesheet.TimesheetStaging s&#xA;LEFT JOIN Timesheet.Employee e ON s.EmployeeName = e.EmployeeName&#xA;LEFT JOIN Timesheet.Client c ON s.ClientName = c.ClientName&#xA;LEFT JOIN Timesheet.Project p ON s.ProjectName = p.ProjectName AND p.ClientID = c.ClientID&#xA;LEFT JOIN Timesheet.Activity a ON s.ActivityName = a.ActivityName&#xA;LEFT JOIN Timesheet.LeaveType lt ON s.ActivityName = lt.LeaveTypeName&#xA;WHERE s.IsValid = 1&#xA;  AND s.ProcessedDate &gt;= DATEADD(DAY, -1, GETDATE())&#xA;  AND e.EmployeeID IS NOT NULL&#xA;  AND (&#xA;        (a.ActivityID IS NOT NULL AND lt.LeaveType IS NULL) OR&#xA;        (a.ActivityID IS NULL AND lt.LeaveType IS NOT NULL)&#xA;      );&#xA;INSERT INTO Timesheet.AuditLog (&#xA;    EventType, Source, EmployeeName, FileName, ColumnName, Value, Message, ProcessedDate&#xA;)&#xA;SELECT &#xA;    'Error',&#xA;    'TimesheetStaging',&#xA;    s.EmployeeName,&#xA;    s.FileName,&#xA;    CASE &#xA;        WHEN e.EmployeeID IS NULL THEN 'EmployeeName'&#xA;        WHEN c.ClientID IS NULL THEN 'ClientName'&#xA;        WHEN p.ProjectID IS NULL THEN 'ProjectName'&#xA;        WHEN a.ActivityID IS NULL AND lt.LeaveType IS NULL THEN 'ActivityName/LeaveType'&#xA;        ELSE 'Unknown'&#xA;    END AS ColumnName,&#xA;    CASE &#xA;        WHEN e.EmployeeID IS NULL THEN s.EmployeeName&#xA;        WHEN c.ClientID IS NULL THEN s.ClientName&#xA;        WHEN p.ProjectID IS NULL THEN s.ProjectName&#xA;        WHEN a.ActivityID IS NULL AND lt.LeaveType IS NULL THEN s.ActivityName&#xA;        ELSE 'Unknown'&#xA;    END AS Value,&#xA;    CASE &#xA;        WHEN e.EmployeeID IS NULL THEN 'Employee not found in reference table'&#xA;        WHEN c.ClientID IS NULL THEN 'Client not found in reference table'&#xA;        WHEN p.ProjectID IS NULL THEN 'Project not found for specified client'&#xA;        WHEN a.ActivityID IS NULL AND lt.LeaveType IS NULL THEN 'Neither Activity nor LeaveType matched'&#xA;        ELSE 'Unknown validation error'&#xA;    END AS Message,&#xA;    GETDATE()&#xA;FROM Timesheet.TimesheetStaging s&#xA;LEFT JOIN Timesheet.Employee e ON s.EmployeeName = e.EmployeeName&#xA;LEFT JOIN Timesheet.Client c ON s.ClientName = c.ClientName&#xA;LEFT JOIN Timesheet.Project p ON s.ProjectName = p.ProjectName AND p.ClientID = c.ClientID&#xA;LEFT JOIN Timesheet.Activity a ON s.ActivityName = a.ActivityName&#xA;LEFT JOIN Timesheet.LeaveType lt ON s.ActivityName = lt.LeaveTypeName&#xA;WHERE s.IsValid = 1&#xA;  AND s.ProcessedDate &gt;= DATEADD(DAY, -1, GETDATE())&#xA;  AND (&#xA;        e.EmployeeID IS NULL OR&#xA;        c.ClientID IS NULL OR&#xA;        p.ProjectID IS NULL OR&#xA;        (a.ActivityID IS NULL AND lt.LeaveType IS NULL)&#xA;      );&#xA;" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
+      </DTS:ObjectData>
+    </DTS:Executable>
+    <DTS:Executable
       DTS:refId="Package\Loop Employee Folders Script"
       DTS:CreationName="Microsoft.ScriptTask"
       DTS:Description="Script Task"
@@ -153,14 +204,35 @@
           ReadOnlyVariables="User::FolderPath"
           ReadWriteVariables="User::FolderList">
           <ProjectItem
-            Name="Properties\Settings.settings"
-            Encoding="UTF8"><![CDATA[<?xml version='1.0' encoding='iso-8859-1'?>
-<SettingsFile xmlns="uri:settings" CurrentProfile="(Default)">
-  <Profiles>
-    <Profile Name="(Default)" />
-  </Profiles>
-  <Settings />
-</SettingsFile>]]></ProjectItem>
+            Name="Properties\AssemblyInfo.cs"
+            Encoding="UTF8"><![CDATA[using System.Reflection;
+using System.Runtime.CompilerServices;
+
+//
+// General Information about an assembly is controlled through the following 
+// set of attributes. Change these attribute values to modify the information
+// associated with an assembly.
+//
+[assembly: AssemblyTitle("ST_5574ccf38d344d97a48f8e333ae51ec7")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("HP")]
+[assembly: AssemblyProduct("ST_5574ccf38d344d97a48f8e333ae51ec7")]
+[assembly: AssemblyCopyright("Copyright @ HP 2025")]
+[assembly: AssemblyTrademark("")]
+[assembly: AssemblyCulture("")]
+//
+// Version information for an assembly consists of the following four values:
+//
+//      Major Version
+//      Minor Version 
+//      Build Number
+//      Revision
+//
+// You can specify all the values or you can default the Revision and Build Numbers 
+// by using the '*' as shown below:
+
+[assembly: AssemblyVersion("1.0.*")]]]></ProjectItem>
           <ProjectItem
             Name="ST_d8511a1dac3b43d6910ee4a6b76999b3.csproj"
             Encoding="UTF8"><![CDATA[<?xml version="1.0" encoding="utf-8"?><Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003"><PropertyGroup><ProjectTypeGuids>{30D016F9-3734-4E33-A861-5E7D899E18F3};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids><Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration><Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform><ProductVersion>8.0.30703</ProductVersion><SchemaVersion>2.0</SchemaVersion><ProjectGuid>{28077679-0E06-439E-BDFE-F41A9609864C}</ProjectGuid><OutputType>Library</OutputType><AppDesignerFolder>Properties</AppDesignerFolder><RootNamespace>ST_5574ccf38d344d97a48f8e333ae51ec7</RootNamespace><AssemblyName>ST_d8511a1dac3b43d6910ee4a6b76999b3</AssemblyName><TargetFrameworkVersion>v4.7</TargetFrameworkVersion><FileAlignment>512</FileAlignment><ResolveAssemblyReferenceIgnoreTargetFrameworkAttributeVersionMismatch>true</ResolveAssemblyReferenceIgnoreTargetFrameworkAttributeVersionMismatch><TargetFrameworkProfile></TargetFrameworkProfile></PropertyGroup><PropertyGroup Condition=" '$(Configuration)' == 'Debug' "><DebugSymbols>true</DebugSymbols><DebugType>full</DebugType><Optimize>false</Optimize><OutputPath>.\bin\Debug\</OutputPath><EnableUnmanagedDebugging>false</EnableUnmanagedDebugging><DefineConstants>DEBUG;TRACE</DefineConstants><ErrorReport>prompt</ErrorReport><WarningLevel>4</WarningLevel></PropertyGroup><PropertyGroup Condition=" '$(Configuration)' == 'Release' "><DebugSymbols>false</DebugSymbols><Optimize>true</Optimize><OutputPath>.\bin\Release\</OutputPath><EnableUnmanagedDebugging>false</EnableUnmanagedDebugging><DefineConstants>TRACE</DefineConstants><ErrorReport>prompt</ErrorReport><WarningLevel>4</WarningLevel></PropertyGroup><ItemGroup><Reference Include="System" /><Reference Include="System.Data" /><Reference Include="System.Windows.Forms" /><Reference Include="System.Xml" /><Reference Include="Microsoft.SqlServer.ManagedDTS, Version=16.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91" /><Reference Include="Microsoft.SqlServer.ScriptTask, Version=16.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91" /></ItemGroup><ItemGroup><AppDesigner Include="Properties\" /><Compile Include="Properties\AssemblyInfo.cs"><SubType>Code</SubType></Compile><EmbeddedResource Include="Properties\Resources.resx"><Generator>ResXFileCodeGenerator</Generator><LastGenOutput>Resources.Designer.cs</LastGenOutput></EmbeddedResource><Compile Include="Properties\Resources.Designer.cs"><AutoGen>True</AutoGen><DependentUpon>Resources.resx</DependentUpon></Compile><None Include="Properties\Settings.settings"><Generator>SettingsSingleFileGenerator</Generator><LastGenOutput>Settings.Designer.cs</LastGenOutput></None><Compile Include="Properties\Settings.Designer.cs"><AutoGen>True</AutoGen><DependentUpon>Settings.settings</DependentUpon></Compile><Compile Include="ScriptMain.cs"><SubType>Code</SubType></Compile></ItemGroup><!-- Include the build rules for a C# project.--><Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" /><ProjectExtensions><VisualStudio><FlavorProperties GUID="{30D016F9-3734-4E33-A861-5E7D899E18F3}"><ProjectProperties HostName="VSTAHostName" HostPackage="{B3A685AA-7EAF-4BC6-9940-57959FA5AC07}" ApplicationType="usd" Language="cs" TemplatesPath="" /><Host Name="ScriptTask" /><ProjectClient><HostIdentifier>SSIS_ST160</HostIdentifier></ProjectClient></FlavorProperties></VisualStudio></ProjectExtensions></Project>]]></ProjectItem>
@@ -474,35 +546,14 @@ namespace ST_5574ccf38d344d97a48f8e333ae51ec7.Properties {
     }
 }]]></ProjectItem>
           <ProjectItem
-            Name="Properties\AssemblyInfo.cs"
-            Encoding="UTF8"><![CDATA[using System.Reflection;
-using System.Runtime.CompilerServices;
-
-//
-// General Information about an assembly is controlled through the following 
-// set of attributes. Change these attribute values to modify the information
-// associated with an assembly.
-//
-[assembly: AssemblyTitle("ST_5574ccf38d344d97a48f8e333ae51ec7")]
-[assembly: AssemblyDescription("")]
-[assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("HP")]
-[assembly: AssemblyProduct("ST_5574ccf38d344d97a48f8e333ae51ec7")]
-[assembly: AssemblyCopyright("Copyright @ HP 2025")]
-[assembly: AssemblyTrademark("")]
-[assembly: AssemblyCulture("")]
-//
-// Version information for an assembly consists of the following four values:
-//
-//      Major Version
-//      Minor Version 
-//      Build Number
-//      Revision
-//
-// You can specify all the values or you can default the Revision and Build Numbers 
-// by using the '*' as shown below:
-
-[assembly: AssemblyVersion("1.0.*")]]]></ProjectItem>
+            Name="Properties\Settings.settings"
+            Encoding="UTF8"><![CDATA[<?xml version='1.0' encoding='iso-8859-1'?>
+<SettingsFile xmlns="uri:settings" CurrentProfile="(Default)">
+  <Profiles>
+    <Profile Name="(Default)" />
+  </Profiles>
+  <Settings />
+</SettingsFile>]]></ProjectItem>
           <ProjectItem
             Name="Properties\Resources.Designer.cs"
             Encoding="UTF8"><![CDATA[//------------------------------------------------------------------------------
@@ -742,14 +793,35 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==</BinaryItem>
               Language="CSharp"
               ReadWriteVariables="User::EmployeeFolderPath,User::EmployeeName">
               <ProjectItem
-                Name="Properties\Settings.settings"
-                Encoding="UTF8"><![CDATA[<?xml version='1.0' encoding='iso-8859-1'?>
-<SettingsFile xmlns="uri:settings" CurrentProfile="(Default)">
-  <Profiles>
-    <Profile Name="(Default)" />
-  </Profiles>
-  <Settings />
-</SettingsFile>]]></ProjectItem>
+                Name="Properties\AssemblyInfo.cs"
+                Encoding="UTF8"><![CDATA[using System.Reflection;
+using System.Runtime.CompilerServices;
+
+//
+// General Information about an assembly is controlled through the following 
+// set of attributes. Change these attribute values to modify the information
+// associated with an assembly.
+//
+[assembly: AssemblyTitle("ST_bf3844c7364c437a8085f9930863c98d")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("HP")]
+[assembly: AssemblyProduct("ST_bf3844c7364c437a8085f9930863c98d")]
+[assembly: AssemblyCopyright("Copyright @ HP 2025")]
+[assembly: AssemblyTrademark("")]
+[assembly: AssemblyCulture("")]
+//
+// Version information for an assembly consists of the following four values:
+//
+//      Major Version
+//      Minor Version 
+//      Build Number
+//      Revision
+//
+// You can specify all the values or you can default the Revision and Build Numbers 
+// by using the '*' as shown below:
+
+[assembly: AssemblyVersion("1.0.*")]]]></ProjectItem>
               <ProjectItem
                 Name="Properties\Resources.resx"
                 Encoding="UTF8"><![CDATA[<?xml version="1.0" encoding="utf-8"?>
@@ -1093,35 +1165,14 @@ namespace ST_bf3844c7364c437a8085f9930863c98d.Properties {
     }
 }]]></ProjectItem>
               <ProjectItem
-                Name="Properties\AssemblyInfo.cs"
-                Encoding="UTF8"><![CDATA[using System.Reflection;
-using System.Runtime.CompilerServices;
-
-//
-// General Information about an assembly is controlled through the following 
-// set of attributes. Change these attribute values to modify the information
-// associated with an assembly.
-//
-[assembly: AssemblyTitle("ST_bf3844c7364c437a8085f9930863c98d")]
-[assembly: AssemblyDescription("")]
-[assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("HP")]
-[assembly: AssemblyProduct("ST_bf3844c7364c437a8085f9930863c98d")]
-[assembly: AssemblyCopyright("Copyright @ HP 2025")]
-[assembly: AssemblyTrademark("")]
-[assembly: AssemblyCulture("")]
-//
-// Version information for an assembly consists of the following four values:
-//
-//      Major Version
-//      Minor Version 
-//      Build Number
-//      Revision
-//
-// You can specify all the values or you can default the Revision and Build Numbers 
-// by using the '*' as shown below:
-
-[assembly: AssemblyVersion("1.0.*")]]]></ProjectItem>
+                Name="Properties\Settings.settings"
+                Encoding="UTF8"><![CDATA[<?xml version='1.0' encoding='iso-8859-1'?>
+<SettingsFile xmlns="uri:settings" CurrentProfile="(Default)">
+  <Profiles>
+    <Profile Name="(Default)" />
+  </Profiles>
+  <Settings />
+</SettingsFile>]]></ProjectItem>
               <ProjectItem
                 Name="Properties\Resources.Designer.cs"
                 Encoding="UTF8"><![CDATA[//------------------------------------------------------------------------------
@@ -2241,11 +2292,237 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA</BinaryItem>
                         </output>
                       </outputs>
                     </component>
+                    <component
+                      refId="Package\Loop Through Employee Folders ADO\Loop through each Excel File\Load Raw Data\Validate Data Exsistance"
+                      componentClassID="Microsoft.Lookup"
+                      contactInfo="Lookup;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; All Rights Reserved; http://www.microsoft.com/sql/support;6"
+                      description="Joins additional columns to the data flow by looking up values in a table. For example, join to the 'employee id' column the employees table to get 'hire date' and 'employee name'. We recommend this transformation when the lookup table can fit into memory."
+                      name="Validate Data Exsistance"
+                      usesDispositions="true"
+                      version="6">
+                      <properties>
+                        <property
+                          dataType="System.String"
+                          description="Specifies the SQL statement that generates the lookup table."
+                          expressionType="Notify"
+                          name="SqlCommand"
+                          UITypeEditor="Microsoft.DataTransformationServices.Controls.ModalMultilineStringEditor">SELECT 
+    [Date],
+    [EmployeeName],
+    [StartTime],
+    [EndTime],
+    [ClientName],
+    [ProjectName]
+FROM [TimesheetDB].[Timesheet].[TimesheetStaging]</property>
+                        <property
+                          dataType="System.String"
+                          description="Specifies a SQL statement that uses parameters to generate the lookup table."
+                          expressionType="Notify"
+                          name="SqlCommandParam"
+                          UITypeEditor="Microsoft.DataTransformationServices.Controls.ModalMultilineStringEditor">select * from (SELECT 
+    [Date],
+    [EmployeeName],
+    [StartTime],
+    [EndTime],
+    [ClientName],
+    [ProjectName]
+FROM [TimesheetDB].[Timesheet].[TimesheetStaging]) [refTable]
+where [refTable].[StartTime] = ? and [refTable].[EndTime] = ? and [refTable].[EmployeeName] = ? and [refTable].[Date] = ? and [refTable].[ClientName] = ?</property>
+                        <property
+                          dataType="System.Int32"
+                          description="Specifies the type of connection used to access the reference dataset."
+                          name="ConnectionType"
+                          typeConverter="LookupConnectionType">0</property>
+                        <property
+                          dataType="System.Int32"
+                          description="Specifies the cache type of the lookup table."
+                          name="CacheType"
+                          typeConverter="CacheType">0</property>
+                        <property
+                          dataType="System.Int32"
+                          description="Specifies how the Lookup transformation handles rows without matching entries in the reference data set."
+                          name="NoMatchBehavior"
+                          typeConverter="LookupNoMatchBehavior">0</property>
+                        <property
+                          dataType="System.Int32"
+                          description="Specifies the percentage of the cache that is allocated for rows with no matching entries in the reference dataset."
+                          name="NoMatchCachePercentage">0</property>
+                        <property
+                          dataType="System.Int32"
+                          description="Maximum Memory Usage for Reference Cache on a 32 bit platform."
+                          name="MaxMemoryUsage">25</property>
+                        <property
+                          dataType="System.Int64"
+                          description="Maximum Memory Usage for Reference Cache on a 64 bit platform."
+                          name="MaxMemoryUsage64">25</property>
+                        <property
+                          dataType="System.String"
+                          description="Indicates whether to reference metadata in an XML format."
+                          name="ReferenceMetadataXml">&lt;referenceMetadata&gt;&lt;referenceColumns&gt;&lt;referenceColumn name="Date" dataType="DT_WSTR" length="50" precision="0" scale="0" codePage="0"/&gt;&lt;referenceColumn name="EmployeeName" dataType="DT_WSTR" length="255" precision="0" scale="0" codePage="0"/&gt;&lt;referenceColumn name="StartTime" dataType="DT_WSTR" length="50" precision="0" scale="0" codePage="0"/&gt;&lt;referenceColumn name="EndTime" dataType="DT_WSTR" length="50" precision="0" scale="0" codePage="0"/&gt;&lt;referenceColumn name="ClientName" dataType="DT_STR" length="100" precision="0" scale="0" codePage="1252"/&gt;&lt;referenceColumn name="ProjectName" dataType="DT_STR" length="100" precision="0" scale="0" codePage="1252"/&gt;&lt;/referenceColumns&gt;&lt;/referenceMetadata&gt;</property>
+                        <property
+                          containsID="true"
+                          dataType="System.String"
+                          description="Specifies the list of lineage identifiers that map to the parameters that the SQL statement in the SQLCommand property uses. Entries in the list are separated by semicolons."
+                          name="ParameterMap">#{Package\Loop Through Employee Folders ADO\Loop through each Excel File\Load Raw Data\Read Timesheet Sheet.Outputs[Excel Source Output].Columns[Start Time]};#{Package\Loop Through Employee Folders ADO\Loop through each Excel File\Load Raw Data\Read Timesheet Sheet.Outputs[Excel Source Output].Columns[End Time]};#{Package\Loop Through Employee Folders ADO\Loop through each Excel File\Load Raw Data\Add EmployeeNameAndFileName.Outputs[Derived Column Output].Columns[EmployeeName]};#{Package\Loop Through Employee Folders ADO\Loop through each Excel File\Load Raw Data\Data Conversion.Outputs[Data Conversion Output].Columns[ConvertedDate]};#{Package\Loop Through Employee Folders ADO\Loop through each Excel File\Load Raw Data\Data Conversion.Outputs[Data Conversion Output].Columns[ConvertedClient]};</property>
+                        <property
+                          dataType="System.Int32"
+                          description="Specifies the column code page to use when code page information is unavailable from the data source."
+                          name="DefaultCodePage">1252</property>
+                        <property
+                          dataType="System.Boolean"
+                          description="Determines whether duplicate keys in the reference data should be treated as errors when full cache mode is used."
+                          name="TreatDuplicateKeysAsError">false</property>
+                      </properties>
+                      <connections>
+                        <connection
+                          refId="Package\Loop Through Employee Folders ADO\Loop through each Excel File\Load Raw Data\Validate Data Exsistance.Connections[OleDbConnection]"
+                          connectionManagerID="Package.ConnectionManagers[LocalHost.TimesheetDB]"
+                          connectionManagerRefId="Package.ConnectionManagers[LocalHost.TimesheetDB]"
+                          description="Connection manager used to access lookup data."
+                          name="OleDbConnection" />
+                      </connections>
+                      <inputs>
+                        <input
+                          refId="Package\Loop Through Employee Folders ADO\Loop through each Excel File\Load Raw Data\Validate Data Exsistance.Inputs[Lookup Input]"
+                          name="Lookup Input">
+                          <inputColumns>
+                            <inputColumn
+                              refId="Package\Loop Through Employee Folders ADO\Loop through each Excel File\Load Raw Data\Validate Data Exsistance.Inputs[Lookup Input].Columns[EmployeeName]"
+                              cachedDataType="wstr"
+                              cachedLength="255"
+                              cachedName="EmployeeName"
+                              lineageId="Package\Loop Through Employee Folders ADO\Loop through each Excel File\Load Raw Data\Add EmployeeNameAndFileName.Outputs[Derived Column Output].Columns[EmployeeName]">
+                              <properties>
+                                <property
+                                  dataType="System.String"
+                                  description="Specifies the column in the reference table that a column joins."
+                                  name="JoinToReferenceColumn">EmployeeName</property>
+                                <property
+                                  dataType="System.Null"
+                                  description="Specifies the column in the reference table from which a column is copied."
+                                  name="CopyFromReferenceColumn" />
+                              </properties>
+                            </inputColumn>
+                            <inputColumn
+                              refId="Package\Loop Through Employee Folders ADO\Loop through each Excel File\Load Raw Data\Validate Data Exsistance.Inputs[Lookup Input].Columns[ConvertedDate]"
+                              cachedDataType="wstr"
+                              cachedLength="50"
+                              cachedName="ConvertedDate"
+                              lineageId="Package\Loop Through Employee Folders ADO\Loop through each Excel File\Load Raw Data\Data Conversion.Outputs[Data Conversion Output].Columns[ConvertedDate]">
+                              <properties>
+                                <property
+                                  dataType="System.String"
+                                  description="Specifies the column in the reference table that a column joins."
+                                  name="JoinToReferenceColumn">Date</property>
+                                <property
+                                  dataType="System.Null"
+                                  description="Specifies the column in the reference table from which a column is copied."
+                                  name="CopyFromReferenceColumn" />
+                              </properties>
+                            </inputColumn>
+                            <inputColumn
+                              refId="Package\Loop Through Employee Folders ADO\Loop through each Excel File\Load Raw Data\Validate Data Exsistance.Inputs[Lookup Input].Columns[Start Time]"
+                              cachedDataType="wstr"
+                              cachedLength="50"
+                              cachedName="Start Time"
+                              lineageId="Package\Loop Through Employee Folders ADO\Loop through each Excel File\Load Raw Data\Read Timesheet Sheet.Outputs[Excel Source Output].Columns[Start Time]">
+                              <properties>
+                                <property
+                                  dataType="System.String"
+                                  description="Specifies the column in the reference table that a column joins."
+                                  name="JoinToReferenceColumn">StartTime</property>
+                                <property
+                                  dataType="System.Null"
+                                  description="Specifies the column in the reference table from which a column is copied."
+                                  name="CopyFromReferenceColumn" />
+                              </properties>
+                            </inputColumn>
+                            <inputColumn
+                              refId="Package\Loop Through Employee Folders ADO\Loop through each Excel File\Load Raw Data\Validate Data Exsistance.Inputs[Lookup Input].Columns[End Time]"
+                              cachedDataType="wstr"
+                              cachedLength="50"
+                              cachedName="End Time"
+                              lineageId="Package\Loop Through Employee Folders ADO\Loop through each Excel File\Load Raw Data\Read Timesheet Sheet.Outputs[Excel Source Output].Columns[End Time]">
+                              <properties>
+                                <property
+                                  dataType="System.String"
+                                  description="Specifies the column in the reference table that a column joins."
+                                  name="JoinToReferenceColumn">EndTime</property>
+                                <property
+                                  dataType="System.Null"
+                                  description="Specifies the column in the reference table from which a column is copied."
+                                  name="CopyFromReferenceColumn" />
+                              </properties>
+                            </inputColumn>
+                            <inputColumn
+                              refId="Package\Loop Through Employee Folders ADO\Loop through each Excel File\Load Raw Data\Validate Data Exsistance.Inputs[Lookup Input].Columns[ConvertedClient]"
+                              cachedCodepage="1252"
+                              cachedDataType="str"
+                              cachedLength="255"
+                              cachedName="ConvertedClient"
+                              lineageId="Package\Loop Through Employee Folders ADO\Loop through each Excel File\Load Raw Data\Data Conversion.Outputs[Data Conversion Output].Columns[ConvertedClient]">
+                              <properties>
+                                <property
+                                  dataType="System.String"
+                                  description="Specifies the column in the reference table that a column joins."
+                                  name="JoinToReferenceColumn">ClientName</property>
+                                <property
+                                  dataType="System.Null"
+                                  description="Specifies the column in the reference table from which a column is copied."
+                                  name="CopyFromReferenceColumn" />
+                              </properties>
+                            </inputColumn>
+                          </inputColumns>
+                          <externalMetadataColumns />
+                        </input>
+                      </inputs>
+                      <outputs>
+                        <output
+                          refId="Package\Loop Through Employee Folders ADO\Loop through each Excel File\Load Raw Data\Validate Data Exsistance.Outputs[Lookup Match Output]"
+                          errorOrTruncationOperation="Lookup"
+                          errorRowDisposition="RedirectRow"
+                          exclusionGroup="1"
+                          name="Lookup Match Output"
+                          synchronousInputId="Package\Loop Through Employee Folders ADO\Loop through each Excel File\Load Raw Data\Validate Data Exsistance.Inputs[Lookup Input]">
+                          <externalMetadataColumns />
+                        </output>
+                        <output
+                          refId="Package\Loop Through Employee Folders ADO\Loop through each Excel File\Load Raw Data\Validate Data Exsistance.Outputs[Lookup No Match Output]"
+                          description="The Lookup output that handles rows with no matching entries in the reference dataset. Use this output when the NoMatchBehavior property is set to &quot;Send rows with no matching entries to the no match output.&quot;"
+                          exclusionGroup="1"
+                          name="Lookup No Match Output"
+                          synchronousInputId="Package\Loop Through Employee Folders ADO\Loop through each Excel File\Load Raw Data\Validate Data Exsistance.Inputs[Lookup Input]">
+                          <externalMetadataColumns />
+                        </output>
+                        <output
+                          refId="Package\Loop Through Employee Folders ADO\Loop through each Excel File\Load Raw Data\Validate Data Exsistance.Outputs[Lookup Error Output]"
+                          exclusionGroup="1"
+                          isErrorOut="true"
+                          name="Lookup Error Output"
+                          synchronousInputId="Package\Loop Through Employee Folders ADO\Loop through each Excel File\Load Raw Data\Validate Data Exsistance.Inputs[Lookup Input]">
+                          <outputColumns>
+                            <outputColumn
+                              refId="Package\Loop Through Employee Folders ADO\Loop through each Excel File\Load Raw Data\Validate Data Exsistance.Outputs[Lookup Error Output].Columns[ErrorCode]"
+                              dataType="i4"
+                              lineageId="Package\Loop Through Employee Folders ADO\Loop through each Excel File\Load Raw Data\Validate Data Exsistance.Outputs[Lookup Error Output].Columns[ErrorCode]"
+                              name="ErrorCode"
+                              specialFlags="1" />
+                            <outputColumn
+                              refId="Package\Loop Through Employee Folders ADO\Loop through each Excel File\Load Raw Data\Validate Data Exsistance.Outputs[Lookup Error Output].Columns[ErrorColumn]"
+                              dataType="i4"
+                              lineageId="Package\Loop Through Employee Folders ADO\Loop through each Excel File\Load Raw Data\Validate Data Exsistance.Outputs[Lookup Error Output].Columns[ErrorColumn]"
+                              name="ErrorColumn"
+                              specialFlags="2" />
+                          </outputColumns>
+                          <externalMetadataColumns />
+                        </output>
+                      </outputs>
+                    </component>
                   </components>
                   <paths>
                     <path
                       refId="Package\Loop Through Employee Folders ADO\Loop through each Excel File\Load Raw Data.Paths[Data Conversion Output]"
-                      endId="Package\Loop Through Employee Folders ADO\Loop through each Excel File\Load Raw Data\Insert into Timesheet Staging.Inputs[OLE DB Destination Input]"
+                      endId="Package\Loop Through Employee Folders ADO\Loop through each Excel File\Load Raw Data\Validate Data Exsistance.Inputs[Lookup Input]"
                       name="Data Conversion Output"
                       startId="Package\Loop Through Employee Folders ADO\Loop through each Excel File\Load Raw Data\Data Conversion.Outputs[Data Conversion Output]" />
                     <path
@@ -2258,6 +2535,11 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA</BinaryItem>
                       endId="Package\Loop Through Employee Folders ADO\Loop through each Excel File\Load Raw Data\Add EmployeeNameAndFileName.Inputs[Derived Column Input]"
                       name="Excel Source Output"
                       startId="Package\Loop Through Employee Folders ADO\Loop through each Excel File\Load Raw Data\Read Timesheet Sheet.Outputs[Excel Source Output]" />
+                    <path
+                      refId="Package\Loop Through Employee Folders ADO\Loop through each Excel File\Load Raw Data.Paths[Lookup Error Output]"
+                      endId="Package\Loop Through Employee Folders ADO\Loop through each Excel File\Load Raw Data\Insert into Timesheet Staging.Inputs[OLE DB Destination Input]"
+                      name="Lookup Error Output"
+                      startId="Package\Loop Through Employee Folders ADO\Loop through each Excel File\Load Raw Data\Validate Data Exsistance.Outputs[Lookup Error Output]" />
                   </paths>
                 </pipeline>
               </DTS:ObjectData>
@@ -2281,14 +2563,35 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA</BinaryItem>
                   ReadOnlyVariables="User::ExcelFilePath"
                   ReadWriteVariables="User::ExcelConnectionString,User::SelectedSheet">
                   <ProjectItem
-                    Name="Properties\Settings.settings"
-                    Encoding="UTF8"><![CDATA[<?xml version='1.0' encoding='iso-8859-1'?>
-<SettingsFile xmlns="uri:settings" CurrentProfile="(Default)">
-  <Profiles>
-    <Profile Name="(Default)" />
-  </Profiles>
-  <Settings />
-</SettingsFile>]]></ProjectItem>
+                    Name="Properties\AssemblyInfo.cs"
+                    Encoding="UTF8"><![CDATA[using System.Reflection;
+using System.Runtime.CompilerServices;
+
+//
+// General Information about an assembly is controlled through the following 
+// set of attributes. Change these attribute values to modify the information
+// associated with an assembly.
+//
+[assembly: AssemblyTitle("ST_a136fd41f7184a7a96b8e8a480790b29")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("HP")]
+[assembly: AssemblyProduct("ST_a136fd41f7184a7a96b8e8a480790b29")]
+[assembly: AssemblyCopyright("Copyright @ HP 2025")]
+[assembly: AssemblyTrademark("")]
+[assembly: AssemblyCulture("")]
+//
+// Version information for an assembly consists of the following four values:
+//
+//      Major Version
+//      Minor Version 
+//      Build Number
+//      Revision
+//
+// You can specify all the values or you can default the Revision and Build Numbers 
+// by using the '*' as shown below:
+
+[assembly: AssemblyVersion("1.0.*")]]]></ProjectItem>
                   <ProjectItem
                     Name="Properties\Resources.resx"
                     Encoding="UTF8"><![CDATA[<?xml version="1.0" encoding="utf-8"?>
@@ -2408,35 +2711,6 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA</BinaryItem>
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
 </root>]]></ProjectItem>
-                  <ProjectItem
-                    Name="Properties\Settings.Designer.cs"
-                    Encoding="UTF8"><![CDATA[//------------------------------------------------------------------------------
-// <auto-generated>
-//     This code was generated by a tool.
-//
-//     Changes to this file may cause incorrect behavior and will be lost if
-//     the code is regenerated.
-// </auto-generated>
-//------------------------------------------------------------------------------
-
-[assembly: global::System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Scope="member", Target="ST_a136fd41f7184a7a96b8e8a480790b29.Properties.Settings.get_Default():ST_a136fd41f7184a7a96b8e8a480790b29.Properties.Sett" +
-    "ings")]
-
-namespace ST_a136fd41f7184a7a96b8e8a480790b29.Properties {
-    
-    
-    internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase {
-        
-        [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-        private static Settings defaultInstance = new Settings();
-        
-        public static Settings Default {
-            get {
-                return defaultInstance;
-            }
-        }
-    }
-}]]></ProjectItem>
                   <ProjectItem
                     Name="ScriptMain.cs"
                     Encoding="UTF8"><![CDATA[#region Help:  Introduction to the script task
@@ -2835,6 +3109,9 @@ namespace ST_a136fd41f7184a7a96b8e8a480790b29
 	}
 }]]></ProjectItem>
                   <ProjectItem
+                    Name="ST_336a9463f4a8472591ee1c7d192a0a94.csproj"
+                    Encoding="UTF8"><![CDATA[<?xml version="1.0" encoding="utf-8"?><Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003"><PropertyGroup><ProjectTypeGuids>{30D016F9-3734-4E33-A861-5E7D899E18F3};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids><Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration><Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform><ProductVersion>8.0.30703</ProductVersion><SchemaVersion>2.0</SchemaVersion><ProjectGuid>{3FE4EA49-40F9-438C-A0E3-7CB51A234E05}</ProjectGuid><OutputType>Library</OutputType><AppDesignerFolder>Properties</AppDesignerFolder><RootNamespace>ST_a136fd41f7184a7a96b8e8a480790b29</RootNamespace><AssemblyName>ST_336a9463f4a8472591ee1c7d192a0a94</AssemblyName><TargetFrameworkVersion>v4.7</TargetFrameworkVersion><FileAlignment>512</FileAlignment><ResolveAssemblyReferenceIgnoreTargetFrameworkAttributeVersionMismatch>true</ResolveAssemblyReferenceIgnoreTargetFrameworkAttributeVersionMismatch><TargetFrameworkProfile></TargetFrameworkProfile></PropertyGroup><PropertyGroup Condition=" '$(Configuration)' == 'Debug' "><DebugSymbols>true</DebugSymbols><DebugType>full</DebugType><Optimize>false</Optimize><OutputPath>.\bin\Debug\</OutputPath><EnableUnmanagedDebugging>false</EnableUnmanagedDebugging><DefineConstants>DEBUG;TRACE</DefineConstants><ErrorReport>prompt</ErrorReport><WarningLevel>4</WarningLevel></PropertyGroup><PropertyGroup Condition=" '$(Configuration)' == 'Release' "><DebugSymbols>false</DebugSymbols><Optimize>true</Optimize><OutputPath>.\bin\Release\</OutputPath><EnableUnmanagedDebugging>false</EnableUnmanagedDebugging><DefineConstants>TRACE</DefineConstants><ErrorReport>prompt</ErrorReport><WarningLevel>4</WarningLevel></PropertyGroup><ItemGroup><Reference Include="System" /><Reference Include="System.Data" /><Reference Include="System.Windows.Forms" /><Reference Include="System.Xml" /><Reference Include="Microsoft.SqlServer.ManagedDTS, Version=16.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91" /><Reference Include="Microsoft.SqlServer.ScriptTask, Version=16.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91" /></ItemGroup><ItemGroup><AppDesigner Include="Properties\" /><Compile Include="Properties\AssemblyInfo.cs"><SubType>Code</SubType></Compile><EmbeddedResource Include="Properties\Resources.resx"><Generator>ResXFileCodeGenerator</Generator><LastGenOutput>Resources.Designer.cs</LastGenOutput></EmbeddedResource><Compile Include="Properties\Resources.Designer.cs"><AutoGen>True</AutoGen><DependentUpon>Resources.resx</DependentUpon></Compile><None Include="Properties\Settings.settings"><Generator>SettingsSingleFileGenerator</Generator><LastGenOutput>Settings.Designer.cs</LastGenOutput></None><Compile Include="Properties\Settings.Designer.cs"><AutoGen>True</AutoGen><DependentUpon>Settings.settings</DependentUpon></Compile><Compile Include="ScriptMain.cs"><SubType>Code</SubType></Compile></ItemGroup><!-- Include the build rules for a C# project.--><Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" /><ProjectExtensions><VisualStudio><FlavorProperties GUID="{30D016F9-3734-4E33-A861-5E7D899E18F3}"><ProjectProperties HostName="VSTAHostName" HostPackage="{B3A685AA-7EAF-4BC6-9940-57959FA5AC07}" ApplicationType="usd" Language="cs" TemplatesPath="" /><Host Name="ScriptTask" /><ProjectClient><HostIdentifier>SSIS_ST160</HostIdentifier></ProjectClient></FlavorProperties></VisualStudio></ProjectExtensions></Project>]]></ProjectItem>
+                  <ProjectItem
                     Name="Project"
                     Encoding="UTF16LE"><![CDATA[<?xml version="1.0" encoding="UTF-16" standalone="yes"?>
 <c:Project xmlns:c="http://schemas.microsoft.com/codeprojectml/2010/08/main" xmlns:msb="http://schemas.microsoft.com/developer/msbuild/2003" runtimeVersion="4.0" schemaVersion="1.0">
@@ -2855,38 +3132,43 @@ namespace ST_a136fd41f7184a7a96b8e8a480790b29
   </msb:ItemGroup>
 </c:Project>]]></ProjectItem>
                   <ProjectItem
-                    Name="Properties\AssemblyInfo.cs"
-                    Encoding="UTF8"><![CDATA[using System.Reflection;
-using System.Runtime.CompilerServices;
+                    Name="Properties\Settings.Designer.cs"
+                    Encoding="UTF8"><![CDATA[//------------------------------------------------------------------------------
+// <auto-generated>
+//     This code was generated by a tool.
+//
+//     Changes to this file may cause incorrect behavior and will be lost if
+//     the code is regenerated.
+// </auto-generated>
+//------------------------------------------------------------------------------
 
-//
-// General Information about an assembly is controlled through the following 
-// set of attributes. Change these attribute values to modify the information
-// associated with an assembly.
-//
-[assembly: AssemblyTitle("ST_a136fd41f7184a7a96b8e8a480790b29")]
-[assembly: AssemblyDescription("")]
-[assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("HP")]
-[assembly: AssemblyProduct("ST_a136fd41f7184a7a96b8e8a480790b29")]
-[assembly: AssemblyCopyright("Copyright @ HP 2025")]
-[assembly: AssemblyTrademark("")]
-[assembly: AssemblyCulture("")]
-//
-// Version information for an assembly consists of the following four values:
-//
-//      Major Version
-//      Minor Version 
-//      Build Number
-//      Revision
-//
-// You can specify all the values or you can default the Revision and Build Numbers 
-// by using the '*' as shown below:
+[assembly: global::System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Scope="member", Target="ST_a136fd41f7184a7a96b8e8a480790b29.Properties.Settings.get_Default():ST_a136fd41f7184a7a96b8e8a480790b29.Properties.Sett" +
+    "ings")]
 
-[assembly: AssemblyVersion("1.0.*")]]]></ProjectItem>
+namespace ST_a136fd41f7184a7a96b8e8a480790b29.Properties {
+    
+    
+    internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase {
+        
+        [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
+        private static Settings defaultInstance = new Settings();
+        
+        public static Settings Default {
+            get {
+                return defaultInstance;
+            }
+        }
+    }
+}]]></ProjectItem>
                   <ProjectItem
-                    Name="ST_336a9463f4a8472591ee1c7d192a0a94.csproj"
-                    Encoding="UTF8"><![CDATA[<?xml version="1.0" encoding="utf-8"?><Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003"><PropertyGroup><ProjectTypeGuids>{30D016F9-3734-4E33-A861-5E7D899E18F3};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids><Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration><Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform><ProductVersion>8.0.30703</ProductVersion><SchemaVersion>2.0</SchemaVersion><ProjectGuid>{3FE4EA49-40F9-438C-A0E3-7CB51A234E05}</ProjectGuid><OutputType>Library</OutputType><AppDesignerFolder>Properties</AppDesignerFolder><RootNamespace>ST_a136fd41f7184a7a96b8e8a480790b29</RootNamespace><AssemblyName>ST_336a9463f4a8472591ee1c7d192a0a94</AssemblyName><TargetFrameworkVersion>v4.7</TargetFrameworkVersion><FileAlignment>512</FileAlignment><ResolveAssemblyReferenceIgnoreTargetFrameworkAttributeVersionMismatch>true</ResolveAssemblyReferenceIgnoreTargetFrameworkAttributeVersionMismatch><TargetFrameworkProfile></TargetFrameworkProfile></PropertyGroup><PropertyGroup Condition=" '$(Configuration)' == 'Debug' "><DebugSymbols>true</DebugSymbols><DebugType>full</DebugType><Optimize>false</Optimize><OutputPath>.\bin\Debug\</OutputPath><EnableUnmanagedDebugging>false</EnableUnmanagedDebugging><DefineConstants>DEBUG;TRACE</DefineConstants><ErrorReport>prompt</ErrorReport><WarningLevel>4</WarningLevel></PropertyGroup><PropertyGroup Condition=" '$(Configuration)' == 'Release' "><DebugSymbols>false</DebugSymbols><Optimize>true</Optimize><OutputPath>.\bin\Release\</OutputPath><EnableUnmanagedDebugging>false</EnableUnmanagedDebugging><DefineConstants>TRACE</DefineConstants><ErrorReport>prompt</ErrorReport><WarningLevel>4</WarningLevel></PropertyGroup><ItemGroup><Reference Include="System" /><Reference Include="System.Data" /><Reference Include="System.Windows.Forms" /><Reference Include="System.Xml" /><Reference Include="Microsoft.SqlServer.ManagedDTS, Version=16.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91" /><Reference Include="Microsoft.SqlServer.ScriptTask, Version=16.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91" /></ItemGroup><ItemGroup><AppDesigner Include="Properties\" /><Compile Include="Properties\AssemblyInfo.cs"><SubType>Code</SubType></Compile><EmbeddedResource Include="Properties\Resources.resx"><Generator>ResXFileCodeGenerator</Generator><LastGenOutput>Resources.Designer.cs</LastGenOutput></EmbeddedResource><Compile Include="Properties\Resources.Designer.cs"><AutoGen>True</AutoGen><DependentUpon>Resources.resx</DependentUpon></Compile><None Include="Properties\Settings.settings"><Generator>SettingsSingleFileGenerator</Generator><LastGenOutput>Settings.Designer.cs</LastGenOutput></None><Compile Include="Properties\Settings.Designer.cs"><AutoGen>True</AutoGen><DependentUpon>Settings.settings</DependentUpon></Compile><Compile Include="ScriptMain.cs"><SubType>Code</SubType></Compile></ItemGroup><!-- Include the build rules for a C# project.--><Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" /><ProjectExtensions><VisualStudio><FlavorProperties GUID="{30D016F9-3734-4E33-A861-5E7D899E18F3}"><ProjectProperties HostName="VSTAHostName" HostPackage="{B3A685AA-7EAF-4BC6-9940-57959FA5AC07}" ApplicationType="usd" Language="cs" TemplatesPath="" /><Host Name="ScriptTask" /><ProjectClient><HostIdentifier>SSIS_ST160</HostIdentifier></ProjectClient></FlavorProperties></VisualStudio></ProjectExtensions></Project>]]></ProjectItem>
+                    Name="Properties\Settings.settings"
+                    Encoding="UTF8"><![CDATA[<?xml version='1.0' encoding='iso-8859-1'?>
+<SettingsFile xmlns="uri:settings" CurrentProfile="(Default)">
+  <Profiles>
+    <Profile Name="(Default)" />
+  </Profiles>
+  <Settings />
+</SettingsFile>]]></ProjectItem>
                   <ProjectItem
                     Name="Properties\Resources.Designer.cs"
                     Encoding="UTF8"><![CDATA[//------------------------------------------------------------------------------
@@ -3239,36 +3521,6 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==</BinaryItem>
                   Language="CSharp"
                   ReadOnlyVariables="User::ExcelFilePath,User::ExcelRange,User::SQLConnectionString">
                   <ProjectItem
-                    Name="Properties\AssemblyInfo.cs"
-                    Encoding="UTF8"><![CDATA[using System.Reflection;
-using System.Runtime.CompilerServices;
-
-//
-// General Information about an assembly is controlled through the following 
-// set of attributes. Change these attribute values to modify the information
-// associated with an assembly.
-//
-[assembly: AssemblyTitle("ST_6ec43d5a6ebf48289a877e0f94ecd669")]
-[assembly: AssemblyDescription("")]
-[assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("HP")]
-[assembly: AssemblyProduct("ST_6ec43d5a6ebf48289a877e0f94ecd669")]
-[assembly: AssemblyCopyright("Copyright @ HP 2025")]
-[assembly: AssemblyTrademark("")]
-[assembly: AssemblyCulture("")]
-//
-// Version information for an assembly consists of the following four values:
-//
-//      Major Version
-//      Minor Version 
-//      Build Number
-//      Revision
-//
-// You can specify all the values or you can default the Revision and Build Numbers 
-// by using the '*' as shown below:
-
-[assembly: AssemblyVersion("1.0.*")]]]></ProjectItem>
-                  <ProjectItem
                     Name="Properties\Resources.resx"
                     Encoding="UTF8"><![CDATA[<?xml version="1.0" encoding="utf-8"?>
 <root>
@@ -3387,6 +3639,35 @@ using System.Runtime.CompilerServices;
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
 </root>]]></ProjectItem>
+                  <ProjectItem
+                    Name="Properties\Settings.Designer.cs"
+                    Encoding="UTF8"><![CDATA[//------------------------------------------------------------------------------
+// <auto-generated>
+//     This code was generated by a tool.
+//
+//     Changes to this file may cause incorrect behavior and will be lost if
+//     the code is regenerated.
+// </auto-generated>
+//------------------------------------------------------------------------------
+
+[assembly: global::System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Scope="member", Target="ST_6ec43d5a6ebf48289a877e0f94ecd669.Properties.Settings.get_Default():ST_6ec43d5a6ebf48289a877e0f94ecd669.Properties.Sett" +
+    "ings")]
+
+namespace ST_6ec43d5a6ebf48289a877e0f94ecd669.Properties {
+    
+    
+    internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase {
+        
+        [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
+        private static Settings defaultInstance = new Settings();
+        
+        public static Settings Default {
+            get {
+                return defaultInstance;
+            }
+        }
+    }
+}]]></ProjectItem>
                   <ProjectItem
                     Name="ST_5b08711bd4b24d93ac2dd2e5e91aa559.csproj"
                     Encoding="UTF8"><![CDATA[<?xml version="1.0" encoding="utf-8"?><Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003"><PropertyGroup><ProjectTypeGuids>{30D016F9-3734-4E33-A861-5E7D899E18F3};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids><Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration><Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform><ProductVersion>8.0.30703</ProductVersion><SchemaVersion>2.0</SchemaVersion><ProjectGuid>{8E73A9BA-AE6C-4A3B-953C-4A29C92E31EC}</ProjectGuid><OutputType>Library</OutputType><AppDesignerFolder>Properties</AppDesignerFolder><RootNamespace>ST_6ec43d5a6ebf48289a877e0f94ecd669</RootNamespace><AssemblyName>ST_5b08711bd4b24d93ac2dd2e5e91aa559</AssemblyName><TargetFrameworkVersion>v4.7</TargetFrameworkVersion><FileAlignment>512</FileAlignment><ResolveAssemblyReferenceIgnoreTargetFrameworkAttributeVersionMismatch>true</ResolveAssemblyReferenceIgnoreTargetFrameworkAttributeVersionMismatch><TargetFrameworkProfile></TargetFrameworkProfile></PropertyGroup><PropertyGroup Condition=" '$(Configuration)' == 'Debug' "><DebugSymbols>true</DebugSymbols><DebugType>full</DebugType><Optimize>false</Optimize><OutputPath>.\bin\Debug\</OutputPath><EnableUnmanagedDebugging>false</EnableUnmanagedDebugging><DefineConstants>DEBUG;TRACE</DefineConstants><ErrorReport>prompt</ErrorReport><WarningLevel>4</WarningLevel></PropertyGroup><PropertyGroup Condition=" '$(Configuration)' == 'Release' "><DebugSymbols>false</DebugSymbols><Optimize>true</Optimize><OutputPath>.\bin\Release\</OutputPath><EnableUnmanagedDebugging>false</EnableUnmanagedDebugging><DefineConstants>TRACE</DefineConstants><ErrorReport>prompt</ErrorReport><WarningLevel>4</WarningLevel></PropertyGroup><ItemGroup><Reference Include="System" /><Reference Include="System.Data" /><Reference Include="System.Windows.Forms" /><Reference Include="System.Xml" /><Reference Include="Microsoft.SqlServer.ManagedDTS, Version=16.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91" /><Reference Include="Microsoft.SqlServer.ScriptTask, Version=16.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91" /></ItemGroup><ItemGroup><AppDesigner Include="Properties\" /><Compile Include="Properties\AssemblyInfo.cs"><SubType>Code</SubType></Compile><EmbeddedResource Include="Properties\Resources.resx"><Generator>ResXFileCodeGenerator</Generator><LastGenOutput>Resources.Designer.cs</LastGenOutput></EmbeddedResource><Compile Include="Properties\Resources.Designer.cs"><AutoGen>True</AutoGen><DependentUpon>Resources.resx</DependentUpon></Compile><None Include="Properties\Settings.settings"><Generator>SettingsSingleFileGenerator</Generator><LastGenOutput>Settings.Designer.cs</LastGenOutput></None><Compile Include="Properties\Settings.Designer.cs"><AutoGen>True</AutoGen><DependentUpon>Settings.settings</DependentUpon></Compile><Compile Include="ScriptMain.cs"><SubType>Code</SubType></Compile></ItemGroup><!-- Include the build rules for a C# project.--><Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" /><ProjectExtensions><VisualStudio><FlavorProperties GUID="{30D016F9-3734-4E33-A861-5E7D899E18F3}"><ProjectProperties HostName="VSTAHostName" HostPackage="{B3A685AA-7EAF-4BC6-9940-57959FA5AC07}" ApplicationType="usd" Language="cs" TemplatesPath="" /><Host Name="ScriptTask" /><ProjectClient><HostIdentifier>SSIS_ST160</HostIdentifier></ProjectClient></FlavorProperties></VisualStudio></ProjectExtensions></Project>]]></ProjectItem>
@@ -3664,34 +3945,35 @@ namespace ST_6ec43d5a6ebf48289a877e0f94ecd669
   </msb:ItemGroup>
 </c:Project>]]></ProjectItem>
                   <ProjectItem
-                    Name="Properties\Settings.Designer.cs"
-                    Encoding="UTF8"><![CDATA[//------------------------------------------------------------------------------
-// <auto-generated>
-//     This code was generated by a tool.
+                    Name="Properties\AssemblyInfo.cs"
+                    Encoding="UTF8"><![CDATA[using System.Reflection;
+using System.Runtime.CompilerServices;
+
 //
-//     Changes to this file may cause incorrect behavior and will be lost if
-//     the code is regenerated.
-// </auto-generated>
-//------------------------------------------------------------------------------
+// General Information about an assembly is controlled through the following 
+// set of attributes. Change these attribute values to modify the information
+// associated with an assembly.
+//
+[assembly: AssemblyTitle("ST_6ec43d5a6ebf48289a877e0f94ecd669")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("HP")]
+[assembly: AssemblyProduct("ST_6ec43d5a6ebf48289a877e0f94ecd669")]
+[assembly: AssemblyCopyright("Copyright @ HP 2025")]
+[assembly: AssemblyTrademark("")]
+[assembly: AssemblyCulture("")]
+//
+// Version information for an assembly consists of the following four values:
+//
+//      Major Version
+//      Minor Version 
+//      Build Number
+//      Revision
+//
+// You can specify all the values or you can default the Revision and Build Numbers 
+// by using the '*' as shown below:
 
-[assembly: global::System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Scope="member", Target="ST_6ec43d5a6ebf48289a877e0f94ecd669.Properties.Settings.get_Default():ST_6ec43d5a6ebf48289a877e0f94ecd669.Properties.Sett" +
-    "ings")]
-
-namespace ST_6ec43d5a6ebf48289a877e0f94ecd669.Properties {
-    
-    
-    internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase {
-        
-        [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-        private static Settings defaultInstance = new Settings();
-        
-        public static Settings Default {
-            get {
-                return defaultInstance;
-            }
-        }
-    }
-}]]></ProjectItem>
+[assembly: AssemblyVersion("1.0.*")]]]></ProjectItem>
                   <ProjectItem
                     Name="Properties\Settings.settings"
                     Encoding="UTF8"><![CDATA[<?xml version='1.0' encoding='iso-8859-1'?>
@@ -4003,6 +4285,30 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==</BinaryItem>
       DTS:LogicalAnd="True"
       DTS:ObjectName="Constraint"
       DTS:To="Package\Loop Through Employee Folders ADO" />
+    <DTS:PrecedenceConstraint
+      DTS:refId="Package.PrecedenceConstraints[Constraint 1]"
+      DTS:CreationName=""
+      DTS:DTSID="{22C5328D-E63B-4B47-AFE3-3EDFBFA04498}"
+      DTS:From="Package\Loop Through Employee Folders ADO"
+      DTS:LogicalAnd="True"
+      DTS:ObjectName="Constraint 1"
+      DTS:To="Package\Clean and Validate Timesheet Data" />
+    <DTS:PrecedenceConstraint
+      DTS:refId="Package.PrecedenceConstraints[Constraint 2]"
+      DTS:CreationName=""
+      DTS:DTSID="{A4B3BDA5-A872-4179-9627-D0EC96555A27}"
+      DTS:From="Package\Clean and Validate Timesheet Data"
+      DTS:LogicalAnd="True"
+      DTS:ObjectName="Constraint 2"
+      DTS:To="Package\Load Timesheet Data" />
+    <DTS:PrecedenceConstraint
+      DTS:refId="Package.PrecedenceConstraints[Constraint 3]"
+      DTS:CreationName=""
+      DTS:DTSID="{6E587881-54B2-427D-B047-1CD9A526E786}"
+      DTS:From="Package\Load Timesheet Data"
+      DTS:LogicalAnd="True"
+      DTS:ObjectName="Constraint 3"
+      DTS:To="Package\Clear Timesheet Staging Data" />
   </DTS:PrecedenceConstraints>
   <DTS:DesignTimeProperties><![CDATA[<?xml version="1.0"?>
 <!--This CDATA section contains the layout information of the package. The section includes information such as (x,y) coordinates, width, and height.-->
@@ -4016,6 +4322,14 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==</BinaryItem>
     <LayoutInfo>
       <GraphLayout
         Capacity="16" xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph" xmlns:mssgle="clr-namespace:Microsoft.SqlServer.Graph.LayoutEngine;assembly=Microsoft.SqlServer.Graph" xmlns:assembly="http://schemas.microsoft.com/winfx/2006/xaml">
+        <NodeLayout
+          Size="242.4,41.6"
+          Id="Package\Clean and Validate Timesheet Data"
+          TopLeft="495.833306242196,859.333330573109" />
+        <NodeLayout
+          Size="177.6,41.6"
+          Id="Package\Load Timesheet Data"
+          TopLeft="529.166637754276,956.533330536948" />
         <NodeLayout
           Size="217.6,41.6"
           Id="Package\Loop Employee Folders Script"
@@ -4116,6 +4430,76 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==</BinaryItem>
             <EdgeLabelCollection />
           </EdgeLayout.Labels>
         </EdgeLayout>
+        <EdgeLayout
+          Id="Package.PrecedenceConstraints[Constraint 1]"
+          TopLeft="614.61664151061,782.333331965274">
+          <EdgeLayout.Curve>
+            <mssgle:Curve
+              StartConnector="{assembly:Null}"
+              EndConnector="0,76.9999986078345"
+              Start="0,0"
+              End="0,69.4999986078345">
+              <mssgle:Curve.Segments>
+                <mssgle:SegmentCollection
+                  Capacity="5">
+                  <mssgle:LineSegment
+                    End="0,69.4999986078345" />
+                </mssgle:SegmentCollection>
+              </mssgle:Curve.Segments>
+            </mssgle:Curve>
+          </EdgeLayout.Curve>
+          <EdgeLayout.Labels>
+            <EdgeLabelCollection />
+          </EdgeLayout.Labels>
+        </EdgeLayout>
+        <EdgeLayout
+          Id="Package.PrecedenceConstraints[Constraint 2]"
+          TopLeft="617.499971998236,900.933330573109">
+          <EdgeLayout.Curve>
+            <mssgle:Curve
+              StartConnector="{assembly:Null}"
+              EndConnector="0,55.5999999638394"
+              Start="0,0"
+              End="0,48.0999999638394">
+              <mssgle:Curve.Segments>
+                <mssgle:SegmentCollection
+                  Capacity="5">
+                  <mssgle:LineSegment
+                    End="0,48.0999999638394" />
+                </mssgle:SegmentCollection>
+              </mssgle:Curve.Segments>
+            </mssgle:Curve>
+          </EdgeLayout.Curve>
+          <EdgeLayout.Labels>
+            <EdgeLabelCollection />
+          </EdgeLayout.Labels>
+        </EdgeLayout>
+        <NodeLayout
+          Size="217.6,41.6"
+          Id="Package\Clear Timesheet Staging Data"
+          TopLeft="515.833305149444,1044.93333028383" />
+        <EdgeLayout
+          Id="Package.PrecedenceConstraints[Constraint 3]"
+          TopLeft="621.29997145186,998.133330536948">
+          <EdgeLayout.Curve>
+            <mssgle:Curve
+              StartConnector="{assembly:Null}"
+              EndConnector="0,46.7999997468794"
+              Start="0,0"
+              End="0,39.2999997468794">
+              <mssgle:Curve.Segments>
+                <mssgle:SegmentCollection
+                  Capacity="5">
+                  <mssgle:LineSegment
+                    End="0,39.2999997468794" />
+                </mssgle:SegmentCollection>
+              </mssgle:Curve.Segments>
+            </mssgle:Curve>
+          </EdgeLayout.Curve>
+          <EdgeLayout.Labels>
+            <EdgeLabelCollection />
+          </EdgeLayout.Labels>
+        </EdgeLayout>
       </GraphLayout>
     </LayoutInfo>
   </Package>
@@ -4123,11 +4507,19 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==</BinaryItem>
     design-time-name="Package\Loop Through Employee Folders ADO\Loop through each Excel File\Load Raw Data">
     <LayoutInfo>
       <GraphLayout
-        Capacity="8" xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph" xmlns:mssgle="clr-namespace:Microsoft.SqlServer.Graph.LayoutEngine;assembly=Microsoft.SqlServer.Graph" xmlns:assembly="http://schemas.microsoft.com/winfx/2006/xaml">
+        Capacity="16" xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph" xmlns:mssgle="clr-namespace:Microsoft.SqlServer.Graph.LayoutEngine;assembly=Microsoft.SqlServer.Graph" xmlns:assembly="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:mssgm="clr-namespace:Microsoft.SqlServer.Graph.Model;assembly=Microsoft.SqlServer.Graph">
+        <NodeLayout
+          Size="156,41.6"
+          Id="Package\Loop Through Employee Folders ADO\Loop through each Excel File\Load Raw Data\Data Conversion"
+          TopLeft="363.333313481676,275.199998481274" />
+        <NodeLayout
+          Size="193.6,41.6"
+          Id="Package\Loop Through Employee Folders ADO\Loop through each Excel File\Load Raw Data\Validate Data Exsistance"
+          TopLeft="336.666648272011,348.799998553594" />
         <NodeLayout
           Size="213.6,41.6"
           Id="Package\Loop Through Employee Folders ADO\Loop through each Excel File\Load Raw Data\Insert into Timesheet Staging"
-          TopLeft="334.166648408606,365.733330790069" />
+          TopLeft="319.16664922817,445.466663568946" />
         <NodeLayout
           Size="184.8,41.6"
           Id="Package\Loop Through Employee Folders ADO\Loop through each Excel File\Load Raw Data\Read Timesheet Sheet"
@@ -4136,10 +4528,6 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==</BinaryItem>
           Size="236.8,41.6"
           Id="Package\Loop Through Employee Folders ADO\Loop through each Excel File\Load Raw Data\Add EmployeeNameAndFileName"
           TopLeft="325.833315530586,194.999998643994" />
-        <NodeLayout
-          Size="156,41.6"
-          Id="Package\Loop Through Employee Folders ADO\Loop through each Excel File\Load Raw Data\Data Conversion"
-          TopLeft="363.333313481676,275.199998481274" />
         <EdgeLayout
           Id="Package\Loop Through Employee Folders ADO\Loop through each Excel File\Load Raw Data.Paths[Derived Column Output]"
           TopLeft="442.783314506131,236.599998643994">
@@ -4159,29 +4547,57 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==</BinaryItem>
             </mssgle:Curve>
           </EdgeLayout.Curve>
           <EdgeLayout.Labels>
-            <EdgeLabelCollection />
+            <mssgm:EdgeLabel
+              BoundingBox="0,0,0,0"
+              RelativePosition="Any" />
           </EdgeLayout.Labels>
         </EdgeLayout>
         <EdgeLayout
           Id="Package\Loop Through Employee Folders ADO\Loop through each Excel File\Load Raw Data.Paths[Data Conversion Output]"
-          TopLeft="441.149980945141,316.799998481274">
+          TopLeft="437.399980876844,316.799998481274">
           <EdgeLayout.Curve>
             <mssgle:Curve
               StartConnector="{assembly:Null}"
-              EndConnector="0,48.9333323087957"
+              EndConnector="0,32.0000000723198"
               Start="0,0"
-              End="0,41.4333323087957">
+              End="0,24.5000000723198">
               <mssgle:Curve.Segments>
                 <mssgle:SegmentCollection
                   Capacity="5">
                   <mssgle:LineSegment
-                    End="0,41.4333323087957" />
+                    End="0,24.5000000723198" />
                 </mssgle:SegmentCollection>
               </mssgle:Curve.Segments>
             </mssgle:Curve>
           </EdgeLayout.Curve>
           <EdgeLayout.Labels>
-            <EdgeLabelCollection />
+            <mssgm:EdgeLabel
+              BoundingBox="0,0,0,0"
+              RelativePosition="Any" />
+          </EdgeLayout.Labels>
+        </EdgeLayout>
+        <EdgeLayout
+          Id="Package\Loop Through Employee Folders ADO\Loop through each Excel File\Load Raw Data.Paths[Lookup Error Output]"
+          TopLeft="429.716648750091,390.399998553594">
+          <EdgeLayout.Curve>
+            <mssgle:Curve
+              StartConnector="{assembly:Null}"
+              EndConnector="0,55.0666650153525"
+              Start="0,0"
+              End="0,47.5666650153525">
+              <mssgle:Curve.Segments>
+                <mssgle:SegmentCollection
+                  Capacity="5">
+                  <mssgle:LineSegment
+                    End="0,47.5666650153525" />
+                </mssgle:SegmentCollection>
+              </mssgle:Curve.Segments>
+            </mssgle:Curve>
+          </EdgeLayout.Curve>
+          <EdgeLayout.Labels>
+            <mssgm:EdgeLabel
+              BoundingBox="-45.86638671875,17.9786450076762,91.7327734375,11.609375"
+              RelativePosition="Any" />
           </EdgeLayout.Labels>
         </EdgeLayout>
         <EdgeLayout
@@ -4203,12 +4619,37 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==</BinaryItem>
             </mssgle:Curve>
           </EdgeLayout.Curve>
           <EdgeLayout.Labels>
-            <EdgeLabelCollection />
+            <mssgm:EdgeLabel
+              BoundingBox="0,0,0,0"
+              RelativePosition="Any" />
           </EdgeLayout.Labels>
         </EdgeLayout>
       </GraphLayout>
     </LayoutInfo>
   </TaskHost>
+  <PipelineComponentMetadata
+    design-time-name="Package\Loop Through Employee Folders ADO\Loop through each Excel File\Load Raw Data\Validate Data Exsistance">
+    <Properties>
+      <Property>
+        <Name>OverwriteParamsSQLProp</Name>
+        <Value
+          type="q2:string">false</Value>
+      </Property>
+      <Property>
+        <Name>UsedTableName</Name>
+        <Value
+          type="q3:string"></Value>
+      </Property>
+      <Property>
+        <Name>TableInfoObjectType</Name>
+        <Value
+          type="q4:string">0</Value>
+      </Property>
+      <Property>
+        <Name>DataSourceViewID</Name>
+      </Property>
+    </Properties>
+  </PipelineComponentMetadata>
   <PipelineComponentMetadata
     design-time-name="Package\Loop Through Employee Folders ADO\Loop through each Excel File\Load Raw Data\Insert into Timesheet Staging">
     <Properties>
