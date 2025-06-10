@@ -216,24 +216,22 @@ BEGIN
      END
 
     -- Forecast Table
-    IF OBJECT_ID('Timesheet.Forecast', 'U') IS NULL
-    BEGIN
-        CREATE TABLE Timesheet.Forecast (
-            Forecast_ID INT PRIMARY KEY IDENTITY(1,1),
-            EmployeeID INT NOT NULL,
-            ClientID INT,
-            ActivityID INT,
-            Forecast_Date DATE NOT NULL,
-            Forecast_Hours DECIMAL(5,2) NOT NULL,
-            FOREIGN KEY (EmployeeID) REFERENCES Timesheet.Employee(EmployeeID),
-            FOREIGN KEY (ClientID) REFERENCES Timesheet.Client(ClientID),
-            FOREIGN KEY (ActivityID) REFERENCES Timesheet.Activity(ActivityID),
-            CONSTRAINT CHK_Forecast_Hours CHECK (Forecast_Hours >= 0)
-        );
-        CREATE INDEX IX_Forecast_Employee_Date ON Timesheet.Forecast(EmployeeID, Forecast_Date);
-        PRINT 'Forecast table created.';
-    END
-
+	IF OBJECT_ID('Timesheet.Forecast', 'U') IS NULL
+	BEGIN
+		CREATE TABLE Timesheet.Forecast (
+			ForecastID INT IDENTITY(1,1) PRIMARY KEY,
+			EmployeeID INT NOT NULL,
+			ForecastMonth DATE NOT NULL,
+			ForecastedHours DECIMAL(5,2) NOT NULL,
+			ForecastedWorkDays INT NOT NULL,
+			NonBillableHours DECIMAL(5,2) NOT NULL,
+			BillableHours DECIMAL(5,2) NOT NULL,
+			TotalHours DECIMAL(5,2) NOT NULL,
+			FOREIGN KEY (EmployeeID) REFERENCES Timesheet.Employee(EmployeeID),
+			CONSTRAINT UQ_Forecast_Employee_Month UNIQUE (EmployeeID, ForecastMonth)
+		);
+		PRINT 'Forecast table created.';
+	END
     -- ProcessedFiles Table
     IF OBJECT_ID('Timesheet.ProcessedFiles', 'U') IS NULL
     BEGIN
@@ -438,3 +436,5 @@ SELECT
 FROM Timesheet.LeaveRequest lr
 JOIN Timesheet.Employee e ON lr.EmployeeID = e.EmployeeID
 JOIN Timesheet.LeaveType lt ON lr.LeaveTypeID = lt.LeaveType;
+
+--

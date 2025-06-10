@@ -1,5 +1,5 @@
 -- Staging Tables
-IF OBJECT_ID('Timesheet.Staging_LeaveRequest', 'U') IS NULL 
+IF OBJECT_ID('Timesheet.StagingLeaveRequest', 'U') IS NULL 
 BEGIN
     CREATE TABLE Timesheet.Staging_LeaveRequest (
         StagingID INT IDENTITY(1,1) PRIMARY KEY,
@@ -15,3 +15,20 @@ BEGIN
         IsValid BIT DEFAULT 0,       -- Marks valid rows
     );
 END
+GO
+IF OBJECT_ID('Timesheet.StagingForecast', 'U') IS NOT NULL
+    DROP TABLE Timesheet.StagingForecast;
+
+CREATE TABLE Timesheet.StagingForecast (
+    StagingID INT IDENTITY(1,1) PRIMARY KEY,
+    ForecastedHours NVARCHAR(50),
+    ForecastedWorkDays NVARCHAR(50),
+    BillableHours NVARCHAR(50),
+    NonBillableHours NVARCHAR(50),
+    TotalHours NVARCHAR(50),
+    EmployeeName NVARCHAR(255),
+    FileName NVARCHAR(255),
+    ProcessedDate DATETIME DEFAULT GETDATE(),
+);
+
+PRINT 'Timesheet.StagingForecast table created.';
