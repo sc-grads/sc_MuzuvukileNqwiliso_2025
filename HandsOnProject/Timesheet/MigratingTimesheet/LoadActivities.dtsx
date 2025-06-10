@@ -5,34 +5,34 @@
   DTS:CreationName="Microsoft.Package"
   DTS:CreatorComputerName="LAPTOP-62JJ49T4"
   DTS:CreatorName="LAPTOP-62JJ49T4\MuzuvukileNqwiliso"
-  DTS:DTSID="{2B38DA4D-986D-42EB-8600-4E543A27B922}"
+  DTS:DTSID="{1D49491C-E4D3-443B-B060-DE40CE4DF720}"
   DTS:ExecutableType="Microsoft.Package"
   DTS:LastModifiedProductVersion="16.0.5685.0"
   DTS:LocaleID="7177"
-  DTS:ObjectName="ImportActivities"
+  DTS:ObjectName="LoadActivities"
   DTS:PackageType="5"
-  DTS:VersionBuild="38"
-  DTS:VersionGUID="{3FC96560-5C3B-4422-AC4A-AF044DE0BB5E}">
+  DTS:VersionBuild="39"
+  DTS:VersionGUID="{2AEA303A-533B-4BB4-8941-1C4F51E4CE9F}">
   <DTS:Property
     DTS:Name="PackageFormatVersion">8</DTS:Property>
   <DTS:ConnectionManagers>
     <DTS:ConnectionManager
       DTS:refId="Package.ConnectionManagers[LocalHost.TimesheetDB]"
       DTS:CreationName="OLEDB"
-      DTS:DTSID="{2C7801E3-CCBE-4B81-97EE-149DAC6DB608}"
+      DTS:DTSID="{FAFBFD70-9B28-4D88-B61F-E690AB7A4F99}"
       DTS:ObjectName="LocalHost.TimesheetDB">
       <DTS:ObjectData>
         <DTS:ConnectionManager
           DTS:ConnectRetryCount="1"
           DTS:ConnectRetryInterval="5"
-          DTS:ConnectionString="Data Source=.;Initial Catalog=TimesheetDB;Provider=MSOLEDBSQL.1;Integrated Security=SSPI;Application Name=SSIS-ImportActivities-{2C7801E3-CCBE-4B81-97EE-149DAC6DB608}LocalHost.TimesheetDB;Auto Translate=False;" />
+          DTS:ConnectionString="Data Source=.;Initial Catalog=TimesheetDB;Provider=MSOLEDBSQL.1;Integrated Security=SSPI;Application Name=SSIS-ImportActivities-{FAFBFD70-9B28-4D88-B61F-E690AB7A4F99}LocalHost.TimesheetDB;Auto Translate=False;" />
       </DTS:ObjectData>
     </DTS:ConnectionManager>
   </DTS:ConnectionManagers>
   <DTS:Variables>
     <DTS:Variable
       DTS:CreationName=""
-      DTS:DTSID="{C18E9297-0CA2-49D1-918F-12579037400F}"
+      DTS:DTSID="{44F3C42B-68B1-4D0F-86CC-5C123CA1F3BD}"
       DTS:IncludeInDebugDump="2345"
       DTS:Namespace="User"
       DTS:ObjectName="ExcelFilePath">
@@ -41,7 +41,7 @@
     </DTS:Variable>
     <DTS:Variable
       DTS:CreationName=""
-      DTS:DTSID="{B1B9D3DB-9AAA-44F2-8A83-E232B67B2A53}"
+      DTS:DTSID="{D5A6DEE0-6936-4A95-8EF1-8D8AFBF0B704}"
       DTS:IncludeInDebugDump="2345"
       DTS:Namespace="User"
       DTS:ObjectName="ExcelRange">
@@ -50,7 +50,7 @@
     </DTS:Variable>
     <DTS:Variable
       DTS:CreationName=""
-      DTS:DTSID="{55B1A4D5-D807-4A08-8CBF-9C5022DB9EBE}"
+      DTS:DTSID="{B16B728A-64B9-484B-9022-CCD702E4E2CF}"
       DTS:IncludeInDebugDump="6789"
       DTS:Namespace="User"
       DTS:ObjectName="RowsAffectedActivity">
@@ -59,7 +59,7 @@
     </DTS:Variable>
     <DTS:Variable
       DTS:CreationName=""
-      DTS:DTSID="{FCA00EBC-DD67-4989-B8B9-9389ACCBF8B3}"
+      DTS:DTSID="{534EA6F5-2C4D-4B1D-8A51-203D2B099106}"
       DTS:IncludeInDebugDump="6789"
       DTS:Namespace="User"
       DTS:ObjectName="RowsAffectedLeave">
@@ -68,7 +68,7 @@
     </DTS:Variable>
     <DTS:Variable
       DTS:CreationName=""
-      DTS:DTSID="{18D9A8C6-CACB-497E-BC4F-1D5E18BE3EA0}"
+      DTS:DTSID="{D02F53CA-1AB0-4485-AF1C-5F73DE592839}"
       DTS:IncludeInDebugDump="2345"
       DTS:Namespace="User"
       DTS:ObjectName="SQLConnectionString">
@@ -77,7 +77,7 @@
     </DTS:Variable>
     <DTS:Variable
       DTS:CreationName=""
-      DTS:DTSID="{1F319215-8DEE-4AB5-9A11-B4BFF4C5CDD9}"
+      DTS:DTSID="{D2E09FF6-0AC7-4E56-85A8-C59E5FF0959A}"
       DTS:IncludeInDebugDump="2345"
       DTS:Namespace="User"
       DTS:ObjectName="TableName">
@@ -90,7 +90,7 @@
       DTS:refId="Package\Insert Activity and LeaveType"
       DTS:CreationName="Microsoft.ExecuteSQLTask"
       DTS:Description="Execute SQL Task"
-      DTS:DTSID="{878AF5BD-401A-4964-8D35-2560476BD9D8}"
+      DTS:DTSID="{FB672039-683D-4F52-8BB5-F6A25DA4CE40}"
       DTS:ExecutableType="Microsoft.ExecuteSQLTask"
       DTS:LocaleID="-1"
       DTS:ObjectName="Insert Activity and LeaveType"
@@ -99,7 +99,7 @@
       <DTS:Variables />
       <DTS:ObjectData>
         <SQLTask:SqlTaskData
-          SQLTask:Connection="{2C7801E3-CCBE-4B81-97EE-149DAC6DB608}"
+          SQLTask:Connection="{FAFBFD70-9B28-4D88-B61F-E690AB7A4F99}"
           SQLTask:SqlStatementSource="&#xA;-- Insert Activities (no 'leave' in name)&#xA;INSERT INTO Timesheet.Activity (ActivityName)&#xA;SELECT DISTINCT als.ActivityOrLeaveType&#xA;FROM Timesheet.ActivityLeaveStaging als&#xA;WHERE LOWER( als.ActivityOrLeaveType) NOT LIKE '%leave%'&#xA;  AND NOT EXISTS (&#xA;      SELECT 1 FROM Timesheet.Activity a&#xA;      WHERE a.ActivityName =  als.ActivityOrLeaveType&#xA;  );&#xA;&#xA;&#xA;&#xA;-- Log Activity inserts&#xA;INSERT INTO Timesheet.AuditLog (FileName, TableName, Action, RecordID, ProcessedDate)&#xA;SELECT als.FileName, 'Activity', 'Insert', NEXT VALUE FOR Timesheet.ActivitySeq - 1, GETDATE()&#xA;FROM Timesheet.ActivityLeaveStaging als&#xA;WHERE LOWER(als.ActivityOrLeaveType) NOT LIKE '%leave%'&#xA;GROUP BY als.FileName;&#xA;&#xA;&#xA;-- Insert LeaveTypes (contains 'leave')&#xA;INSERT INTO Timesheet.LeaveType (LeaveTypeName)&#xA;SELECT DISTINCT als.ActivityOrLeaveType&#xA;FROM Timesheet.ActivityLeaveStaging als&#xA;WHERE LOWER(als.ActivityOrLeaveType) LIKE '%leave%'&#xA;  AND NOT EXISTS (&#xA;      SELECT 1 FROM Timesheet.LeaveType lt&#xA;      WHERE lt.LeaveTypeName = als.ActivityOrLeaveType&#xA;  );&#xA;&#xA;&#xA;&#xA;-- Log LeaveType inserts&#xA;INSERT INTO Timesheet.AuditLog (FileName, TableName, Action, RecordID, ProcessedDate)&#xA;SELECT als.FileName, 'LeaveType', 'Insert', NEXT VALUE FOR Timesheet.LeaveTypeSeq - 1, GETDATE()&#xA;FROM Timesheet.ActivityLeaveStaging als&#xA;WHERE LOWER(als.ActivityOrLeaveType) LIKE '%leave%'&#xA;GROUP BY als.FileName;&#xA;" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
       </DTS:ObjectData>
     </DTS:Executable>
@@ -107,7 +107,7 @@
       DTS:refId="Package\Read ActivityLeave Data"
       DTS:CreationName="Microsoft.ScriptTask"
       DTS:Description="Script Task"
-      DTS:DTSID="{A65930FF-4FB6-4297-AA27-CD7399FBF62B}"
+      DTS:DTSID="{749F9F80-F9DC-4598-8E4F-B0AC0780C2B3}"
       DTS:ExecutableType="Microsoft.ScriptTask"
       DTS:LocaleID="-1"
       DTS:ObjectName="Read ActivityLeave Data"
@@ -120,6 +120,15 @@
           VSTAMinorVersion="0"
           Language="CSharp"
           ReadOnlyVariables="User::ExcelFilePath,User::ExcelRange,User::SQLConnectionString,User::TableName">
+          <ProjectItem
+            Name="Properties\Settings.settings"
+            Encoding="UTF8"><![CDATA[<?xml version='1.0' encoding='iso-8859-1'?>
+<SettingsFile xmlns="uri:settings" CurrentProfile="(Default)">
+  <Profiles>
+    <Profile Name="(Default)" />
+  </Profiles>
+  <Settings />
+</SettingsFile>]]></ProjectItem>
           <ProjectItem
             Name="Properties\Resources.resx"
             Encoding="UTF8"><![CDATA[<?xml version="1.0" encoding="utf-8"?>
@@ -239,35 +248,6 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
 </root>]]></ProjectItem>
-          <ProjectItem
-            Name="Properties\Settings.Designer.cs"
-            Encoding="UTF8"><![CDATA[//------------------------------------------------------------------------------
-// <auto-generated>
-//     This code was generated by a tool.
-//
-//     Changes to this file may cause incorrect behavior and will be lost if
-//     the code is regenerated.
-// </auto-generated>
-//------------------------------------------------------------------------------
-
-[assembly: global::System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Scope="member", Target="ST_02bc6161639641819f8532cb18c36ba5.Properties.Settings.get_Default():ST_02bc6161639641819f8532cb18c36ba5.Properties.Sett" +
-    "ings")]
-
-namespace ST_02bc6161639641819f8532cb18c36ba5.Properties {
-    
-    
-    internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase {
-        
-        [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-        private static Settings defaultInstance = new Settings();
-        
-        public static Settings Default {
-            get {
-                return defaultInstance;
-            }
-        }
-    }
-}]]></ProjectItem>
           <ProjectItem
             Name="ScriptMain.cs"
             Encoding="UTF8"><![CDATA[#region Help:  Introduction to the script task
@@ -560,6 +540,35 @@ namespace ST_02bc6161639641819f8532cb18c36ba5
   </msb:ItemGroup>
 </c:Project>]]></ProjectItem>
           <ProjectItem
+            Name="Properties\Settings.Designer.cs"
+            Encoding="UTF8"><![CDATA[//------------------------------------------------------------------------------
+// <auto-generated>
+//     This code was generated by a tool.
+//
+//     Changes to this file may cause incorrect behavior and will be lost if
+//     the code is regenerated.
+// </auto-generated>
+//------------------------------------------------------------------------------
+
+[assembly: global::System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Scope="member", Target="ST_02bc6161639641819f8532cb18c36ba5.Properties.Settings.get_Default():ST_02bc6161639641819f8532cb18c36ba5.Properties.Sett" +
+    "ings")]
+
+namespace ST_02bc6161639641819f8532cb18c36ba5.Properties {
+    
+    
+    internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase {
+        
+        [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
+        private static Settings defaultInstance = new Settings();
+        
+        public static Settings Default {
+            get {
+                return defaultInstance;
+            }
+        }
+    }
+}]]></ProjectItem>
+          <ProjectItem
             Name="Properties\AssemblyInfo.cs"
             Encoding="UTF8"><![CDATA[using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -589,15 +598,6 @@ using System.Runtime.CompilerServices;
 // by using the '*' as shown below:
 
 [assembly: AssemblyVersion("1.0.*")]]]></ProjectItem>
-          <ProjectItem
-            Name="Properties\Settings.settings"
-            Encoding="UTF8"><![CDATA[<?xml version='1.0' encoding='iso-8859-1'?>
-<SettingsFile xmlns="uri:settings" CurrentProfile="(Default)">
-  <Profiles>
-    <Profile Name="(Default)" />
-  </Profiles>
-  <Settings />
-</SettingsFile>]]></ProjectItem>
           <ProjectItem
             Name="Properties\Resources.Designer.cs"
             Encoding="UTF8"><![CDATA[//------------------------------------------------------------------------------
@@ -819,7 +819,7 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</BinaryItem>
     <DTS:PrecedenceConstraint
       DTS:refId="Package.PrecedenceConstraints[Constraint]"
       DTS:CreationName=""
-      DTS:DTSID="{05563F2D-5730-4818-BA36-337CC13F792D}"
+      DTS:DTSID="{1EFF8875-CAD7-427E-AF59-2706BF87F3DD}"
       DTS:From="Package\Read ActivityLeave Data"
       DTS:LogicalAnd="True"
       DTS:ObjectName="Constraint"
@@ -838,13 +838,13 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</BinaryItem>
       <GraphLayout
         Capacity="4" xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph" xmlns:mssgle="clr-namespace:Microsoft.SqlServer.Graph.LayoutEngine;assembly=Microsoft.SqlServer.Graph" xmlns:assembly="http://schemas.microsoft.com/winfx/2006/xaml">
         <NodeLayout
-          Size="192,41.6"
-          Id="Package\Read ActivityLeave Data"
-          TopLeft="347.499981013438,51.9999996383985" />
-        <NodeLayout
           Size="214.4,41.6"
           Id="Package\Insert Activity and LeaveType"
           TopLeft="329.999981969596,167.266665503515" />
+        <NodeLayout
+          Size="192,41.6"
+          Id="Package\Read ActivityLeave Data"
+          TopLeft="347.499981013438,51.9999996383985" />
         <EdgeLayout
           Id="Package.PrecedenceConstraints[Constraint]"
           TopLeft="440.349981491517,93.5999996383985">

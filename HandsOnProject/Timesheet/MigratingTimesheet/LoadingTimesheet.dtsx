@@ -5,14 +5,14 @@
   DTS:CreationName="Microsoft.Package"
   DTS:CreatorComputerName="LAPTOP-62JJ49T4"
   DTS:CreatorName="LAPTOP-62JJ49T4\MuzuvukileNqwiliso"
-  DTS:DTSID="{62443900-753A-4A4C-B0BB-5353CFD0725B}"
+  DTS:DTSID="{48B98D52-AD86-407B-BFB6-45EA16CB115A}"
   DTS:ExecutableType="Microsoft.Package"
   DTS:LastModifiedProductVersion="16.0.5685.0"
   DTS:LocaleID="7177"
-  DTS:ObjectName="TimesheetStaging"
+  DTS:ObjectName="LoadingTimesheet"
   DTS:PackageType="5"
-  DTS:VersionBuild="40"
-  DTS:VersionGUID="{BDBF4563-E74F-43F1-9EE1-131079A63D3D}">
+  DTS:VersionBuild="73"
+  DTS:VersionGUID="{57BA7907-19A7-413D-8B49-886BA234946C}">
   <DTS:Property
     DTS:Name="PackageFormatVersion">8</DTS:Property>
   <DTS:ConnectionManagers>
@@ -20,7 +20,7 @@
       DTS:refId="Package.ConnectionManagers[Excel Connection Manager]"
       DTS:CreationName="EXCEL"
       DTS:DelayValidation="True"
-      DTS:DTSID="{1BE50EAD-D734-4B4C-A760-7F3CD9AA53DB}"
+      DTS:DTSID="{7C2F816B-3BF6-4284-99E2-E176C730755D}"
       DTS:ObjectName="Excel Connection Manager">
       <DTS:PropertyExpression
         DTS:Name="ConnectionString">@[User::ExcelConnectionString]</DTS:PropertyExpression>
@@ -34,20 +34,20 @@
     <DTS:ConnectionManager
       DTS:refId="Package.ConnectionManagers[LocalHost.TimesheetDB]"
       DTS:CreationName="OLEDB"
-      DTS:DTSID="{4A2109E3-0D28-4887-9BCF-89C18EE42177}"
+      DTS:DTSID="{953867F6-60BC-4801-81DA-6B94055DDBB6}"
       DTS:ObjectName="LocalHost.TimesheetDB">
       <DTS:ObjectData>
         <DTS:ConnectionManager
           DTS:ConnectRetryCount="1"
           DTS:ConnectRetryInterval="5"
-          DTS:ConnectionString="Data Source=.;Initial Catalog=TimesheetDB;Provider=MSOLEDBSQL.1;Integrated Security=SSPI;Application Name=SSIS-TimesheetStaging-{4A2109E3-0D28-4887-9BCF-89C18EE42177}LocalHost.TimesheetDB;Auto Translate=False;" />
+          DTS:ConnectionString="Data Source=.;Initial Catalog=TimesheetDB;Provider=MSOLEDBSQL.1;Integrated Security=SSPI;Application Name=SSIS-TimesheetStaging-{953867F6-60BC-4801-81DA-6B94055DDBB6}LocalHost.TimesheetDB;Auto Translate=False;" />
       </DTS:ObjectData>
     </DTS:ConnectionManager>
   </DTS:ConnectionManagers>
   <DTS:Variables>
     <DTS:Variable
       DTS:CreationName=""
-      DTS:DTSID="{6AE85FC2-740C-4621-83C2-1A9A3F189F70}"
+      DTS:DTSID="{EC38A1CA-25E2-405A-9517-22CE8BA13BB1}"
       DTS:IncludeInDebugDump="2345"
       DTS:Namespace="User"
       DTS:ObjectName="EmployeeFolderPath">
@@ -57,7 +57,7 @@
     </DTS:Variable>
     <DTS:Variable
       DTS:CreationName=""
-      DTS:DTSID="{9461FBD9-F28B-4CAE-8A04-2F181AE58014}"
+      DTS:DTSID="{0FA9D28A-A4D1-4EE2-A1CC-53A67C83BEB3}"
       DTS:IncludeInDebugDump="2345"
       DTS:Namespace="User"
       DTS:ObjectName="EmployeeName">
@@ -67,7 +67,7 @@
     </DTS:Variable>
     <DTS:Variable
       DTS:CreationName=""
-      DTS:DTSID="{5FC29D23-8808-4053-B16C-C9FE17DD6893}"
+      DTS:DTSID="{B2F1BBF9-516D-479C-8DAA-C0F4E8FBD690}"
       DTS:IncludeInDebugDump="2345"
       DTS:Namespace="User"
       DTS:ObjectName="ExcelConnectionString">
@@ -76,7 +76,7 @@
     </DTS:Variable>
     <DTS:Variable
       DTS:CreationName=""
-      DTS:DTSID="{40F85449-8719-4CBA-8D48-CA39310B8218}"
+      DTS:DTSID="{7673EA2F-8533-4F4D-ABA5-77B6128CD90E}"
       DTS:IncludeInDebugDump="2345"
       DTS:Namespace="User"
       DTS:ObjectName="ExcelFilePath">
@@ -86,7 +86,7 @@
     </DTS:Variable>
     <DTS:Variable
       DTS:CreationName=""
-      DTS:DTSID="{CE9D7064-7364-4802-A1A3-9D11C23F7CC9}"
+      DTS:DTSID="{3E34E695-4A89-4705-8579-ECCE2771DD56}"
       DTS:IncludeInDebugDump="2345"
       DTS:Namespace="User"
       DTS:ObjectName="ExcelRange">
@@ -95,7 +95,7 @@
     </DTS:Variable>
     <DTS:Variable
       DTS:CreationName=""
-      DTS:DTSID="{01685F74-2259-4DB2-9F41-6D4DB198E6DF}"
+      DTS:DTSID="{775628D6-EFF5-4E49-983A-1B63CE112D7A}"
       DTS:IncludeInDebugDump="6789"
       DTS:Namespace="User"
       DTS:ObjectName="FolderList">
@@ -113,7 +113,7 @@
     </DTS:Variable>
     <DTS:Variable
       DTS:CreationName=""
-      DTS:DTSID="{72D63DD2-E84E-4B9A-92B1-D51481809B62}"
+      DTS:DTSID="{2A0ED08B-B708-4873-B2F5-9437444E3AA0}"
       DTS:IncludeInDebugDump="2345"
       DTS:Namespace="User"
       DTS:ObjectName="FolderPath">
@@ -122,7 +122,7 @@
     </DTS:Variable>
     <DTS:Variable
       DTS:CreationName=""
-      DTS:DTSID="{701A0EC3-64C9-453C-8101-8EFC89F87FB9}"
+      DTS:DTSID="{86BA2F8D-5A8A-40B2-B4BE-40FC10095C2F}"
       DTS:IncludeInDebugDump="2345"
       DTS:Namespace="User"
       DTS:ObjectName="SelectedSheet">
@@ -135,7 +135,7 @@
       DTS:refId="Package\Clean and Validate Timesheet Data"
       DTS:CreationName="Microsoft.ExecuteSQLTask"
       DTS:Description="Execute SQL Task"
-      DTS:DTSID="{CA296DBD-D257-4140-A2FB-97F23CD87798}"
+      DTS:DTSID="{AF2BBFBA-D557-4D5E-9769-4D3661189764}"
       DTS:ExecutableType="Microsoft.ExecuteSQLTask"
       DTS:LocaleID="-1"
       DTS:ObjectName="Clean and Validate Timesheet Data"
@@ -144,7 +144,7 @@
       <DTS:Variables />
       <DTS:ObjectData>
         <SQLTask:SqlTaskData
-          SQLTask:Connection="{4A2109E3-0D28-4887-9BCF-89C18EE42177}"
+          SQLTask:Connection="{953867F6-60BC-4801-81DA-6B94055DDBB6}"
           SQLTask:SqlStatementSource="-- Step 1: Clean data&#xA;UPDATE Timesheet.TimesheetStaging&#xA;SET [Date] = NULLIF(TRIM([Date]), ''),&#xA;    [DayOfWeek] = NULLIF(TRIM(UPPER([DayOfWeek])), ''),&#xA;    ClientName = NULLIF(TRIM(ClientName), ''),&#xA;    ProjectName = NULLIF(TRIM(ProjectName), ''),&#xA;    ActivityName = NULLIF(TRIM(ActivityName), ''),&#xA;    BillableStatus = NULLIF(TRIM(UPPER(BillableStatus)), ''),&#xA;    Comments = NULLIF(TRIM(Comments), ''),&#xA;    TotalHours = NULLIF(TRIM(TotalHours), ''),&#xA;    StartTime = NULLIF(TRIM(StartTime), ''),&#xA;    EndTime = NULLIF(TRIM(EndTime), ''),&#xA;    EmployeeName = NULLIF(TRIM(EmployeeName), '')&#xA;WHERE ProcessedDate &gt;= DATEADD(DAY, -1, GETDATE());&#xA;&#xA;-- Step 2: Fill forward Date&#xA;WITH DateFill AS (&#xA;    SELECT StagingID, [Date], EmployeeName, FileName,&#xA;           LAG([Date]) OVER (PARTITION BY EmployeeName, FileName ORDER BY StagingID) AS PrevDate&#xA;    FROM Timesheet.TimesheetStaging&#xA;    WHERE ProcessedDate &gt;= DATEADD(DAY, -1, GETDATE())&#xA;)&#xA;UPDATE Timesheet.TimesheetStaging&#xA;SET [Date] = COALESCE(s.[Date], df.PrevDate)&#xA;FROM Timesheet.TimesheetStaging s&#xA;JOIN DateFill df ON s.StagingID = df.StagingID&#xA;WHERE s.ProcessedDate &gt;= DATEADD(DAY, -1, GETDATE());&#xA;&#xA;-- Step 3: Validate and standardize values&#xA;UPDATE Timesheet.TimesheetStaging&#xA;SET [DayOfWeek] = CASE &#xA;        WHEN [DayOfWeek] IN ('MON', 'MONDAY') THEN 'Monday'&#xA;        WHEN [DayOfWeek] IN ('TUE', 'TUESDAY') THEN 'Tuesday'&#xA;        WHEN [DayOfWeek] IN ('WED', 'WEDNESDAY') THEN 'Wednesday'&#xA;        WHEN [DayOfWeek] IN ('THU', 'THURSDAY') THEN 'Thursday'&#xA;        WHEN [DayOfWeek] IN ('FRI', 'FRIDAY') THEN 'Friday'&#xA;        WHEN [DayOfWeek] IN ('SAT', 'SATURDAY') THEN 'Saturday'&#xA;        WHEN [DayOfWeek] IN ('SUN', 'SUNDAY') THEN 'Sunday'&#xA;        ELSE NULL&#xA;    END,&#xA;    BillableStatus = CASE &#xA;        WHEN BillableStatus IN ('BILLABLE', 'B') THEN 'Billable'&#xA;        WHEN BillableStatus IN ('NON-BILLABLE', 'NON BILLABLE', 'NB') THEN 'Non-Billable'&#xA;        ELSE NULL&#xA;    END,&#xA;    TotalHours = CASE &#xA;        WHEN ISNUMERIC(TotalHours) = 1 AND CAST(TotalHours AS DECIMAL(5,2)) &gt;= 0 &#xA;        THEN TotalHours&#xA;        ELSE NULL&#xA;    END&#xA;WHERE ProcessedDate &gt;= DATEADD(DAY, -1, GETDATE());&#xA;&#xA;-- 🔄 Step 3.5: Calculate missing TotalHours from StartTime and EndTime&#xA;UPDATE Timesheet.TimesheetStaging&#xA;SET TotalHours = &#xA;    CAST(&#xA;        CAST(DATEDIFF(MINUTE, TRY_CONVERT(TIME, StartTime), TRY_CONVERT(TIME, EndTime)) / 60.0 AS DECIMAL(5,2))&#xA;        AS NVARCHAR(10)&#xA;    )&#xA;WHERE &#xA;    (TotalHours IS NULL OR TRY_CONVERT(DECIMAL(5,2), TotalHours) IS NULL)&#xA;    AND TRY_CONVERT(TIME, StartTime) IS NOT NULL&#xA;    AND TRY_CONVERT(TIME, EndTime) IS NOT NULL&#xA;    AND DATEDIFF(MINUTE, TRY_CONVERT(TIME, StartTime), TRY_CONVERT(TIME, EndTime)) &gt;= 0&#xA;    AND ProcessedDate &gt;= DATEADD(DAY, -1, GETDATE());&#xA;&#xA;-- Step 4: Mark valid rows&#xA;UPDATE Timesheet.TimesheetStaging&#xA;SET IsValid = 1&#xA;WHERE TRY_CONVERT(DATE, [Date]) IS NOT NULL&#xA;  AND [DayOfWeek] IS NOT NULL&#xA;  AND BillableStatus IS NOT NULL&#xA;  AND ActivityName IS NOT NULL&#xA;  AND EmployeeName IS NOT NULL&#xA;  AND TRY_CONVERT(DECIMAL(5,2), TotalHours) &gt;= 0&#xA;  AND ProcessedDate &gt;= DATEADD(DAY, -1, GETDATE());&#xA;&#xA;-- Step 5: Log invalid rows&#xA;INSERT INTO Timesheet.AuditLog (&#xA;    EventType,&#xA;    Source,&#xA;    EmployeeName,&#xA;    FileName,&#xA;    ColumnName,&#xA;    Value,&#xA;    Message,&#xA;    ProcessedDate&#xA;)&#xA;SELECT &#xA;    'Error',&#xA;    'TimesheetStaging',&#xA;    EmployeeName,&#xA;    FileName,&#xA;    'Timesheet Data',&#xA;    COALESCE(ProjectName, 'Unknown') + ', ' + COALESCE(TotalHours, '0'),&#xA;    'Invalid or missing fields',&#xA;    ProcessedDate&#xA;FROM Timesheet.TimesheetStaging&#xA;WHERE IsValid = 0&#xA;  AND ProcessedDate &gt;= DATEADD(DAY, -1, GETDATE());&#xA;" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
       </DTS:ObjectData>
     </DTS:Executable>
@@ -152,7 +152,7 @@
       DTS:refId="Package\Clear Timesheet Staging Data"
       DTS:CreationName="Microsoft.ExecuteSQLTask"
       DTS:Description="Execute SQL Task"
-      DTS:DTSID="{4D1D1360-E315-4D3F-85CA-B2432F787B56}"
+      DTS:DTSID="{EEB71888-8B2A-43CF-BDE0-349591ABE7B4}"
       DTS:ExecutableType="Microsoft.ExecuteSQLTask"
       DTS:LocaleID="-1"
       DTS:ObjectName="Clear Timesheet Staging Data"
@@ -161,7 +161,7 @@
       <DTS:Variables />
       <DTS:ObjectData>
         <SQLTask:SqlTaskData
-          SQLTask:Connection="{4A2109E3-0D28-4887-9BCF-89C18EE42177}"
+          SQLTask:Connection="{953867F6-60BC-4801-81DA-6B94055DDBB6}"
           SQLTask:SqlStatementSource="TRUNCATE TABLE [TimesheetDB].[Timesheet].[TimesheetStaging]" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
       </DTS:ObjectData>
     </DTS:Executable>
@@ -169,7 +169,7 @@
       DTS:refId="Package\Load Timesheet Data"
       DTS:CreationName="Microsoft.ExecuteSQLTask"
       DTS:Description="Execute SQL Task"
-      DTS:DTSID="{51EA0D9A-6499-404A-9E64-C524B9649A13}"
+      DTS:DTSID="{2CBA765F-9EC2-4530-A416-77816A64D4D6}"
       DTS:ExecutableType="Microsoft.ExecuteSQLTask"
       DTS:LocaleID="-1"
       DTS:ObjectName="Load Timesheet Data"
@@ -178,7 +178,7 @@
       <DTS:Variables />
       <DTS:ObjectData>
         <SQLTask:SqlTaskData
-          SQLTask:Connection="{4A2109E3-0D28-4887-9BCF-89C18EE42177}"
+          SQLTask:Connection="{953867F6-60BC-4801-81DA-6B94055DDBB6}"
           SQLTask:SqlStatementSource="-- Log duplicates&#xA;INSERT INTO Timesheet.AuditLog (&#xA;    EventType, Source, EmployeeName, FileName, ColumnName, Value, Message, ProcessedDate&#xA;)&#xA;SELECT &#xA;    'Info',&#xA;    'TimesheetStaging',&#xA;    s.EmployeeName,&#xA;    s.FileName,&#xA;    'Timesheet Data',&#xA;    COALESCE(s.ProjectName, 'Unknown') + ', ' + COALESCE(s.TotalHours, '0'),&#xA;    'Duplicate timesheet entry found in Timesheet table',&#xA;    GETDATE()&#xA;FROM Timesheet.TimesheetStaging s&#xA;JOIN Timesheet.Employee e ON s.EmployeeName = e.EmployeeName&#xA;LEFT JOIN Timesheet.Client c ON s.ClientName = c.ClientName&#xA;LEFT JOIN Timesheet.Project p ON s.ProjectName = p.ProjectName AND p.ClientID = c.ClientID&#xA;JOIN Timesheet.Timesheet t ON &#xA;    e.EmployeeID = t.EmployeeID&#xA;    AND TRY_CONVERT(DATE, s.[Date]) = t.[Date]&#xA;    AND TRY_CONVERT(TIME, s.StartTime) = t.StartTime&#xA;    AND TRY_CONVERT(TIME, s.EndTime) = t.EndTime&#xA;    AND COALESCE(c.ClientID, -1) = COALESCE(t.ClientID, -1)&#xA;    AND COALESCE(p.ProjectID, -1) = COALESCE(t.ProjectID, -1)&#xA;WHERE s.IsValid = 1&#xA;  AND s.ProcessedDate &gt;= DATEADD(DAY, -1, GETDATE())&#xA;  AND e.EmployeeID IS NOT NULL;&#xA;&#xA;-- Insert non-duplicate valid rows&#xA;INSERT INTO Timesheet.Timesheet (&#xA;    EmployeeID, [Date], [DayOfWeek], ClientID, ProjectID, ActivityID, LeaveType,&#xA;    BillableStatus, Comments, TotalHours, StartTime, EndTime&#xA;)&#xA;SELECT &#xA;    e.EmployeeID,&#xA;    TRY_CONVERT(DATE, s.[Date]),&#xA;    s.[DayOfWeek],&#xA;    c.ClientID,&#xA;    p.ProjectID,&#xA;    a.ActivityID,&#xA;    lt.LeaveType,&#xA;    s.BillableStatus,&#xA;    s.Comments,&#xA;    TRY_CONVERT(DECIMAL(5,2), s.TotalHours),&#xA;    TRY_CONVERT(TIME, s.StartTime),&#xA;    TRY_CONVERT(TIME, s.EndTime)&#xA;FROM Timesheet.TimesheetStaging s&#xA;LEFT JOIN Timesheet.Employee e ON s.EmployeeName = e.EmployeeName&#xA;LEFT JOIN Timesheet.Client c ON s.ClientName = c.ClientName&#xA;LEFT JOIN Timesheet.Project p ON s.ProjectName = p.ProjectName AND p.ClientID = c.ClientID&#xA;LEFT JOIN Timesheet.Activity a ON s.ActivityName = a.ActivityName&#xA;LEFT JOIN Timesheet.LeaveType lt ON s.ActivityName = lt.LeaveTypeName&#xA;WHERE s.IsValid = 1&#xA;  AND s.ProcessedDate &gt;= DATEADD(DAY, -1, GETDATE())&#xA;  AND e.EmployeeID IS NOT NULL&#xA;  AND (&#xA;        (a.ActivityID IS NOT NULL AND lt.LeaveType IS NULL) OR&#xA;        (a.ActivityID IS NULL AND lt.LeaveType IS NOT NULL)&#xA;      )&#xA;  AND NOT EXISTS (&#xA;        SELECT 1&#xA;        FROM Timesheet.Timesheet t&#xA;        WHERE t.EmployeeID = e.EmployeeID&#xA;          AND t.[Date] = TRY_CONVERT(DATE, s.[Date])&#xA;          AND t.StartTime = TRY_CONVERT(TIME, s.StartTime)&#xA;          AND t.EndTime = TRY_CONVERT(TIME, s.EndTime)&#xA;          AND COALESCE(t.ClientID, -1) = COALESCE(c.ClientID, -1)&#xA;          AND COALESCE(t.ProjectID, -1) = COALESCE(p.ProjectID, -1)&#xA;      );&#xA;&#xA;-- Log lookup failures&#xA;INSERT INTO Timesheet.AuditLog (&#xA;    EventType, Source, EmployeeName, FileName, ColumnName, Value, Message, ProcessedDate&#xA;)&#xA;SELECT &#xA;    'Error',&#xA;    'TimesheetStaging',&#xA;    s.EmployeeName,&#xA;    s.FileName,&#xA;    CASE &#xA;        WHEN e.EmployeeID IS NULL THEN 'EmployeeName'&#xA;        WHEN c.ClientID IS NULL THEN 'ClientName'&#xA;        WHEN p.ProjectID IS NULL THEN 'ProjectName'&#xA;        WHEN a.ActivityID IS NULL AND lt.LeaveType IS NULL THEN 'ActivityName/LeaveType'&#xA;        ELSE 'Unknown'&#xA;    END AS ColumnName,&#xA;    CASE &#xA;        WHEN e.EmployeeID IS NULL THEN s.EmployeeName&#xA;        WHEN c.ClientID IS NULL THEN s.ClientName&#xA;        WHEN p.ProjectID IS NULL THEN s.ProjectName&#xA;        WHEN a.ActivityID IS NULL AND lt.LeaveType IS NULL THEN s.ActivityName&#xA;        ELSE 'Unknown'&#xA;    END AS Value,&#xA;    CASE &#xA;        WHEN e.EmployeeID IS NULL THEN 'Employee not found in reference table'&#xA;        WHEN c.ClientID IS NULL THEN 'Client not found in reference table'&#xA;        WHEN p.ProjectID IS NULL THEN 'Project not found for specified client'&#xA;        WHEN a.ActivityID IS NULL AND lt.LeaveType IS NULL THEN 'Neither Activity nor LeaveType matched'&#xA;        ELSE 'Unknown validation error'&#xA;    END AS Message,&#xA;    GETDATE()&#xA;FROM Timesheet.TimesheetStaging s&#xA;LEFT JOIN Timesheet.Employee e ON s.EmployeeName = e.EmployeeName&#xA;LEFT JOIN Timesheet.Client c ON s.ClientName = c.ClientName&#xA;LEFT JOIN Timesheet.Project p ON s.ProjectName = p.ProjectName AND p.ClientID = c.ClientID&#xA;LEFT JOIN Timesheet.Activity a ON s.ActivityName = a.ActivityName&#xA;LEFT JOIN Timesheet.LeaveType lt ON s.ActivityName = lt.LeaveTypeName&#xA;WHERE s.IsValid = 1&#xA;  AND s.ProcessedDate &gt;= DATEADD(DAY, -1, GETDATE())&#xA;  AND (&#xA;        e.EmployeeID IS NULL OR&#xA;        c.ClientID IS NULL OR&#xA;        p.ProjectID IS NULL OR&#xA;        (a.ActivityID IS NULL AND lt.LeaveType IS NULL)&#xA;      );" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
       </DTS:ObjectData>
     </DTS:Executable>
@@ -186,7 +186,7 @@
       DTS:refId="Package\Loop Employee Folders Script"
       DTS:CreationName="Microsoft.ScriptTask"
       DTS:Description="Script Task"
-      DTS:DTSID="{28eafddd-20fa-450f-a9c6-9da1c5905944}"
+      DTS:DTSID="{F1C6B180-43C7-45B6-A1C5-A472FC1154C3}"
       DTS:ExecutableType="Microsoft.ScriptTask"
       DTS:LocaleID="-1"
       DTS:ObjectName="Loop Employee Folders Script"
@@ -756,13 +756,13 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==</BinaryItem>
       DTS:refId="Package\Loop Through Employee Folders ADO"
       DTS:CreationName="STOCK:FOREACHLOOP"
       DTS:Description="Foreach Loop Container"
-      DTS:DTSID="{733a1ac0-8154-40c2-bff1-4b029502f24a}"
+      DTS:DTSID="{DDDC8665-56D7-4661-B9D1-8AFC0DA7301D}"
       DTS:ExecutableType="STOCK:FOREACHLOOP"
       DTS:LocaleID="-1"
       DTS:ObjectName="Loop Through Employee Folders ADO">
       <DTS:ForEachEnumerator
         DTS:CreationName="Microsoft.ForEachADOEnumerator"
-        DTS:DTSID="{73896d76-824d-461b-b707-4789e5dc8e77}"
+        DTS:DTSID="{5CB7F1BB-DDD8-464A-80E0-5AC4270FD9CD}"
         DTS:ObjectName="{A3FEC5D4-4251-42A6-AB24-B26F02C9E470}">
         <DTS:ObjectData>
           <FEEADO
@@ -779,7 +779,7 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==</BinaryItem>
           DTS:refId="Package\Loop Through Employee Folders ADO\Extract Employee Names"
           DTS:CreationName="Microsoft.ScriptTask"
           DTS:Description="Script Task"
-          DTS:DTSID="{dcfe0910-e2c4-4904-a804-22dcb2350943}"
+          DTS:DTSID="{8F256340-7633-4EA0-BE25-0B101C8BC722}"
           DTS:ExecutableType="Microsoft.ScriptTask"
           DTS:LocaleID="-1"
           DTS:ObjectName="Extract Employee Names"
@@ -1384,13 +1384,13 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA</BinaryItem>
           DTS:refId="Package\Loop Through Employee Folders ADO\Loop through each Excel File"
           DTS:CreationName="STOCK:FOREACHLOOP"
           DTS:Description="Foreach Loop Container"
-          DTS:DTSID="{d3ee58c1-b5aa-44e7-90c7-77fe7e30d17b}"
+          DTS:DTSID="{580FDCEF-B04C-403A-B324-DE546BC64C3F}"
           DTS:ExecutableType="STOCK:FOREACHLOOP"
           DTS:LocaleID="-1"
           DTS:ObjectName="Loop through each Excel File">
           <DTS:ForEachEnumerator
             DTS:CreationName="Microsoft.ForEachFileEnumerator"
-            DTS:DTSID="{0392e90a-1bc2-4367-aad8-70182ec7854e}"
+            DTS:DTSID="{6F5F2D21-10F4-45DE-850E-702B886B5923}"
             DTS:ObjectName="{33912B39-F78A-4A7B-BC4C-010A56CAD77A}">
             <DTS:PropertyExpression
               DTS:Name="Directory">@[User::EmployeeFolderPath]</DTS:PropertyExpression>
@@ -1416,7 +1416,7 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA</BinaryItem>
               DTS:refId="Package\Loop Through Employee Folders ADO\Loop through each Excel File\Load Raw Data"
               DTS:CreationName="Microsoft.Pipeline"
               DTS:Description="Data Flow Task"
-              DTS:DTSID="{1DDCC501-FD15-4B31-9D0D-3BFBF62AE081}"
+              DTS:DTSID="{0D6C0196-5791-4D38-9C19-002EA5DEA211}"
               DTS:ExecutableType="Microsoft.Pipeline"
               DTS:LocaleID="-1"
               DTS:ObjectName="Load Raw Data"
@@ -2548,7 +2548,7 @@ where [refTable].[StartTime] = ? and [refTable].[EndTime] = ? and [refTable].[Em
               DTS:refId="Package\Loop Through Employee Folders ADO\Loop through each Excel File\Select Month Sheet"
               DTS:CreationName="Microsoft.ScriptTask"
               DTS:Description="Script Task"
-              DTS:DTSID="{dc2d2a3a-a8ac-4efb-b943-569b5a80cba9}"
+              DTS:DTSID="{AE3D2C96-57BF-412D-A8BC-EB5280469655}"
               DTS:ExecutableType="Microsoft.ScriptTask"
               DTS:LocaleID="-1"
               DTS:ObjectName="Select Month Sheet"
@@ -2563,14 +2563,35 @@ where [refTable].[StartTime] = ? and [refTable].[EndTime] = ? and [refTable].[Em
                   ReadOnlyVariables="User::ExcelFilePath"
                   ReadWriteVariables="User::ExcelConnectionString,User::SelectedSheet">
                   <ProjectItem
-                    Name="Properties\Settings.settings"
-                    Encoding="UTF8"><![CDATA[<?xml version='1.0' encoding='iso-8859-1'?>
-<SettingsFile xmlns="uri:settings" CurrentProfile="(Default)">
-  <Profiles>
-    <Profile Name="(Default)" />
-  </Profiles>
-  <Settings />
-</SettingsFile>]]></ProjectItem>
+                    Name="Properties\AssemblyInfo.cs"
+                    Encoding="UTF8"><![CDATA[using System.Reflection;
+using System.Runtime.CompilerServices;
+
+//
+// General Information about an assembly is controlled through the following 
+// set of attributes. Change these attribute values to modify the information
+// associated with an assembly.
+//
+[assembly: AssemblyTitle("ST_a136fd41f7184a7a96b8e8a480790b29")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("HP")]
+[assembly: AssemblyProduct("ST_a136fd41f7184a7a96b8e8a480790b29")]
+[assembly: AssemblyCopyright("Copyright @ HP 2025")]
+[assembly: AssemblyTrademark("")]
+[assembly: AssemblyCulture("")]
+//
+// Version information for an assembly consists of the following four values:
+//
+//      Major Version
+//      Minor Version 
+//      Build Number
+//      Revision
+//
+// You can specify all the values or you can default the Revision and Build Numbers 
+// by using the '*' as shown below:
+
+[assembly: AssemblyVersion("1.0.*")]]]></ProjectItem>
                   <ProjectItem
                     Name="Properties\Resources.resx"
                     Encoding="UTF8"><![CDATA[<?xml version="1.0" encoding="utf-8"?>
@@ -2691,35 +2712,6 @@ where [refTable].[StartTime] = ? and [refTable].[EndTime] = ? and [refTable].[Em
   </resheader>
 </root>]]></ProjectItem>
                   <ProjectItem
-                    Name="Properties\Settings.Designer.cs"
-                    Encoding="UTF8"><![CDATA[//------------------------------------------------------------------------------
-// <auto-generated>
-//     This code was generated by a tool.
-//
-//     Changes to this file may cause incorrect behavior and will be lost if
-//     the code is regenerated.
-// </auto-generated>
-//------------------------------------------------------------------------------
-
-[assembly: global::System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Scope="member", Target="ST_a136fd41f7184a7a96b8e8a480790b29.Properties.Settings.get_Default():ST_a136fd41f7184a7a96b8e8a480790b29.Properties.Sett" +
-    "ings")]
-
-namespace ST_a136fd41f7184a7a96b8e8a480790b29.Properties {
-    
-    
-    internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase {
-        
-        [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-        private static Settings defaultInstance = new Settings();
-        
-        public static Settings Default {
-            get {
-                return defaultInstance;
-            }
-        }
-    }
-}]]></ProjectItem>
-                  <ProjectItem
                     Name="ScriptMain.cs"
                     Encoding="UTF8"><![CDATA[#region Help:  Introduction to the script task
 /* The Script Task allows you to perform virtually any operation that can be accomplished in
@@ -2750,8 +2742,8 @@ namespace ST_a136fd41f7184a7a96b8e8a480790b29
     /// or parent of this class.
     /// </summary>
 	[Microsoft.SqlServer.Dts.Tasks.ScriptTask.SSISScriptTaskEntryPointAttribute]
-	public partial class ScriptMain : Microsoft.SqlServer.Dts.Tasks.ScriptTask.VSTARTScriptObjectModelBase
-	{
+    public partial class ScriptMain : Microsoft.SqlServer.Dts.Tasks.ScriptTask.VSTARTScriptObjectModelBase
+    {
         #region Help:  Using Integration Services variables and parameters in a script
         /* To use a variable in this script, first ensure that the variable has been added to 
          * either the list contained in the ReadOnlyVariables property or the list contained in 
@@ -2817,11 +2809,34 @@ namespace ST_a136fd41f7184a7a96b8e8a480790b29
         /// Before returning from this method, set the value of Dts.TaskResult to indicate success or failure.
         /// To open Help, press F1.
         /// </summary>
+        /// 
+
+
+
+        private DateTime firstValidDate = DateTime.MinValue;
+        private int targetYear = 0;
+        private int targetMonth = 0;
+        private bool firstDateFound = false;
+        private int validRowCount = 0;
+
         public void Main()
         {
             string logFilePath = @"C:\Timesheets\Log.txt";
             StringBuilder debugInfo = new StringBuilder();
             debugInfo.AppendLine($"{DateTime.Now}: Starting Excel sheet range test");
+
+            // Clear the log
+            try
+            {
+                File.WriteAllText(logFilePath, string.Empty);
+                debugInfo.AppendLine("Log file cleared.");
+            }
+            catch (Exception ex)
+            {
+                File.WriteAllText(logFilePath, $"Error clearing log: {ex.Message}");
+                Dts.TaskResult = (int)ScriptResults.Failure;
+                return;
+            }
 
             try
             {
@@ -2858,9 +2873,8 @@ namespace ST_a136fd41f7184a7a96b8e8a480790b29
                 }
 
                 string excelConnStr = $"Provider=Microsoft.ACE.OLEDB.12.0;Data Source={excelFilePath};Extended Properties=\"Excel 12.0 Xml;HDR=YES;IMEX=1\";";
-                string validSheetRange = string.Empty;
+                string validSheetRange = $"{detectedMonth}$A8:J1000";
                 string firstDateValue = string.Empty;
-                int daysInMonth = 0;
                 bool isValidDate = false;
                 DateTime parsedDate = DateTime.MinValue;
 
@@ -2893,7 +2907,6 @@ namespace ST_a136fd41f7184a7a96b8e8a480790b29
 
                     string headerRange = $"{sheetName}A8:J8";
                     string exampleCheckRange = $"{sheetName}C8:D14";
-                    string fullDataRange;
 
                     try
                     {
@@ -2982,10 +2995,9 @@ namespace ST_a136fd41f7184a7a96b8e8a480790b29
                             return;
                         }
 
-                        // 4. GET FIRST DATE AND CALCULATE DAYS IN MONTH
+                        // 4. GET FIRST DATE AND CALCULATE TARGET MONTH/YEAR
                         debugInfo.AppendLine("Retrieving first Date value...");
-                        // Use a temporary range to get the first date
-                        var dateCmd = new OleDbCommand($"SELECT TOP 1 [Date] FROM [{sheetName}A8:J10] WHERE [Date] IS NOT NULL", conn);
+                        var dateCmd = new OleDbCommand($"SELECT TOP 1 [Date] FROM [{sheetName}A8:J15] WHERE [Date] IS NOT NULL", conn);
                         object dateResult = dateCmd.ExecuteScalar();
 
                         if (dateResult != null)
@@ -3013,36 +3025,13 @@ namespace ST_a136fd41f7184a7a96b8e8a480790b29
 
                             if (isValidDate)
                             {
-                                daysInMonth = DateTime.DaysInMonth(parsedDate.Year, parsedDate.Month);
-                                // Set dynamic range based on days in month
-                                int endRow = 8 + daysInMonth; // Header row (8) + days in month
-                                fullDataRange = $"{sheetName}A8:J{endRow}";
-                                validSheetRange = fullDataRange;
-                                debugInfo.AppendLine($"VALID SHEET FOUND: {validSheetRange}");
-
-                                debugInfo.AppendLine($"Valid date detected: {parsedDate.ToString("yyyy-MM-dd")}");
-                                debugInfo.AppendLine($"Month: {parsedDate.ToString("MMMM")}");
-                                debugInfo.AppendLine($"Days in month: {daysInMonth}");
-
-                                // Special handling for February
-                                if (parsedDate.Month == 2)
-                                {
-                                    debugInfo.AppendLine("February detected - checking for leap year");
-                                    if (daysInMonth == 29)
-                                    {
-                                        debugInfo.AppendLine("Leap year - 29 days in February");
-                                    }
-                                    else
-                                    {
-                                        debugInfo.AppendLine("Not a leap year - 28 days in February");
-                                    }
-                                }
-
-                                //MessageBox.Show($"First valid date: {parsedDate.ToString("yyyy-MM-dd")}\n" +
-                                //                $"Month: {parsedDate.ToString("MMMM")}\n" +
-                                //                $"Days in month: {daysInMonth}\n" +
-                                //                $"Data Range: {validSheetRange}",
-                                //                "Date Information");
+                                firstValidDate = parsedDate;
+                                targetYear = parsedDate.Year;
+                                targetMonth = Array.IndexOf(monthSheets, detectedMonth) + 1; // Match filename month
+                                firstDateFound = true;
+                                debugInfo.AppendLine($"Valid date detected: {firstValidDate.ToString("yyyy-MM-dd")}");
+                                debugInfo.AppendLine($"Target Month: {detectedMonth}");
+                                debugInfo.AppendLine($"Target Year: {targetYear}");
                             }
                             else
                             {
@@ -3055,6 +3044,78 @@ namespace ST_a136fd41f7184a7a96b8e8a480790b29
                         {
                             debugInfo.AppendLine("No Date values found in the sheet");
                             MessageBox.Show("No Date values found in the sheet", "Date Value Not Found");
+                        }
+
+                        if (firstDateFound)
+                        {
+                            debugInfo.AppendLine("Scanning for valid rows...");
+
+                            var scanCmd = new OleDbCommand($"SELECT * FROM [{validSheetRange}]", conn);
+                            var adapter = new OleDbDataAdapter(scanCmd);
+                            var dataTable = new DataTable();
+                            adapter.Fill(dataTable);
+
+                            int emptyRowStreak = 0;
+                            const int maxEmptyRows = 5;
+                            int currentRow = 9;
+
+                            foreach (DataRow row in dataTable.Rows)
+                            {
+                                // Footer logic
+                                if (row.ItemArray.Any(cell => cell?.ToString().ToLower().Contains("forecast") == true ||
+                                                              cell?.ToString().ToLower().Contains("billable hours") == true ||
+                                                              cell?.ToString().ToLower().Contains("non billable hours") == true ||
+                                                              cell?.ToString().ToLower().Contains("line manager") == true))
+                                {
+                                    debugInfo.AppendLine($"Row {currentRow}: Footer detected. Stopping.");
+                                    break;
+                                }
+
+                                string dateValue = row[0]?.ToString();
+                                if (!string.IsNullOrWhiteSpace(dateValue))
+                                {
+                                    DateTime rowDate;
+                                    bool isRowValid = double.TryParse(dateValue, out double serialDate)
+                                        ? TryParseExcelDate(serialDate, out rowDate)
+                                        : DateTime.TryParse(dateValue, CultureInfo.InvariantCulture, DateTimeStyles.None, out rowDate);
+
+                                    if (isRowValid && rowDate.Month == targetMonth && rowDate.Year == targetYear)
+                                    {
+                                        validRowCount++;
+                                        emptyRowStreak = 0;
+                                        debugInfo.AppendLine($"Row {currentRow}: Valid (Date: {rowDate:yyyy-MM-dd})");
+                                    }
+                                    else
+                                    {
+                                        emptyRowStreak++;
+                                        debugInfo.AppendLine($"Row {currentRow}: Invalid or out-of-month date.");
+                                    }
+                                }
+                                else
+                                {
+                                    emptyRowStreak++;
+                                    debugInfo.AppendLine($"Row {currentRow}: Empty date.");
+                                }
+
+                                if (emptyRowStreak >= maxEmptyRows)
+                                {
+                                    debugInfo.AppendLine($"Stopping scan after {maxEmptyRows} consecutive empty rows.");
+                                    break;
+                                }
+
+                                currentRow++;
+                            }
+
+                            // Update validSheetRange to the last valid row
+                            int lastValidRow = currentRow - emptyRowStreak -1;
+                            validSheetRange = $"{sheetName}A8:J{lastValidRow}";
+                            debugInfo.AppendLine($"Adjusted valid sheet range: {validSheetRange}");
+                        }
+
+                        // Log the valid file name if first date is found
+                        if (firstDateFound)
+                        {
+                            debugInfo.AppendLine($"Valid file: {Path.GetFileName(excelFilePath)}");
                         }
                     }
                     catch (Exception ex)
@@ -3077,14 +3138,13 @@ namespace ST_a136fd41f7184a7a96b8e8a480790b29
                         return;
                     }
 
-                    // Store all relevant information in SSIS variables
+            
                     Dts.Variables["User::SelectedSheet"].Value = validSheetRange;
                     Dts.Variables["User::ExcelConnectionString"].Value = excelConnStr;
-                    //Dts.Variables["User::FirstDateValue"].Value = firstDateValue;
-                    //Dts.Variables["User::ParsedDate"].Value = isValidDate ? parsedDate.ToString("yyyy-MM-dd") : string.Empty;
-                    //Dts.Variables["User::DaysInMonth"].Value = daysInMonth;
-                    //Dts.Variables["User::IsValidDate"].Value = isValidDate;
+                    
 
+                    debugInfo.AppendLine($"Expected valid rows for file '{fileName}': {validRowCount}");
+                    File.WriteAllText(logFilePath, debugInfo.ToString());
                     debugInfo.AppendLine($"\nUsing sheet range: {validSheetRange}");
                     Dts.TaskResult = (int)ScriptResults.Success;
                 }
@@ -3099,76 +3159,182 @@ namespace ST_a136fd41f7184a7a96b8e8a480790b29
             }
         }
 
-
-        #region ScriptResults declaration
-        /// <summary>
-        /// This enum provides a convenient shorthand within the scope of this class for setting the
-        /// result of the script.
-        /// 
-        /// This code was generated automatically.
-        /// </summary>
-        enum ScriptResults
+        private bool TryParseExcelDate(double serialDate, out DateTime date)
         {
-            Success = Microsoft.SqlServer.Dts.Runtime.DTSExecResult.Success,
-            Failure = Microsoft.SqlServer.Dts.Runtime.DTSExecResult.Failure
-        };
-        #endregion
+            try
+            {
+                date = DateTime.FromOADate(serialDate);
+                return date.Year >= 1900;
+            }
+            catch
+            {
+                date = DateTime.MinValue;
+                return false;
+            }
+        }
 
-	}
+    }
+
+
+    #region ScriptResults declaration
+    /// <summary>
+    /// This enum provides a convenient shorthand within the scope of this class for setting the
+    /// result of the script.
+    /// 
+    /// This code was generated automatically.
+    /// </summary>
+    enum ScriptResults
+    {
+        Success = Microsoft.SqlServer.Dts.Runtime.DTSExecResult.Success,
+        Failure = Microsoft.SqlServer.Dts.Runtime.DTSExecResult.Failure
+    };
+    #endregion
+    
 }]]></ProjectItem>
+                  <ProjectItem
+                    Name="ST_336a9463f4a8472591ee1c7d192a0a94.csproj"
+                    Encoding="UTF8"><![CDATA[<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <ProjectTypeGuids>{30D016F9-3734-4E33-A861-5E7D899E18F3};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{3FE4EA49-40F9-438C-A0E3-7CB51A234E05}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>ST_a136fd41f7184a7a96b8e8a480790b29</RootNamespace>
+    <AssemblyName>ST_336a9463f4a8472591ee1c7d192a0a94</AssemblyName>
+    <TargetFrameworkVersion>v4.7</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <ResolveAssemblyReferenceIgnoreTargetFrameworkAttributeVersionMismatch>true</ResolveAssemblyReferenceIgnoreTargetFrameworkAttributeVersionMismatch>
+    <TargetFrameworkProfile></TargetFrameworkProfile>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>.\bin\Debug\</OutputPath>
+    <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <DebugSymbols>false</DebugSymbols>
+    <Optimize>true</Optimize>
+    <OutputPath>.\bin\Release\</OutputPath>
+    <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+    <Reference Include="Microsoft.SqlServer.ManagedDTS, Version=16.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91" />
+    <Reference Include="Microsoft.SqlServer.ScriptTask, Version=16.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91" />
+  </ItemGroup>
+  <ItemGroup>
+    <AppDesigner Include="Properties\" />
+    <Compile Include="Properties\AssemblyInfo.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+    </Compile>
+    <Compile Include="ScriptMain.cs">
+      <SubType>Code</SubType>
+    </Compile>
+  </ItemGroup>
+  <!-- Include the build rules for a C# project.-->
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <ProjectExtensions>
+    <VisualStudio>
+      <FlavorProperties GUID="{30D016F9-3734-4E33-A861-5E7D899E18F3}">
+        <ProjectProperties HostName="VSTAHostName" HostPackage="{B3A685AA-7EAF-4BC6-9940-57959FA5AC07}" ApplicationType="usd" Language="cs" TemplatesPath="" />
+        <Host Name="ScriptTask" />
+        <ProjectClient>
+          <HostIdentifier>SSIS_ST160</HostIdentifier>
+        </ProjectClient>
+      </FlavorProperties>
+    </VisualStudio>
+  </ProjectExtensions>
+</Project>]]></ProjectItem>
                   <ProjectItem
                     Name="Project"
                     Encoding="UTF16LE"><![CDATA[<?xml version="1.0" encoding="UTF-16" standalone="yes"?>
 <c:Project xmlns:c="http://schemas.microsoft.com/codeprojectml/2010/08/main" xmlns:msb="http://schemas.microsoft.com/developer/msbuild/2003" runtimeVersion="4.0" schemaVersion="1.0">
   <msb:PropertyGroup>
-    <msb:CodeName>ST_a136fd41f7184a7a96b8e8a480790b29</msb:CodeName>
+    <msb:CodeName>ST_336a9463f4a8472591ee1c7d192a0a94</msb:CodeName>
     <msb:Language>msBuild</msb:Language>
-    <msb:DisplayName>ST_a136fd41f7184a7a96b8e8a480790b29</msb:DisplayName>
-    <msb:ProjectId>{49D544A7-141D-46E1-A3B4-0E85D5A3702E}</msb:ProjectId>
+    <msb:DisplayName>ST_336a9463f4a8472591ee1c7d192a0a94</msb:DisplayName>
+    <msb:ProjectId>{BDD112C7-5489-426D-857C-8B4D19625A44}</msb:ProjectId>
   </msb:PropertyGroup>
   <msb:ItemGroup>
     <msb:Project Include="ST_336a9463f4a8472591ee1c7d192a0a94.csproj" />
-    <msb:File Include="Properties\Settings.Designer.cs" />
     <msb:File Include="Properties\Settings.settings" />
     <msb:File Include="Properties\AssemblyInfo.cs" />
     <msb:File Include="Properties\Resources.resx" />
     <msb:File Include="Properties\Resources.Designer.cs" />
+    <msb:File Include="Properties\Settings.Designer.cs" />
     <msb:File Include="ScriptMain.cs" />
   </msb:ItemGroup>
 </c:Project>]]></ProjectItem>
                   <ProjectItem
-                    Name="Properties\AssemblyInfo.cs"
-                    Encoding="UTF8"><![CDATA[using System.Reflection;
-using System.Runtime.CompilerServices;
+                    Name="Properties\Settings.Designer.cs"
+                    Encoding="UTF8"><![CDATA[//------------------------------------------------------------------------------
+// <auto-generated>
+//     This code was generated by a tool.
+//
+//     Changes to this file may cause incorrect behavior and will be lost if
+//     the code is regenerated.
+// </auto-generated>
+//------------------------------------------------------------------------------
 
-//
-// General Information about an assembly is controlled through the following 
-// set of attributes. Change these attribute values to modify the information
-// associated with an assembly.
-//
-[assembly: AssemblyTitle("ST_a136fd41f7184a7a96b8e8a480790b29")]
-[assembly: AssemblyDescription("")]
-[assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("HP")]
-[assembly: AssemblyProduct("ST_a136fd41f7184a7a96b8e8a480790b29")]
-[assembly: AssemblyCopyright("Copyright @ HP 2025")]
-[assembly: AssemblyTrademark("")]
-[assembly: AssemblyCulture("")]
-//
-// Version information for an assembly consists of the following four values:
-//
-//      Major Version
-//      Minor Version 
-//      Build Number
-//      Revision
-//
-// You can specify all the values or you can default the Revision and Build Numbers 
-// by using the '*' as shown below:
+[assembly: global::System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Scope="member", Target="ST_a136fd41f7184a7a96b8e8a480790b29.Properties.Settings.get_Default():ST_a136fd41f7184a7a96b8e8a480790b29.Properties.Sett" +
+    "ings")]
 
-[assembly: AssemblyVersion("1.0.*")]]]></ProjectItem>
+namespace ST_a136fd41f7184a7a96b8e8a480790b29.Properties {
+    
+    
+    internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase {
+        
+        [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
+        private static Settings defaultInstance = new Settings();
+        
+        public static Settings Default {
+            get {
+                return defaultInstance;
+            }
+        }
+    }
+}]]></ProjectItem>
                   <ProjectItem
-                    Name="ST_336a9463f4a8472591ee1c7d192a0a94.csproj"
-                    Encoding="UTF8"><![CDATA[<?xml version="1.0" encoding="utf-8"?><Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003"><PropertyGroup><ProjectTypeGuids>{30D016F9-3734-4E33-A861-5E7D899E18F3};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids><Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration><Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform><ProductVersion>8.0.30703</ProductVersion><SchemaVersion>2.0</SchemaVersion><ProjectGuid>{3FE4EA49-40F9-438C-A0E3-7CB51A234E05}</ProjectGuid><OutputType>Library</OutputType><AppDesignerFolder>Properties</AppDesignerFolder><RootNamespace>ST_a136fd41f7184a7a96b8e8a480790b29</RootNamespace><AssemblyName>ST_336a9463f4a8472591ee1c7d192a0a94</AssemblyName><TargetFrameworkVersion>v4.7</TargetFrameworkVersion><FileAlignment>512</FileAlignment><ResolveAssemblyReferenceIgnoreTargetFrameworkAttributeVersionMismatch>true</ResolveAssemblyReferenceIgnoreTargetFrameworkAttributeVersionMismatch><TargetFrameworkProfile></TargetFrameworkProfile></PropertyGroup><PropertyGroup Condition=" '$(Configuration)' == 'Debug' "><DebugSymbols>true</DebugSymbols><DebugType>full</DebugType><Optimize>false</Optimize><OutputPath>.\bin\Debug\</OutputPath><EnableUnmanagedDebugging>false</EnableUnmanagedDebugging><DefineConstants>DEBUG;TRACE</DefineConstants><ErrorReport>prompt</ErrorReport><WarningLevel>4</WarningLevel></PropertyGroup><PropertyGroup Condition=" '$(Configuration)' == 'Release' "><DebugSymbols>false</DebugSymbols><Optimize>true</Optimize><OutputPath>.\bin\Release\</OutputPath><EnableUnmanagedDebugging>false</EnableUnmanagedDebugging><DefineConstants>TRACE</DefineConstants><ErrorReport>prompt</ErrorReport><WarningLevel>4</WarningLevel></PropertyGroup><ItemGroup><Reference Include="System" /><Reference Include="System.Data" /><Reference Include="System.Windows.Forms" /><Reference Include="System.Xml" /><Reference Include="Microsoft.SqlServer.ManagedDTS, Version=16.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91" /><Reference Include="Microsoft.SqlServer.ScriptTask, Version=16.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91" /></ItemGroup><ItemGroup><AppDesigner Include="Properties\" /><Compile Include="Properties\AssemblyInfo.cs"><SubType>Code</SubType></Compile><EmbeddedResource Include="Properties\Resources.resx"><Generator>ResXFileCodeGenerator</Generator><LastGenOutput>Resources.Designer.cs</LastGenOutput></EmbeddedResource><Compile Include="Properties\Resources.Designer.cs"><AutoGen>True</AutoGen><DependentUpon>Resources.resx</DependentUpon></Compile><None Include="Properties\Settings.settings"><Generator>SettingsSingleFileGenerator</Generator><LastGenOutput>Settings.Designer.cs</LastGenOutput></None><Compile Include="Properties\Settings.Designer.cs"><AutoGen>True</AutoGen><DependentUpon>Settings.settings</DependentUpon></Compile><Compile Include="ScriptMain.cs"><SubType>Code</SubType></Compile></ItemGroup><!-- Include the build rules for a C# project.--><Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" /><ProjectExtensions><VisualStudio><FlavorProperties GUID="{30D016F9-3734-4E33-A861-5E7D899E18F3}"><ProjectProperties HostName="VSTAHostName" HostPackage="{B3A685AA-7EAF-4BC6-9940-57959FA5AC07}" ApplicationType="usd" Language="cs" TemplatesPath="" /><Host Name="ScriptTask" /><ProjectClient><HostIdentifier>SSIS_ST160</HostIdentifier></ProjectClient></FlavorProperties></VisualStudio></ProjectExtensions></Project>]]></ProjectItem>
+                    Name="Properties\Settings.settings"
+                    Encoding="UTF8"><![CDATA[<?xml version='1.0' encoding='iso-8859-1'?>
+<SettingsFile xmlns="uri:settings" CurrentProfile="(Default)">
+  <Profiles>
+    <Profile Name="(Default)" />
+  </Profiles>
+  <Settings />
+</SettingsFile>]]></ProjectItem>
                   <ProjectItem
                     Name="Properties\Resources.Designer.cs"
                     Encoding="UTF8"><![CDATA[//------------------------------------------------------------------------------
@@ -3238,258 +3404,294 @@ namespace ST_a136fd41f7184a7a96b8e8a480790b29.Properties {
     }
 }]]></ProjectItem>
                   <BinaryItem
-                    Name="ST_a136fd41f7184a7a96b8e8a480790b29.dll">TVqQAAMAAAAEAAAA//8AALgAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+                    Name="ST_336a9463f4a8472591ee1c7d192a0a94.dll">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
-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
+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
-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
+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
-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
-AAAAAAYA0AMyBwYAXwQyBwYAHAMfBw8ApgcAAAYASQMPBgYAswMPBgYAlAMPBgYARgQPBgYA8AMP
-BgYACQQPBgYAYAMPBgYAewOoBAoAJAQFBQoAbwIFBQYAxQb4CAYA5QGMBQ4ASAbNAA4AYwHBAAYA
-+AY5CA4AGgnBAAYAggGMBQYATwDoAAYAlgiMBQYAWAaMBQYAmAWMBQYA5AIyBwYA/wIfBwYA1wZS
-BwYAhgb6BRIAzwJABRIAMANABRIApgLlBQYAxASMBQoALgUFBRYA7wfuARYAbQHuAQYAywSQAAYA
-XACMBRoAdwGSBgYAQQDoAB4AJwkYCB4AuAgYCAYAsgGQAA4ASwZiBg4ABwHNAAYAEgGMBQ4ANgbB
-AA4AiwLBAAYAdgE5CA4AFwHNAA4A5wbNAA4A6gZiBg4AIQbBAAYAVgCMBQ4AvgXBAAYAdQaMBQ4A
-GgFiBgYAtQaMBQYA+Qf6BQYAGQKMBQYAjgGMBQYANgkPBgAAAACHAAAAAAABAAEAAQAQAK4FYwA5
-AAEAAQAAABAAWQe1B10AAQADAAABEAAICLUHgQADAAcAAwEAAFwIAABlAAQACgADARAAAQAAAF0A
-BwAKAAMBEAAhAAAAXQAIAAwAEQCdBQECEQBKAgUCEQAzAQkCBga5AA0CVoBMCBACVoAqAhACBgDD
-AdMABgDbAdMAUCAAAAAAhgC0BQYAAQBcKgAAAACGGBIHBgABAGQqAAAAAIMYEgcGAAEAbCoAAAAA
-kwjTBhQCAQCYKgAAAACTCDICiwEBAJ8qAAAAAJMIPgIZAgEApyoAAAAAlgidCB8CAgCuKgAAAACG
-GBIHBgACALYqAAAAAJEYGAckAgIAZCoAAAAAhhgSBwYAAgDCKgAAAACDABYAKAICAGQqAAAAAIYY
-EgcGAAMA1yoAAAAAgwA2AC0CAwAAAAEAmgQAAAEAmwUAAAEAHQcJABIHAQARABIHBgAZABIHCgAp
-ABIHEAAxABIHEAA5ABIHEABBABIHEABJABIHEABRABIHEABZABIHEABhABIHEABpABIHBgDRABIH
-BgDZABIHBgD5ABIHFQB5ABIHBgCBABIJWwAJAYEIYAB5AA4CZgBxAFQIbAARAesHcgAZAYMFeAAh
-AX0EfwC5AMIEgwApAckFhwAMABIHlAA5AakImgAJAUMJswAJAXoIuABJASIJvgBZAQQJxgARAcUI
-AQBZAWoIswAJAXoIzAAJAUsJ0wCBAJEE1gCJABIHEABhAakFBgApAbcBhwBpAeQH2gCJAE8B3wCR
-AHEI6QCBAQQH7wCZANQIfwChAIMF9ACZAO8I+QCpAL4CBgA5AeoI/QAUABIHlAA5AT8JGQGRARIH
-LQGZARIHNAGRABIHBgChAX4FOwEcABIHBgCRAC0IRwGBAeAITQEJAYEIUQEcAAMBWAGpAYMFXgG5
-AcwBgwAJAZMFgwAJAREIZQEJAYEIbQEJAbkFdQF5AYMFgAGhAIMFhgHJAacGfwDpAFoCiwGBAIgI
-kAGBAMYCoAGBAMIErgGBAJ4GTQGBANAETQGBANoEswHBAEMBgwAJAXoIuQEhAYcEwQHBACQBgwBx
-ABIHBgC5ABIHBgDhAaABxgHhATIJzwHhABIH1QEBARIHBgAJAaAE3QEIABQA9wEIABgA/AEpAHsA
-agIuAAsAQgIuABMASwIuABsAagIuACMAcwIuACsAnAIuADMAnAIuADsAogIuAEMAcwIuAEsAqgIu
-AFMAnAIuAFsAwwJDAGMA/AFJAHsAagJhAGsA/AFjAHMA/AHDAGsA/AHjAGsA/AEbAAMAAQAEAAMA
-AADXBjMCAABnAjgCAACwCD0CAgAEAAMAAgAFAAUAAQAGAAUAAgAHAAcAjAAQAUEBBIAAAAEAAABJ
-JIqcAAAAAAAAYwAAAAQAAAAAAAAAAAAAAOUB3wAAAAAAEAAAAAAAAAAAAAAA7gHmBAAAAAAEAAAA
-AAAAAAAAAADlAcEAAAAAAAQAAAAAAAAAAAAAAOUBjAUAAAAAEAAAAAAAAAAAAAAA7gGaAAAAAAAE
-AAAAAAAAAAAAAADlAR4CAAAAAAQAAAAAAAAAAAAAAOUBGAgAAAAAAAAAAAEAAABjBwAABQACAAYA
-AgAHAAIANwCvAGEACwFlAAsBAAAAAAA8PmNfX0Rpc3BsYXlDbGFzczBfMAA8TWFpbj5iX18wADw+
-Y19fRGlzcGxheUNsYXNzMF8xADxNYWluPmJfXzEASUVudW1lcmFibGVgMQBMaXN0YDEASW50MzIA
-RnVuY2AyAFNUX2ExMzZmZDQxZjcxODRhN2E5NmI4ZThhNDgwNzkwYjI5ADxNb2R1bGU+AFN5c3Rl
-bS5JTwBNaWNyb3NvZnQuU3FsU2VydmVyLk1hbmFnZWREVFMAdmFsdWVfXwBTeXN0ZW0uRGF0YQBT
-eXN0ZW0uRGF0YS5PbGVEYgBtc2NvcmxpYgBTeXN0ZW0uQ29sbGVjdGlvbnMuR2VuZXJpYwBBZGQA
-T2xlRGJTY2hlbWFHdWlkAE9sZURiQ29tbWFuZABnZXRfU3RhY2tUcmFjZQBkZWZhdWx0SW5zdGFu
-Y2UAZ2V0X01lc3NhZ2UAR2V0T2xlRGJTY2hlbWFUYWJsZQBEYXRhVGFibGUAVmFyaWFibGUASUVu
-dW1lcmFibGUASURpc3Bvc2FibGUAUnVudGltZVR5cGVIYW5kbGUAR2V0VHlwZUZyb21IYW5kbGUA
-RmlsZQBHZXRGaWxlTmFtZQBmaWxlTmFtZQBnZXRfQ29sdW1uTmFtZQBzaGVldE5hbWUARGF0ZVRp
-bWUATWljcm9zb2Z0LlNxbFNlcnZlci5EdHMuUnVudGltZQBBcHBlbmRMaW5lAFR5cGUAU3lzdGVt
-LkNvcmUARmFpbHVyZQBnZXRfQ3VsdHVyZQBzZXRfQ3VsdHVyZQByZXNvdXJjZUN1bHR1cmUAZ2V0
-X0ludmFyaWFudEN1bHR1cmUAVlNUQVJUU2NyaXB0T2JqZWN0TW9kZWxCYXNlAEludGVybmFsRGF0
-YUNvbGxlY3Rpb25CYXNlAEFwcGxpY2F0aW9uU2V0dGluZ3NCYXNlAERpc3Bvc2UAVHJ5UGFyc2UA
-RWRpdG9yQnJvd3NhYmxlU3RhdGUAQ29tcGlsZXJHZW5lcmF0ZWRBdHRyaWJ1dGUARGVidWdnZXJO
-b25Vc2VyQ29kZUF0dHJpYnV0ZQBEZWJ1Z2dhYmxlQXR0cmlidXRlAEVkaXRvckJyb3dzYWJsZUF0
-dHJpYnV0ZQBBc3NlbWJseVRpdGxlQXR0cmlidXRlAEFzc2VtYmx5VHJhZGVtYXJrQXR0cmlidXRl
-AFRhcmdldEZyYW1ld29ya0F0dHJpYnV0ZQBBc3NlbWJseUNvbmZpZ3VyYXRpb25BdHRyaWJ1dGUA
-QXNzZW1ibHlEZXNjcmlwdGlvbkF0dHJpYnV0ZQBDb21waWxhdGlvblJlbGF4YXRpb25zQXR0cmli
-dXRlAEFzc2VtYmx5UHJvZHVjdEF0dHJpYnV0ZQBBc3NlbWJseUNvcHlyaWdodEF0dHJpYnV0ZQBT
-U0lTU2NyaXB0VGFza0VudHJ5UG9pbnRBdHRyaWJ1dGUAQXNzZW1ibHlDb21wYW55QXR0cmlidXRl
-AFJ1bnRpbWVDb21wYXRpYmlsaXR5QXR0cmlidXRlAGdldF9WYWx1ZQBzZXRfVmFsdWUATWluVmFs
-dWUAdmFsdWUASW5kZXhPZgBTeXN0ZW0uUnVudGltZS5WZXJzaW9uaW5nAFRvU3RyaW5nAFBhdGgA
-Z2V0X01vbnRoAERheXNJbk1vbnRoAE1pY3Jvc29mdC5TcWxTZXJ2ZXIuU2NyaXB0VGFzawBNaWNy
-b3NvZnQuU3FsU2VydmVyLkR0cy5UYXNrcy5TY3JpcHRUYXNrAFNjcmlwdE9iamVjdE1vZGVsAFN5
-c3RlbS5Db21wb25lbnRNb2RlbABTVF9hMTM2ZmQ0MWY3MTg0YTdhOTZiOGU4YTQ4MDc5MGIyOS5k
-bGwARmlsbABnZXRfSXRlbQBTeXN0ZW0AVHJpbQBFbnVtAHJlc291cmNlTWFuAE9wZW4AU2NyaXB0
-TWFpbgBKb2luAERhdGFDb2x1bW4AR2V0RmlsZU5hbWVXaXRob3V0RXh0ZW5zaW9uAFN5c3RlbS5D
-b25maWd1cmF0aW9uAFN5c3RlbS5HbG9iYWxpemF0aW9uAFN5c3RlbS5SZWZsZWN0aW9uAERhdGFD
-b2x1bW5Db2xsZWN0aW9uAERhdGFSb3dDb2xsZWN0aW9uAE9sZURiQ29ubmVjdGlvbgBFeGNlcHRp
-b24AU3lzdGVtLkRhdGEuQ29tbW9uAFN0cmluZ0NvbXBhcmlzb24AQ3VsdHVyZUluZm8AU3lzdGVt
-LkxpbnEAZ2V0X1llYXIARXhlY3V0ZVNjYWxhcgBJRm9ybWF0UHJvdmlkZXIAU3RyaW5nQnVpbGRl
-cgBnZXRfUmVzb3VyY2VNYW5hZ2VyAE9sZURiRGF0YUFkYXB0ZXIASUVudW1lcmF0b3IAR2V0RW51
-bWVyYXRvcgAuY3RvcgAuY2N0b3IAU3lzdGVtLkRpYWdub3N0aWNzAFN5c3RlbS5SdW50aW1lLkNv
-bXBpbGVyU2VydmljZXMAU3lzdGVtLlJlc291cmNlcwBTVF9hMTM2ZmQ0MWY3MTg0YTdhOTZiOGU4
-YTQ4MDc5MGIyOS5Qcm9wZXJ0aWVzLlJlc291cmNlcy5yZXNvdXJjZXMARGVidWdnaW5nTW9kZXMA
-U1RfYTEzNmZkNDFmNzE4NGE3YTk2YjhlOGE0ODA3OTBiMjkuUHJvcGVydGllcwBUYWJsZXMAZ2V0
-X1ZhcmlhYmxlcwBEYXRlVGltZVN0eWxlcwBTZXR0aW5ncwBFcXVhbHMAU3lzdGVtLldpbmRvd3Mu
-Rm9ybXMAZ2V0X0NvbHVtbnMAU3lzdGVtLkNvbGxlY3Rpb25zAFN1Y2Nlc3MAZ2V0X0R0cwBTY3Jp
-cHRSZXN1bHRzAEV4aXN0cwBnZXRfUm93cwBDb25jYXQARm9ybWF0AFRyeVBhcnNlRXhhY3QAT2Jq
-ZWN0AGdldF9EZWZhdWx0AEZpcnN0T3JEZWZhdWx0AERpYWxvZ1Jlc3VsdABzZXRfVGFza1Jlc3Vs
-dABnZXRfQ3VycmVudABnZXRfQ291bnQAQ2FzdABNb3ZlTmV4dABTeXN0ZW0uVGV4dABBcHBlbmRB
-bGxUZXh0AGdldF9Ob3cARGF0YVJvdwBTaG93AE1lc3NhZ2VCb3gAZ2V0X0Fzc2VtYmx5AEFueQBJ
-c051bGxPckVtcHR5AAAAAAArQwA6AFwAVABpAG0AZQBzAGgAZQBlAHQAcwBcAEwAbwBnAC4AdAB4
-AHQAAEl7ADAAfQA6ACAAUwB0AGEAcgB0AGkAbgBnACAARQB4AGMAZQBsACAAcwBoAGUAZQB0ACAA
-cgBhAG4AZwBlACAAdABlAHMAdAAAJ1UAcwBlAHIAOgA6AEUAeABjAGUAbABGAGkAbABlAFAAYQB0
-AGgAAAdKAGEAbgAAB0YAZQBiAAAHTQBhAHIAAAdBAHAAcgAAB00AYQB5AAAHSgB1AG4AAAdKAHUA
-bAAAB0EAdQBnAAAHUwBlAHAAAAdPAGMAdAAAB04AbwB2AAAHRABlAGMAAD9OAG8AIABtAG8AbgB0
-AGgAIABkAGUAdABlAGMAdABlAGQAIABpAG4AIABmAGkAbABlAG4AYQBtAGUAOgAgAAArTQBvAG4A
-dABoACAARABlAHQAZQBjAHQAaQBvAG4AIABFAHIAcgBvAHIAAAlEAGEAdABlAAATRAAgAG8AZgAg
-AFcAZQBlAGsAAA1DAGwAaQBlAG4AdAAAJ0MAbABpAGUAbgB0ACAAUAByAG8AagBlAGMAdAAgAE4A
-YQBtAGUAABdEAGUAcwBjAHIAaQBwAHQAaQBvAG4AADFCAGkAbABsAGEAYgBsAGUAIABvAHIAIABO
-AG8AbgAgAEIAaQBsAGwAYQBiAGwAZQAAEUMAbwBtAG0AZQBuAHQAcwAAF1QAbwB0AGEAbAAgAEgA
-bwB1AHIAcwAAFVMAdABhAHIAdAAgAFQAaQBtAGUAABFFAG4AZAAgAFQAaQBtAGUAAC1FAHgAYwBl
-AGwAIABmAGkAbABlACAAbgBvAHQAIABmAG8AdQBuAGQAOgAKAAAVRgBpAGwAZQAgAEUAcgByAG8A
-cgAAXVAAcgBvAHYAaQBkAGUAcgA9AE0AaQBjAHIAbwBzAG8AZgB0AC4AQQBDAEUALgBPAEwARQBE
-AEIALgAxADIALgAwADsARABhAHQAYQAgAFMAbwB1AHIAYwBlAD0AAGs7AEUAeAB0AGUAbgBkAGUA
-ZAAgAFAAcgBvAHAAZQByAHQAaQBlAHMAPQAiAEUAeABjAGUAbAAgADEAMgAuADAAIABYAG0AbAA7
-AEgARABSAD0AWQBFAFMAOwBJAE0ARQBYAD0AMQAiADsAACNQAHIAbwBjAGUAcwBzAGkAbgBnACAA
-ZgBpAGwAZQA6ACAAAD8tAC0ALQAtAC0ALQAtAC0ALQAtAC0ALQAtAC0ALQAtAC0ALQAtAC0ALQAt
-AC0ALQAtAC0ALQAtAC0ALQAtAAEzUwBoAGUAZQB0AHMAIABmAG8AdQBuAGQAIABpAG4AIAB3AG8A
-cgBrAGIAbwBvAGsAOgAACy0AIAB7ADAAfQABFVQAQQBCAEwARQBfAE4AQQBNAEUAAAEAAyQAADND
-AGgAZQBjAGsAaQBuAGcAIABkAGUAdABlAGMAdABlAGQAIABzAGgAZQBlAHQAOgAgAAAPUwBoAGUA
-ZQB0ACAAJwABLycAIABuAG8AdAAgAGYAbwB1AG4AZAAgAGkAbgAgAHcAbwByAGsAYgBvAG8AawAB
-F1MAaABlAGUAdAAgAEUAcgByAG8AcgAAC0EAOAA6AEoAOAAADUMAOAA6AEQAMQA0AAAnQwBoAGUA
-YwBrAGkAbgBnACAAaABlAGEAZABlAHIAcwAuAC4ALgAAH1MARQBMAEUAQwBUACAAKgAgAEYAUgBP
-AE0AIABbAAADXQAASUMAbwBsAHUAbQBuACAAewAwAH0AOgAgAE0AaQBzAHMAaQBuAGcAIAAoAGUA
-eABwAGUAYwB0AGUAZAAgACcAewAxAH0AJwApAAFRQwBvAGwAdQBtAG4AIAB7ADAAfQA6ACAARgBv
-AHUAbgBkACAAJwB7ADEAfQAnACAAKABlAHgAcABlAGMAdABlAGQAIAAnAHsAMgB9ACcAKQABM0gA
-ZQBhAGQAZQByACAAdgBhAGwAaQBkAGEAdABpAG8AbgAgAGYAYQBpAGwAZQBkADoAAAMKAABJSABl
-AGEAZABlAHIAIAB2AGEAbABpAGQAYQB0AGkAbwBuACAAZgBhAGkAbABlAGQAIABmAG8AcgAgAHMA
-aABlAGUAdAAgACcAAS8nAC4AIABTAGUAZQAgAGwAbwBnACAAZgBvAHIAIABkAGUAdABhAGkAbABz
-AC4AASNWAGEAbABpAGQAYQB0AGkAbwBuACAARgBhAGkAbABlAGQAABVIAGUAYQBkAGUAcgBzACAA
-TwBLAAA9QwBoAGUAYwBrAGkAbgBnACAAZgBvAHIAIAAnAEUAeABhAG0AcABsAGUAJwAgAHQAZQB4
-AHQALgAuAC4AAQ9FAHgAYQBtAHAAbABlAABVRgBvAHUAbgBkACAAJwBFAHgAYQBtAHAAbABlACcA
-IABpAG4AIABjAGUAbABsACAAWwBSAG8AdwAgAHsAMAB9ACwAIABDAG8AbAAgAHsAMQB9AF0AAWEn
-ACAAYwBvAG4AdABhAGkAbgBzACAAJwBFAHgAYQBtAHAAbABlACcAIAB0AGUAeAB0ACAALQAgAHMA
-awBpAHAAcABpAG4AZwAgAHYAYQBsAGkAZABhAHQAaQBvAG4ALgABJU4AbwAgACcARQB4AGEAbQBw
-AGwAZQAnACAAZgBvAHUAbgBkAAEpQwBoAGUAYwBrAGkAbgBnACAAZgBvAHIAIABkAGEAdABhAC4A
-LgAuAABZTgBvACAAZABhAHQAYQAgAGYAbwB1AG4AZAAgAGkAbgAgAHYAYQBsAGkAZABhAHQAaQBv
-AG4AIAByAGEAbgBnAGUAIABpAG4AIABzAGgAZQBlAHQAIAAnAAEDJwABPVIAZQB0AHIAaQBlAHYA
-aQBuAGcAIABmAGkAcgBzAHQAIABEAGEAdABlACAAdgBhAGwAdQBlAC4ALgAuAAA1UwBFAEwARQBD
-AFQAIABUAE8AUAAgADEAIABbAEQAYQB0AGUAXQAgAEYAUgBPAE0AIABbAABBQQA4ADoASgAxADAA
-XQAgAFcASABFAFIARQAgAFsARABhAHQAZQBdACAASQBTACAATgBPAFQAIABOAFUATABMAAAxRgBp
-AHIAcwB0ACAARABhAHQAZQAgAHYAYQBsAHUAZQAgAGYAbwB1AG4AZAA6ACAAABFNAC8AZAAvAHkA
-eQB5AHkAABVNAE0ALwBkAGQALwB5AHkAeQB5AAARZAAvAE0ALwB5AHkAeQB5AAAVZABkAC8ATQBN
-AC8AeQB5AHkAeQAAFXkAeQB5AHkALQBNAE0ALQBkAGQAASd5AHkAeQB5AC8ATQBNAC8AZABkACAA
-SABIADoAbQBtADoAcwBzAAA5RgBhAGwAbABiAGEAYwBrACAAcABhAHIAcwBpAG4AZwAgAHMAdQBj
-AGMAZQBlAGQAZQBkADoAIAAAFXsAMAB9AEEAOAA6AEoAewAxAH0AACdWAEEATABJAEQAIABTAEgA
-RQBFAFQAIABGAE8AVQBOAEQAOgAgAAArVgBhAGwAaQBkACAAZABhAHQAZQAgAGQAZQB0AGUAYwB0
-AGUAZAA6ACAAAA9NAG8AbgB0AGgAOgAgAAAJTQBNAE0ATQAAJUQAYQB5AHMAIABpAG4AIABtAG8A
-bgB0AGgAOgAgAHsAMAB9AABVRgBlAGIAcgB1AGEAcgB5ACAAZABlAHQAZQBjAHQAZQBkACAALQAg
-AGMAaABlAGMAawBpAG4AZwAgAGYAbwByACAAbABlAGEAcAAgAHkAZQBhAHIAAT9MAGUAYQBwACAA
-eQBlAGEAcgAgAC0AIAAyADkAIABkAGEAeQBzACAAaQBuACAARgBlAGIAcgB1AGEAcgB5AAFLTgBv
-AHQAIABhACAAbABlAGEAcAAgAHkAZQBhAHIAIAAtACAAMgA4ACAAZABhAHkAcwAgAGkAbgAgAEYA
-ZQBiAHIAdQBhAHIAeQABV0YAaQByAHMAdAAgAGQAYQB0AGUAIAB2AGEAbAB1AGUAIABpAHMAIABu
-AG8AdAAgAGEAIAB2AGEAbABpAGQAIABkAGEAdABlACAAZgBvAHIAbQBhAHQAACVGAGkAcgBzAHQA
-IABkAGEAdABlACAAdgBhAGwAdQBlACAAJwABOScAIABpAHMAIABuAG8AdAAgAGEAIAB2AGEAbABp
-AGQAIABkAGEAdABlACAAZgBvAHIAbQBhAHQAASdJAG4AdgBhAGwAaQBkACAARABhAHQAZQAgAEYA
-bwByAG0AYQB0AABDTgBvACAARABhAHQAZQAgAHYAYQBsAHUAZQBzACAAZgBvAHUAbgBkACAAaQBu
-ACAAdABoAGUAIABzAGgAZQBlAHQAAClEAGEAdABlACAAVgBhAGwAdQBlACAATgBvAHQAIABGAG8A
-dQBuAGQAAC1FAHIAcgBvAHIAIABjAGgAZQBjAGsAaQBuAGcAIABzAGgAZQBlAHQAIAAnAAEHJwA6
-ACAAASFWAGEAbABpAGQAYQB0AGkAbwBuACAARQByAHIAbwByAABbTgBvACAAdgBhAGwAaQBkACAA
-cwBoAGUAZQB0ACAAZgBvAHUAbgBkACAAaQBuADoACgB7ADAAfQAKAAoARABlAGIAdQBnACAASQBu
-AGYAbwA6AAoAewAxAH0AACdVAHMAZQByADoAOgBTAGUAbABlAGMAdABlAGQAUwBoAGUAZQB0AAA3
-VQBzAGUAcgA6ADoARQB4AGMAZQBsAEMAbwBuAG4AZQBjAHQAaQBvAG4AUwB0AHIAaQBuAGcAACkK
-AFUAcwBpAG4AZwAgAHMAaABlAGUAdAAgAHIAYQBuAGcAZQA6ACAAACFDAFIASQBUAEkAQwBBAEwA
-IABFAFIAUgBPAFIAOgAKAAAfCgAKAFMAdABhAGMAawAgAFQAcgBhAGMAZQA6AAoAABdGAGEAdABh
-AGwAIABFAHIAcgBvAHIAAHFTAFQAXwBhADEAMwA2AGYAZAA0ADEAZgA3ADEAOAA0AGEANwBhADkA
-NgBiADgAZQA4AGEANAA4ADAANwA5ADAAYgAyADkALgBQAHIAbwBwAGUAcgB0AGkAZQBzAC4AUgBl
-AHMAbwB1AHIAYwBlAHMAAABd62mvHqt8RZdVillMTsCeAAQgAQEIAyAAAQUgAQEREQQgAQEOBSAB
-ARF5PwcqDhI9EhgODh0ODg4OCAIRQQ4OEkUSHBJJDg4STRJRElUOEkkCFRJZAQ4SSQIcCA4ICA4O
-Dh0OCBJhDhJhDgQAABFBBQACDg4cBSABEj0OBSAAEoCJBSAAEoCNBiABEoCRHAMgABwDIAAOBAAB
-Dg4HFRKAmQIOAgUgAgEcGBQQAQIeABUSgKEBHgAVEoCZAh4AAgMKAQ4EAAECDgUAAg4ODgcAAhGA
-qQ4OBQACAQ4OBgADDg4ODgIGDgMGEUEEBhGAuQkgAhJJEYC5HRwFIAASgL0EIAASTQQgARwOAyAA
-Ag0QAQEVEoChAR4AEoDFBAoBElEIFRKAmQISUQITEAECAhUSgKEBHgAVEoCZAh4AAgYgAgEOEkUG
-IAEBEoDJBSABCBJJBRUSWQEOBSAAEoDVAyAACAYAAw4OHBwFIAEBEwAGIAESgN0IByACAg4RgOEH
-AAQODhwcHAoAAg4OFRKAoQEOBSABElEIBCABHAgEAAASdQ8ABQIOHQ4SgOkRgO0QEUENAAQCDhKA
-6RGA7RARQQQgAQ4OBQACCAgIBwAEDg4ODg4EIAEBHAgAARKA8RGA9QUgABKA+QcgAgEOEoD5ByAC
-CA4RgOEIt3pcVhk04IkIiYRdzYCAzJEEAAAAAAQBAAAAAwYScQMGEnUDBhIQAgYIAwYRFAQAABJx
-BQABARJ1BAAAEhADAAABBCABAg4FIAECElEECAAScQQIABJ1BAgAEhAIAQAIAAAAAAAeAQABAFQC
-FldyYXBOb25FeGNlcHRpb25UaHJvd3MBCAEAAgAAAAAAKAEAI1NUX2ExMzZmZDQxZjcxODRhN2E5
-NmI4ZThhNDgwNzkwYjI5AAAFAQAAAAAHAQACSFAAABgBABNDb3B5cmlnaHQgQCBIUCAyMDI1AABJ
-AQAaLk5FVEZyYW1ld29yayxWZXJzaW9uPXY0LjcBAFQOFEZyYW1ld29ya0Rpc3BsYXlOYW1lEi5O
-RVQgRnJhbWV3b3JrIDQuNwAAALQAAADOyu++AQAAAJEAAABsU3lzdGVtLlJlc291cmNlcy5SZXNv
-dXJjZVJlYWRlciwgbXNjb3JsaWIsIFZlcnNpb249NC4wLjAuMCwgQ3VsdHVyZT1uZXV0cmFsLCBQ
-dWJsaWNLZXlUb2tlbj1iNzdhNWM1NjE5MzRlMDg5I1N5c3RlbS5SZXNvdXJjZXMuUnVudGltZVJl
-c291cmNlU2V0AgAAAAAAAAAAAAAAUEFEUEFEULQAAABgTgAAAAAAAAAAAAB6TgAAACAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAbE4AAAAAAAAAAAAAAABfQ29yRGxsTWFpbgBtc2NvcmVlLmRsbAAAAAAA
-/yUAIAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAIAAACAAAAAAAAAAAAAAACCAAAEgAAAAAAAAAAAAAAC50ZXh0AAAADDYAAAAgAAAAOAAAAAIA
+AAAAAAAAAAAAAAAAACAAAGAucnNyYwAAAHQEAAAAYAAAAAYAAAA6AAAAAAAAAAAAAAAAAABAAABA
+LnJlbG9jAAAMAAAAAIAAAAACAAAAQAAAAAAAAAAAAAAAAAAAQAAAQgAAAAAAAAAAAAAAAAAAAADo
+VQAAAAAAAEgAAAACAAUAXC4AAKAmAAABAAAAAAAAAPxUAAC4AAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAABswBgDuCwAAAQAAEXIBAABwCnMQAAAKCwdyLQAAcCgRAAAK
+jA8AAAEoEgAACm8TAAAKJgZ+FAAACigVAAAKB3J3AABwbxMAAAom3igMBnKbAABwCG8WAAAKKBcA
+AAooFQAACgIoGAAAChdvGQAACt2FCwAAAHMOAAAGDQIoGAAACm8aAAAKcsUAAHBvGwAACm8cAAAK
+bx0AAAoTBB8MjSIAAAElFnLtAABwoiUXcvUAAHCiJRhy/QAAcKIlGXIFAQBwoiUacg0BAHCiJRty
+FQEAcKIlHHIdAQBwoiUdciUBAHCiJR5yLQEAcKIlHwlyNQEAcKIlHwpyPQEAcKIlHwtyRQEAcKIT
+BQkRBCgeAAAKfQ4AAAQRBQn+Bg8AAAZzHwAACigBAAArEwYRBighAAAKLEVyTQEAcAl7DgAABCgX
+AAAKEw0RDXKNAQBwKCIAAAomBxENbxMAAAomBgdvHQAACigjAAAKAigYAAAKF28ZAAAK3YEKAAAf
+Co0iAAABJRZyuQEAcKIlF3LDAQBwoiUYctcBAHCiJRly5QEAcKIlGnINAgBwoiUbciUCAHCiJRxy
+VwIAcKIlHXJpAgBwoiUecoECAHCiJR8JcpcCAHCiEwcRBCgkAAAKLUFyqQIAcBEEKBcAAAoTDhEO
+ctcCAHAoIgAACiYHEQ5vEwAACiYGB28dAAAKKCMAAAoCKBgAAAoXbxkAAArd3QkAAHLtAgBwEQRy
+SwMAcCglAAAKEwgRBnK3AwBwKBcAAAoTCX4UAAAKEwoWEwt+JgAAChMMEQhzJwAAChMPcxAAAAYT
+EBEPbygAAAoHcssDAHARBCgpAAAKKBcAAApvEwAACiYHcu8DAHBvEwAACiYRD34qAAAKFG8rAAAK
+ExEHci8EAHBvEwAACiYREW8sAAAKby0AAAoTFCsrERRvLgAACnQVAAABExUHcmMEAHARFXJvBABw
+by8AAAooEgAACm8TAAAKJhEUbzAAAAotzN4VERR1FgAAARMWERYsBxEWbzEAAArcB3KFBABwbxMA
+AAomERARBnKHBABwKBcAAAp9DwAABAdyiwQAcBEQew8AAAQoFwAACm8TAAAKJhERbywAAAooAgAA
+KxEQ/gYRAAAGczMAAAooAwAAKy1Lcr8EAHAREHsPAAAEcs8EAHAoJQAAChMXERdy/wQAcCgiAAAK
+JgcRF28TAAAKJgYHbx0AAAooIwAACgIoGAAAChdvGQAACt1YCAAAERB7DwAABHIXBQBwKBcAAAoT
+EhEQew8AAARyIwUAcCgXAAAKExMHcjEFAHBvEwAACiZyWQUAcBEScnkFAHAoJQAAChEPczUAAApz
+NgAACnM3AAAKExgRGG84AAAKJhcTGXM5AAAKExoWEx44hwAAABEYbzoAAApvOwAAChEeMCQWExkR
+GnJ9BQBwER4XWIw2AAABEQcRHpooPAAACm89AAAKK00RGG86AAAKER5vPgAACm8/AAAKb0AAAAoT
+HxEfEQcRHpobb0EAAAotJBYTGREacscFAHARHhdYjDYAAAERHxEHER6aKEIAAApvPQAAChEeF1gT
+HhEeEQeOaT9u////ERktXQdyGQYAcG8TAAAKJgdyTQYAcBEaKEMAAApvEwAACiYGB28dAAAKKCMA
+AApyUQYAcBEQew8AAARymwYAcCglAAAKcssGAHAoIgAACiYCKBgAAAoXbxkAAArd9QYAAAdy7wYA
+cG8TAAAKJgdyBQcAcG8TAAAKJnJZBQBwERNyeQUAcCglAAAKEQ9zNQAACnM2AAAKczcAAAoTGxEb
+bzgAAAomFhMcFhMgOI0AAAAWEyErbhEbbywAAAoRIG9EAAAKESFvRQAACiUtBCYUKwpvHQAACm9A
+AAAKEyIRIighAAAKLTcRInJDBwBwG29BAAAKLCgXExwHclMHAHARIB5YjDYAAAERIRlYjDYAAAEo
+PAAACm8TAAAKJisWESEXWBMhESERG286AAAKbzsAAAoyghEcLRkRIBdYEyARIBEbbywAAApvOwAA
+Cj9g////ERwsS3K/BABwERB7DwAABHKpBwBwKCUAAAoTIwcRI28TAAAKJgYHbx0AAAooIwAAChEj
+cssGAHAoIgAACiYCKBgAAAoXbxkAAArdtwUAAAdyCwgAcG8TAAAKJgdyMQgAcG8TAAAKJhEbbywA
+AApvOwAACi1LclsIAHAREHsPAAAEcrUIAHAoJQAAChMkBxEkbxMAAAomBgdvHQAACigjAAAKESRy
+ywYAcCgiAAAKJgIoGAAAChdvGQAACt1GBQAAB3K5CABwbxMAAAomcvcIAHAREHsPAAAEci0JAHAo
+JQAAChEPczUAAApvRgAAChMdER05SgEAABEdbx0AAAoTCgdybwkAcBEKKBcAAApvEwAACiYcjSIA
+AAElFnKhCQBwoiUXcrMJAHCiJRhyyQkAcKIlGXLbCQBwoiUacvEJAHCiJRtyBwoAcKITJREKESUo
+RwAAChYSDChIAAAKEwsRCy0yEQooRwAAChYSDChJAAAKEwsRCywdB3IvCgBwEgxy8QkAcChKAAAK
+KBcAAApvEwAACiYRCyx/AhEMfQEAAAQCEgwoSwAACn0CAAAEAhEFEQYoBAAAKxdYfQMAAAQCF30E
+AAAEB3JpCgBwAnwBAAAEcvEJAHAoSgAACigXAAAKbxMAAAomB3KVCgBwEQYoFwAACm8TAAAKJgdy
+swoAcAJ7AgAABIw2AAABKBIAAApvEwAACiYrRgdy1QoAcG8TAAAKJnItCwBwEQpyUwsAcCglAAAK
+co0LAHAoIgAACiYrHAdytQsAcG8TAAAKJnK1CwBwcvkLAHAoIgAACiYCewQAAAQ5/wEAAAdyIwwA
+cG8TAAAKJnJZBQBwEQlyeQUAcCglAAAKEQ9zNQAACnM2AAAKczcAAAoTJhEmbzgAAAomFhMnHwkT
+KBEmbywAAApvLQAAChMUOFQBAAARFG8uAAAKdBUAAAETKhEqb00AAAp+DQAABCUtFyZ+DAAABP4G
+DQAABnNOAAAKJYANAAAEKAUAACssHQdyWQwAcBEojDYAAAEoEgAACm8TAAAKJjgIAQAAESoWb0UA
+AAolLQQmFCsFbx0AAAoTKxErKE8AAAo6mAAAABErEi0oUAAACi0RESsoRwAAChYSLChJAAAKKwoC
+ES0SLCgCAAAGLFASLChRAAAKAnsDAAAEM0ESLChLAAAKAnsCAAAEMzICAnsFAAAEF1h9BQAABBYT
+JwdyoQwAcBEojDYAAAERLIwPAAABKDwAAApvEwAACiYrPhEnF1gTJwdy7QwAcBEojDYAAAEoEgAA
+Cm8TAAAKJiseEScXWBMnB3I7DQBwESiMNgAAASgSAAAKbxMAAAomEScbMhkHcmUNAHAbjDYAAAEo
+EgAACm8TAAAKJisSESgXWBMoERRvMAAACjqg/v//3hURFHUWAAABExYRFiwHERZvMQAACtwRKBEn
+WRdZEylyxQ0AcBEQew8AAAQRKYw2AAABKDwAAAoTCQdy2w0AcBEJKBcAAApvEwAACiYCewQAAAQs
+GAdyFQ4AcBEEKCkAAAooFwAACm8TAAAKJt5UEy5yLw4AcBEQew8AAARyXQ4AcBEubxYAAAooUgAA
+ChMvBxEvbxMAAAomBgdvHQAACigjAAAKES9yZQ4AcCgiAAAKJgIoGAAAChdvGQAACt0pAQAABgdv
+HQAACigjAAAKEQkoIQAACiwucocOAHARBCgpAAAKByg8AAAKcssGAHAoIgAACiYCKBgAAAoXbxkA
+AArd5gAAAAIoGAAACm8aAAAKcuMOAHBvGwAAChEJb1MAAAoCKBgAAApvGgAACnILDwBwbxsAAAoR
+CG9TAAAKB3JDDwBwCXsOAAAEAnsFAAAEjDYAAAEoPAAACm8TAAAKJgYHbx0AAAooFQAACgdykw8A
+cBEJKBcAAApvEwAACiYCKBgAAAoWbxkAAAreDBEPLAcRD28xAAAK3N5REzByvQ8AcBEwbxYAAApy
+3w8AcBEwb1QAAAooUgAAChMxETFy/w8AcCgiAAAKJgcRMW8TAAAKJgYHbx0AAAooIwAACgIoGAAA
+ChdvGQAACt4AKgAAQZQAAAAAAAAnAAAAGQAAAEAAAAAoAAAAEQAAAQIAAACmAgAAOAAAAN4CAAAV
+AAAAAAAAAAIAAACcCAAAZwEAAAMKAAAVAAAAAAAAAAAAAAC7AwAAtQYAAHAKAABUAAAAEQAAAQIA
+AABLAgAAQwkAAI4LAAAMAAAAAAAAAAAAAABpAAAAMwsAAJwLAABRAAAAEQAAARswAgAxAAAAAgAA
+EQQDKFUAAAqBDwAAAQQoSwAACiBsBwAA/gQW/gEK3hAmBH4mAAAKgQ8AAAEWCt4ABioAAAABEAAA
+AAAAAB8fABAYAAABSgJ+JgAACn0BAAAEAihWAAAKKh4CKFcAAAoqrn4JAAAELR5yFxAAcNAEAAAC
+KFgAAApvWQAACnNaAAAKgAkAAAR+CQAABCoafgoAAAQqHgKACgAABCoafgsAAAQqHgIoWwAACiou
+cwkAAAaACwAABCoucwwAAAaADAAABCoAAAATMAIAawAAAAAAAAADLBcDbx0AAApvXAAACnKJEABw
+b10AAAotTwMsFwNvHQAACm9cAAAKcpsQAHBvXQAACi01AywXA28dAAAKb1wAAApyuRAAcG9dAAAK
+LRsDLQIWKgNvHQAACm9cAAAKct8QAHBvXQAACioXKlICew4AAAQDG29eAAAKFv4EFv4BKnYDcm8E
+AHBvLwAACm8dAAAKAnsPAAAEG29BAAAKKgAAQlNKQgEAAQAAAAAADAAAAHY0LjAuMzAzMTkAAAAA
+BQBsAAAAjAcAACN+AAD4BwAARAoAACNTdHJpbmdzAAAAADwSAAD8EAAAI1VTADgjAAAQAAAAI0dV
+SUQAAABIIwAAWAMAACNCbG9iAAAAAAAAAAIAAAFXHaIJCQsAAAD6ATMAFgAAAQAAAEAAAAAIAAAA
+DwAAABEAAAAGAAAAXgAAAAIAAAATAAAAAgAAAAIAAAADAAAABAAAAAQAAAABAAAABwAAAAEAAAAD
+AAAABQAAAAAA/QUBAAAAAAAGAHcE8QcGAAYF8QcGAMMD3gcPAGUIAAAGAPADuwYGAFoEuwYGADsE
+uwYGAO0EuwYGAJcEuwYGALAEuwYGAAcEuwYGACIETwUKAMsErAUKANoCrAUGAFACOAYGAHwHzgkG
+AAQHOAYOAPQGCwEOAMcB/wAGALcHAQkOAP0J/wAGAOYBOAYGAE8AKgEGAF4JOAYGAIsD8QcGAHIA
+OAYGAEQGOAYGAKYD3gcGAI4HEQgGADIHpgYSAHYD5wUSANcD5wUSABEDkQYGAGsFOAYGAB0CzgAK
+ANUFrAUWAK4IWQIWANEBWQIGAHIFzgAaANsBPgcGAEEAKgEeAAoK1wgeAIAJ1wgOAPcGDgcOAEkB
+CwEGAFQBOAYOAOIG/wAOAPYC/wAGANoBAQkOAFkBCwEOAJ4HCwEOAKEHDgcOAM0G/wAGAFYAOAYO
+AGoG/wAGACEHOAYOAFwBDgcGAGwHOAYGALgIpgYGAB0KOAYGAPIBOAYGAIQCOAYGAPkBOAYGACcK
+uwYAAAAAxQAAAAAAAQABAAEAEABaBp0AOQABAAEAAAEAACQJnQBtAAYABAAAABAAGAh0CGEACQAE
+AAABEADHCHQIhQALAAgAAyEQACYBAABhAAwACwADARAAAQAAAGEADgAOAAMBEAAhAAAAYQAPABAA
+AQBFA+EAAQBTBzQCAQCBBTQCAQBmATcCAQCyCTQCBgb3ADQCVoAUCToCVoCVAjoCEQBJBj4CEQC1
+AkICEQCXAUYCNgDBAEoCFgBcAE4CBgAuAnkABgBGAnkAUCAAAAAAhgBgBgYAAQDgLAAAAACBAF8D
+VgIBADAtAAAAAIYY0QcGAAMAQy0AAAAAgxjRBwYAAwBLLQAAAACTCIoHXgIDAHctAAAAAJMInQKU
+AQMAfi0AAAAAkwipAmMCAwCGLQAAAACWCGUJaQIEAI0tAAAAAIYY0QcGAAQAlS0AAAAAkRjXB24C
+BAChLQAAAACRGNcHbgIEAEMtAAAAAIYY0QcGAAQAsC0AAAAAgwBlAHICBABDLQAAAACGGNEHBgAF
+ACcuAAAAAIMAFgALAgUAQy0AAAAAhhjRBwYABgA8LgAAAACDADYAdwIGAAAAAQBUAwIAAgBxAwAA
+AQBBBQAAAQAlBgAAAQBHBgAAAQDcBwkA0QcBABEA0QcGABkA0QcKACkA0QcQADEA0QcQADkA0QcQ
+AEEA0QcQAEkA0QcQAFEA0QcQAFkA0QcQAGEA0QcQAGkA0QcGAMkA0QcGAOEA0QcGAAEB0QcVAIEA
+0QcGAHkA9QloABEBSQltAIEAeQJzABEBPAp5ABkB6Al8AIkApwGCABEBQgmGAHEAHAmMACEBjQkB
+ACEBqgiSACkBLwaYADEBJAWfAMEAaQWCADkBdQajAAwA0QevAEEBcQm1ABEBNArNAFEBBQrSABkB
+2gl8ABkBMgnNABEBQgnaAHkAOAXhAJEA0QcQAGEBVQYGADkBIgKjAGkBowjlAJEAswHqAJkAOQn0
+AIEBwwf6AKEAnAmfAKkALwb/AKEAxQkEAbEAKQMGAEEBwAkIARQA0QevAEEBMAojAZEB0Qc2AZkB
+0Qc9AZkA0QcGAKEBKgZEARwA0QcGAJkA9QhQAYEBqAlWAREBSQlaARwARQFhAakBLwZnAbkBNwKC
+ABEBPwaCABEB0AhuAREBSQl2AREBZQZ+AXkBLwaJAakALwaPAckBXgefAPEAxQKUAXkAUAmZAXkA
+MQOpAXkAaQW3AXkASgdWAeEBRwW8AakAFQrGASQA0QevABEBdQHNAOkBMQPWAXkAdwVWAREBQgnd
+ATEBLgXlAYkAiAGCAHkAOgPuAXEA0QcGAMEA0QcGAPEBCwL0AfEBIwr9AekA0QcDAgkB0QcGABEB
+rweCABEB7AgLAhEBRwUQAggAHAAqAggAIAAvAikAewC0Ai4ACwCMAi4AEwCVAi4AGwC0Ai4AIwC9
+Ai4AKwDmAi4AMwDmAi4AOwDsAi4AQwC9Ai4ASwD0Ai4AUwDmAi4AWwANA0MAYwAvAkkAewC0AoMA
+cwAvAsMAawAvAuMAawAvAgMBawAvAmEBawAvAhsA6gEEAAEABQADAAAAjgd9AgAA0gKCAgAAeAmH
+AgIABQADAAIABgAFAAEABwAFAAIACAAHAKgAGwFKAcsBBIAAAAEAAABMJIEOAAAAAAAAeQAAAAQA
+AAAAAAAAAAAAABgCHQEAAAAAEAAAAAAAAAAAAAAAIQKNBQAAAAAEAAAAAAAAAAAAAAAYAv8AAAAA
+AAQAAAAAAAAAAAAAABgCOAYAAAAAEAAAAAAAAAAAAAAAIQLYAAAAAAAEAAAAAAAAAAAAAAAYAokC
+AAAAAAQAAAAAAAAAAAAAABgC1wgAAAAAAAAAAAEAAAAiCAAABgACAAcAAgAIAAIAQQDJAGUAFgFp
+ABYBmQDJAGkA0gEAAAAAADw+Y19fRGlzcGxheUNsYXNzNV8wADxNYWluPmJfXzAAPD5jX19EaXNw
+bGF5Q2xhc3M1XzEAPE1haW4+Yl9fMQBJRW51bWVyYWJsZWAxAExpc3RgMQBJbnQzMgA8PjlfXzVf
+MgA8TWFpbj5iX181XzIARnVuY2AyAFNUXzMzNmE5NDYzZjRhODQ3MjU5MWVlMWM3ZDE5MmEwYTk0
+AFNUX2ExMzZmZDQxZjcxODRhN2E5NmI4ZThhNDgwNzkwYjI5ADw+OQA8TW9kdWxlPgBTeXN0ZW0u
+SU8ATWljcm9zb2Z0LlNxbFNlcnZlci5NYW5hZ2VkRFRTAHZhbHVlX18AU3lzdGVtLkRhdGEAU3lz
+dGVtLkRhdGEuT2xlRGIAbXNjb3JsaWIAPD5jAFN5c3RlbS5Db2xsZWN0aW9ucy5HZW5lcmljAEFk
+ZABPbGVEYlNjaGVtYUd1aWQAT2xlRGJDb21tYW5kAGZpcnN0RGF0ZUZvdW5kAElzTnVsbE9yV2hp
+dGVTcGFjZQBnZXRfU3RhY2tUcmFjZQBkZWZhdWx0SW5zdGFuY2UAZ2V0X01lc3NhZ2UAR2V0T2xl
+RGJTY2hlbWFUYWJsZQBEYXRhVGFibGUAVmFyaWFibGUASUVudW1lcmFibGUASURpc3Bvc2FibGUA
+RG91YmxlAFJ1bnRpbWVUeXBlSGFuZGxlAEdldFR5cGVGcm9tSGFuZGxlAEZpbGUAR2V0RmlsZU5h
+bWUAZmlsZU5hbWUAZ2V0X0NvbHVtbk5hbWUAc2hlZXROYW1lAERhdGVUaW1lAE1pY3Jvc29mdC5T
+cWxTZXJ2ZXIuRHRzLlJ1bnRpbWUAQXBwZW5kTGluZQBUeXBlAFN5c3RlbS5Db3JlAEZhaWx1cmUA
+Z2V0X0N1bHR1cmUAc2V0X0N1bHR1cmUAcmVzb3VyY2VDdWx0dXJlAGdldF9JbnZhcmlhbnRDdWx0
+dXJlAFZTVEFSVFNjcmlwdE9iamVjdE1vZGVsQmFzZQBJbnRlcm5hbERhdGFDb2xsZWN0aW9uQmFz
+ZQBBcHBsaWNhdGlvblNldHRpbmdzQmFzZQBEaXNwb3NlAFRyeVBhcnNlAEZyb21PQURhdGUAZmly
+c3RWYWxpZERhdGUAc2VyaWFsRGF0ZQBUcnlQYXJzZUV4Y2VsRGF0ZQBkYXRlAEVkaXRvckJyb3dz
+YWJsZVN0YXRlAENvbXBpbGVyR2VuZXJhdGVkQXR0cmlidXRlAERlYnVnZ2VyTm9uVXNlckNvZGVB
+dHRyaWJ1dGUARGVidWdnYWJsZUF0dHJpYnV0ZQBFZGl0b3JCcm93c2FibGVBdHRyaWJ1dGUAQXNz
+ZW1ibHlUaXRsZUF0dHJpYnV0ZQBBc3NlbWJseVRyYWRlbWFya0F0dHJpYnV0ZQBUYXJnZXRGcmFt
+ZXdvcmtBdHRyaWJ1dGUAQXNzZW1ibHlDb25maWd1cmF0aW9uQXR0cmlidXRlAEFzc2VtYmx5RGVz
+Y3JpcHRpb25BdHRyaWJ1dGUAQ29tcGlsYXRpb25SZWxheGF0aW9uc0F0dHJpYnV0ZQBBc3NlbWJs
+eVByb2R1Y3RBdHRyaWJ1dGUAQXNzZW1ibHlDb3B5cmlnaHRBdHRyaWJ1dGUAU1NJU1NjcmlwdFRh
+c2tFbnRyeVBvaW50QXR0cmlidXRlAEFzc2VtYmx5Q29tcGFueUF0dHJpYnV0ZQBSdW50aW1lQ29t
+cGF0aWJpbGl0eUF0dHJpYnV0ZQBnZXRfVmFsdWUAc2V0X1ZhbHVlAE1pblZhbHVlAHZhbHVlAElu
+ZGV4T2YAU3lzdGVtLlJ1bnRpbWUuVmVyc2lvbmluZwBUb1N0cmluZwBQYXRoAGdldF9Nb250aAB0
+YXJnZXRNb250aABNaWNyb3NvZnQuU3FsU2VydmVyLlNjcmlwdFRhc2sATWljcm9zb2Z0LlNxbFNl
+cnZlci5EdHMuVGFza3MuU2NyaXB0VGFzawBTY3JpcHRPYmplY3RNb2RlbABTeXN0ZW0uQ29tcG9u
+ZW50TW9kZWwAU1RfMzM2YTk0NjNmNGE4NDcyNTkxZWUxYzdkMTkyYTBhOTQuZGxsAGNlbGwARmls
+bABnZXRfSXRlbQBTeXN0ZW0AVHJpbQBFbnVtAHJlc291cmNlTWFuAE9wZW4AU2NyaXB0TWFpbgBK
+b2luAERhdGFDb2x1bW4AR2V0RmlsZU5hbWVXaXRob3V0RXh0ZW5zaW9uAFN5c3RlbS5Db25maWd1
+cmF0aW9uAFN5c3RlbS5HbG9iYWxpemF0aW9uAFN5c3RlbS5SZWZsZWN0aW9uAERhdGFDb2x1bW5D
+b2xsZWN0aW9uAERhdGFSb3dDb2xsZWN0aW9uAE9sZURiQ29ubmVjdGlvbgBFeGNlcHRpb24AU3lz
+dGVtLkRhdGEuQ29tbW9uAFN0cmluZ0NvbXBhcmlzb24AQ3VsdHVyZUluZm8AU3lzdGVtLkxpbnEA
+Z2V0X1llYXIAdGFyZ2V0WWVhcgBFeGVjdXRlU2NhbGFyAElGb3JtYXRQcm92aWRlcgBTdHJpbmdC
+dWlsZGVyAGdldF9SZXNvdXJjZU1hbmFnZXIAT2xlRGJEYXRhQWRhcHRlcgBUb0xvd2VyAElFbnVt
+ZXJhdG9yAEdldEVudW1lcmF0b3IALmN0b3IALmNjdG9yAFN5c3RlbS5EaWFnbm9zdGljcwBTeXN0
+ZW0uUnVudGltZS5Db21waWxlclNlcnZpY2VzAFN5c3RlbS5SZXNvdXJjZXMAU1RfYTEzNmZkNDFm
+NzE4NGE3YTk2YjhlOGE0ODA3OTBiMjkuUHJvcGVydGllcy5SZXNvdXJjZXMucmVzb3VyY2VzAERl
+YnVnZ2luZ01vZGVzAFNUX2ExMzZmZDQxZjcxODRhN2E5NmI4ZThhNDgwNzkwYjI5LlByb3BlcnRp
+ZXMAVGFibGVzAGdldF9WYXJpYWJsZXMARGF0ZVRpbWVTdHlsZXMAU2V0dGluZ3MARXF1YWxzAFN5
+c3RlbS5XaW5kb3dzLkZvcm1zAENvbnRhaW5zAGdldF9Db2x1bW5zAFN5c3RlbS5Db2xsZWN0aW9u
+cwBTdWNjZXNzAGdldF9EdHMAU2NyaXB0UmVzdWx0cwBFeGlzdHMAZ2V0X1Jvd3MAQ29uY2F0AEZv
+cm1hdABUcnlQYXJzZUV4YWN0AE9iamVjdABnZXRfRGVmYXVsdABGaXJzdE9yRGVmYXVsdABEaWFs
+b2dSZXN1bHQAc2V0X1Rhc2tSZXN1bHQAZ2V0X0N1cnJlbnQAZ2V0X0NvdW50AHZhbGlkUm93Q291
+bnQAQ2FzdABNb3ZlTmV4dABTeXN0ZW0uVGV4dABBcHBlbmRBbGxUZXh0AFdyaXRlQWxsVGV4dABn
+ZXRfTm93AERhdGFSb3cAU2hvdwBNZXNzYWdlQm94AGdldF9JdGVtQXJyYXkAZ2V0X0Fzc2VtYmx5
+AEFueQBJc051bGxPckVtcHR5AAAAACtDADoAXABUAGkAbQBlAHMAaABlAGUAdABzAFwATABvAGcA
+LgB0AHgAdAAASXsAMAB9ADoAIABTAHQAYQByAHQAaQBuAGcAIABFAHgAYwBlAGwAIABzAGgAZQBl
+AHQAIAByAGEAbgBnAGUAIAB0AGUAcwB0AAAjTABvAGcAIABmAGkAbABlACAAYwBsAGUAYQByAGUA
+ZAAuAAApRQByAHIAbwByACAAYwBsAGUAYQByAGkAbgBnACAAbABvAGcAOgAgAAAnVQBzAGUAcgA6
+ADoARQB4AGMAZQBsAEYAaQBsAGUAUABhAHQAaAAAB0oAYQBuAAAHRgBlAGIAAAdNAGEAcgAAB0EA
+cAByAAAHTQBhAHkAAAdKAHUAbgAAB0oAdQBsAAAHQQB1AGcAAAdTAGUAcAAAB08AYwB0AAAHTgBv
+AHYAAAdEAGUAYwAAP04AbwAgAG0AbwBuAHQAaAAgAGQAZQB0AGUAYwB0AGUAZAAgAGkAbgAgAGYA
+aQBsAGUAbgBhAG0AZQA6ACAAACtNAG8AbgB0AGgAIABEAGUAdABlAGMAdABpAG8AbgAgAEUAcgBy
+AG8AcgAACUQAYQB0AGUAABNEACAAbwBmACAAVwBlAGUAawAADUMAbABpAGUAbgB0AAAnQwBsAGkA
+ZQBuAHQAIABQAHIAbwBqAGUAYwB0ACAATgBhAG0AZQAAF0QAZQBzAGMAcgBpAHAAdABpAG8AbgAA
+MUIAaQBsAGwAYQBiAGwAZQAgAG8AcgAgAE4AbwBuACAAQgBpAGwAbABhAGIAbABlAAARQwBvAG0A
+bQBlAG4AdABzAAAXVABvAHQAYQBsACAASABvAHUAcgBzAAAVUwB0AGEAcgB0ACAAVABpAG0AZQAA
+EUUAbgBkACAAVABpAG0AZQAALUUAeABjAGUAbAAgAGYAaQBsAGUAIABuAG8AdAAgAGYAbwB1AG4A
+ZAA6AAoAABVGAGkAbABlACAARQByAHIAbwByAABdUAByAG8AdgBpAGQAZQByAD0ATQBpAGMAcgBv
+AHMAbwBmAHQALgBBAEMARQAuAE8ATABFAEQAQgAuADEAMgAuADAAOwBEAGEAdABhACAAUwBvAHUA
+cgBjAGUAPQAAazsARQB4AHQAZQBuAGQAZQBkACAAUAByAG8AcABlAHIAdABpAGUAcwA9ACIARQB4
+AGMAZQBsACAAMQAyAC4AMAAgAFgAbQBsADsASABEAFIAPQBZAEUAUwA7AEkATQBFAFgAPQAxACIA
+OwAAEyQAQQA4ADoASgAxADAAMAAwAAAjUAByAG8AYwBlAHMAcwBpAG4AZwAgAGYAaQBsAGUAOgAg
+AAA/LQAtAC0ALQAtAC0ALQAtAC0ALQAtAC0ALQAtAC0ALQAtAC0ALQAtAC0ALQAtAC0ALQAtAC0A
+LQAtAC0ALQABM1MAaABlAGUAdABzACAAZgBvAHUAbgBkACAAaQBuACAAdwBvAHIAawBiAG8AbwBr
+ADoAAAstACAAewAwAH0AARVUAEEAQgBMAEUAXwBOAEEATQBFAAABAAMkAAAzQwBoAGUAYwBrAGkA
+bgBnACAAZABlAHQAZQBjAHQAZQBkACAAcwBoAGUAZQB0ADoAIAAAD1MAaABlAGUAdAAgACcAAS8n
+ACAAbgBvAHQAIABmAG8AdQBuAGQAIABpAG4AIAB3AG8AcgBrAGIAbwBvAGsAARdTAGgAZQBlAHQA
+IABFAHIAcgBvAHIAAAtBADgAOgBKADgAAA1DADgAOgBEADEANAAAJ0MAaABlAGMAawBpAG4AZwAg
+AGgAZQBhAGQAZQByAHMALgAuAC4AAB9TAEUATABFAEMAVAAgACoAIABGAFIATwBNACAAWwAAA10A
+AElDAG8AbAB1AG0AbgAgAHsAMAB9ADoAIABNAGkAcwBzAGkAbgBnACAAKABlAHgAcABlAGMAdABl
+AGQAIAAnAHsAMQB9ACcAKQABUUMAbwBsAHUAbQBuACAAewAwAH0AOgAgAEYAbwB1AG4AZAAgACcA
+ewAxAH0AJwAgACgAZQB4AHAAZQBjAHQAZQBkACAAJwB7ADIAfQAnACkAATNIAGUAYQBkAGUAcgAg
+AHYAYQBsAGkAZABhAHQAaQBvAG4AIABmAGEAaQBsAGUAZAA6AAADCgAASUgAZQBhAGQAZQByACAA
+dgBhAGwAaQBkAGEAdABpAG8AbgAgAGYAYQBpAGwAZQBkACAAZgBvAHIAIABzAGgAZQBlAHQAIAAn
+AAEvJwAuACAAUwBlAGUAIABsAG8AZwAgAGYAbwByACAAZABlAHQAYQBpAGwAcwAuAAEjVgBhAGwA
+aQBkAGEAdABpAG8AbgAgAEYAYQBpAGwAZQBkAAAVSABlAGEAZABlAHIAcwAgAE8ASwAAPUMAaABl
+AGMAawBpAG4AZwAgAGYAbwByACAAJwBFAHgAYQBtAHAAbABlACcAIAB0AGUAeAB0AC4ALgAuAAEP
+RQB4AGEAbQBwAGwAZQAAVUYAbwB1AG4AZAAgACcARQB4AGEAbQBwAGwAZQAnACAAaQBuACAAYwBl
+AGwAbAAgAFsAUgBvAHcAIAB7ADAAfQAsACAAQwBvAGwAIAB7ADEAfQBdAAFhJwAgAGMAbwBuAHQA
+YQBpAG4AcwAgACcARQB4AGEAbQBwAGwAZQAnACAAdABlAHgAdAAgAC0AIABzAGsAaQBwAHAAaQBu
+AGcAIAB2AGEAbABpAGQAYQB0AGkAbwBuAC4AASVOAG8AIAAnAEUAeABhAG0AcABsAGUAJwAgAGYA
+bwB1AG4AZAABKUMAaABlAGMAawBpAG4AZwAgAGYAbwByACAAZABhAHQAYQAuAC4ALgAAWU4AbwAg
+AGQAYQB0AGEAIABmAG8AdQBuAGQAIABpAG4AIAB2AGEAbABpAGQAYQB0AGkAbwBuACAAcgBhAG4A
+ZwBlACAAaQBuACAAcwBoAGUAZQB0ACAAJwABAycAAT1SAGUAdAByAGkAZQB2AGkAbgBnACAAZgBp
+AHIAcwB0ACAARABhAHQAZQAgAHYAYQBsAHUAZQAuAC4ALgAANVMARQBMAEUAQwBUACAAVABPAFAA
+IAAxACAAWwBEAGEAdABlAF0AIABGAFIATwBNACAAWwAAQUEAOAA6AEoAMQA1AF0AIABXAEgARQBS
+AEUAIABbAEQAYQB0AGUAXQAgAEkAUwAgAE4ATwBUACAATgBVAEwATAAAMUYAaQByAHMAdAAgAEQA
+YQB0AGUAIAB2AGEAbAB1AGUAIABmAG8AdQBuAGQAOgAgAAARTQAvAGQALwB5AHkAeQB5AAAVTQBN
+AC8AZABkAC8AeQB5AHkAeQAAEWQALwBNAC8AeQB5AHkAeQAAFWQAZAAvAE0ATQAvAHkAeQB5AHkA
+ABV5AHkAeQB5AC0ATQBNAC0AZABkAAEneQB5AHkAeQAvAE0ATQAvAGQAZAAgAEgASAA6AG0AbQA6
+AHMAcwAAOUYAYQBsAGwAYgBhAGMAawAgAHAAYQByAHMAaQBuAGcAIABzAHUAYwBjAGUAZQBkAGUA
+ZAA6ACAAACtWAGEAbABpAGQAIABkAGEAdABlACAAZABlAHQAZQBjAHQAZQBkADoAIAAAHVQAYQBy
+AGcAZQB0ACAATQBvAG4AdABoADoAIAAAIVQAYQByAGcAZQB0ACAAWQBlAGEAcgA6ACAAewAwAH0A
+AFdGAGkAcgBzAHQAIABkAGEAdABlACAAdgBhAGwAdQBlACAAaQBzACAAbgBvAHQAIABhACAAdgBh
+AGwAaQBkACAAZABhAHQAZQAgAGYAbwByAG0AYQB0AAAlRgBpAHIAcwB0ACAAZABhAHQAZQAgAHYA
+YQBsAHUAZQAgACcAATknACAAaQBzACAAbgBvAHQAIABhACAAdgBhAGwAaQBkACAAZABhAHQAZQAg
+AGYAbwByAG0AYQB0AAEnSQBuAHYAYQBsAGkAZAAgAEQAYQB0AGUAIABGAG8AcgBtAGEAdAAAQ04A
+bwAgAEQAYQB0AGUAIAB2AGEAbAB1AGUAcwAgAGYAbwB1AG4AZAAgAGkAbgAgAHQAaABlACAAcwBo
+AGUAZQB0AAApRABhAHQAZQAgAFYAYQBsAHUAZQAgAE4AbwB0ACAARgBvAHUAbgBkAAA1UwBjAGEA
+bgBuAGkAbgBnACAAZgBvAHIAIAB2AGEAbABpAGQAIAByAG8AdwBzAC4ALgAuAABHUgBvAHcAIAB7
+ADAAfQA6ACAARgBvAG8AdABlAHIAIABkAGUAdABlAGMAdABlAGQALgAgAFMAdABvAHAAcABpAG4A
+ZwAuAABLUgBvAHcAIAB7ADAAfQA6ACAAVgBhAGwAaQBkACAAKABEAGEAdABlADoAIAB7ADEAOgB5
+AHkAeQB5AC0ATQBNAC0AZABkAH0AKQABTVIAbwB3ACAAewAwAH0AOgAgAEkAbgB2AGEAbABpAGQA
+IABvAHIAIABvAHUAdAAtAG8AZgAtAG0AbwBuAHQAaAAgAGQAYQB0AGUALgABKVIAbwB3ACAAewAw
+AH0AOgAgAEUAbQBwAHQAeQAgAGQAYQB0AGUALgAAX1MAdABvAHAAcABpAG4AZwAgAHMAYwBhAG4A
+IABhAGYAdABlAHIAIAB7ADAAfQAgAGMAbwBuAHMAZQBjAHUAdABpAHYAZQAgAGUAbQBwAHQAeQAg
+AHIAbwB3AHMALgAAFXsAMAB9AEEAOAA6AEoAewAxAH0AADlBAGQAagB1AHMAdABlAGQAIAB2AGEA
+bABpAGQAIABzAGgAZQBlAHQAIAByAGEAbgBnAGUAOgAgAAAZVgBhAGwAaQBkACAAZgBpAGwAZQA6
+ACAAAC1FAHIAcgBvAHIAIABjAGgAZQBjAGsAaQBuAGcAIABzAGgAZQBlAHQAIAAnAAEHJwA6ACAA
+ASFWAGEAbABpAGQAYQB0AGkAbwBuACAARQByAHIAbwByAABbTgBvACAAdgBhAGwAaQBkACAAcwBo
+AGUAZQB0ACAAZgBvAHUAbgBkACAAaQBuADoACgB7ADAAfQAKAAoARABlAGIAdQBnACAASQBuAGYA
+bwA6AAoAewAxAH0AACdVAHMAZQByADoAOgBTAGUAbABlAGMAdABlAGQAUwBoAGUAZQB0AAA3VQBz
+AGUAcgA6ADoARQB4AGMAZQBsAEMAbwBuAG4AZQBjAHQAaQBvAG4AUwB0AHIAaQBuAGcAAE9FAHgA
+cABlAGMAdABlAGQAIAB2AGEAbABpAGQAIAByAG8AdwBzACAAZgBvAHIAIABmAGkAbABlACAAJwB7
+ADAAfQAnADoAIAB7ADEAfQABKQoAVQBzAGkAbgBnACAAcwBoAGUAZQB0ACAAcgBhAG4AZwBlADoA
+IAAAIUMAUgBJAFQASQBDAEEATAAgAEUAUgBSAE8AUgA6AAoAAB8KAAoAUwB0AGEAYwBrACAAVABy
+AGEAYwBlADoACgAAF0YAYQB0AGEAbAAgAEUAcgByAG8AcgAAcVMAVABfAGEAMQAzADYAZgBkADQA
+MQBmADcAMQA4ADQAYQA3AGEAOQA2AGIAOABlADgAYQA0ADgAMAA3ADkAMABiADIAOQAuAFAAcgBv
+AHAAZQByAHQAaQBlAHMALgBSAGUAcwBvAHUAcgBjAGUAcwAAEWYAbwByAGUAYwBhAHMAdAAAHWIA
+aQBsAGwAYQBiAGwAZQAgAGgAbwB1AHIAcwAAJW4AbwBuACAAYgBpAGwAbABhAGIAbABlACAAaABv
+AHUAcgBzAAAZbABpAG4AZQAgAG0AYQBuAGEAZwBlAHIAAAAAAEv5BY+F65xCpC2nXB3kHWYABCAB
+AQgDIAABBSABARERBCABAQ4FIAEBEX1MBzIOEkESRRIcDh0ODh0ODg4OAhE9Dg4SSRIgEk0ODhJR
+ElUSWQ4STQIVEl0BDhJNAhwIDggIDg4OHQ4STQgICBJVDhE9DRJFDhJFDgQAABE9BQACDg4cBSAB
+EkEOAgYOBQACAQ4OAyAADgUAAg4ODgUgABKAkQUgABKAlQYgARKAmRwDIAAcBAABDg4GFRJpAg4C
+BSACARwYExABAh4AFRKApQEeABUSaQIeAAIDCgEOBAABAg4HAAIRgK0ODgYAAw4ODg4DBhE9BAYR
+gLkJIAISTRGAuR0cBSAAEoC9BCAAElEEIAEcDgMgAAINEAEBFRKApQEeABKAxQQKARJVBxUSaQIS
+VQISEAECAhUSgKUBHgAVEmkCHgACBiACAQ4SSQYgAQESgMkFIAEIEk0FFRJdAQ4FIAASgNUDIAAI
+BgADDg4cHAUgAQETAAYgARKA3QgHIAICDhGA4QcABA4OHBwcCgACDg4VEoClAQ4FIAESVQgEIAEc
+CAQAABJ5DwAFAg4dDhKA6RGA7RARPQ0ABAIOEoDpEYDtEBE9BCABDg4JEAECCB0eAB4ABCAAHRwG
+FRJpAhwCAwoBHAYAAgIOEA0HAAQODg4ODgQgAQEcAwcBAgUAARE9DQgAARKA+RGA/QUgABKBAQcg
+AgEOEoEBBCABAg4HIAIIDhGA4Qi3elxWGTTgiQiJhF3NgIDMkQQAAAAABAEAAAACBggCBgIDBhEM
+AwYSdQMGEnkDBhIUAwYSGAcGFRJpAhwCByACAg0QET0EAAASdQUAAQESeQQAABIUAwAAAQQgAQIc
+BSABAhJVBAgAEnUECAASeQQIABIUCAEACAAAAAAAHgEAAQBUAhZXcmFwTm9uRXhjZXB0aW9uVGhy
+b3dzAQgBAAIAAAAAACgBACNTVF9hMTM2ZmQ0MWY3MTg0YTdhOTZiOGU4YTQ4MDc5MGIyOQAABQEA
+AAAABwEAAkhQAAAYAQATQ29weXJpZ2h0IEAgSFAgMjAyNQAASQEAGi5ORVRGcmFtZXdvcmssVmVy
+c2lvbj12NC43AQBUDhRGcmFtZXdvcmtEaXNwbGF5TmFtZRIuTkVUIEZyYW1ld29yayA0LjcAtAAA
+AM7K774BAAAAkQAAAGxTeXN0ZW0uUmVzb3VyY2VzLlJlc291cmNlUmVhZGVyLCBtc2NvcmxpYiwg
+VmVyc2lvbj00LjAuMC4wLCBDdWx0dXJlPW5ldXRyYWwsIFB1YmxpY0tleVRva2VuPWI3N2E1YzU2
+MTkzNGUwODkjU3lzdGVtLlJlc291cmNlcy5SdW50aW1lUmVzb3VyY2VTZXQCAAAAAAAAAAAAAABQ
+QURQQURQtAAAANxVAAAAAAAAAAAAAPZVAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAADoVQAAAAAA
+AAAAAAAAAF9Db3JEbGxNYWluAG1zY29yZWUuZGxsAAAAAAD/JQAgABAAAAAAAAAAAAAAAAAAAAAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAEAAAABgAAIAA
-AAAAAAAAAAAAAAAAAAEAAQAAADAAAIAAAAAAAAAAAAAAAAAAAAEAAAAAAEgAAABYYAAAIgQAAAAA
-AAAAAAAAIgQ0AAAAVgBTAF8AVgBFAFIAUwBJAE8ATgBfAEkATgBGAE8AAAAAAL0E7/4AAAEAAAAB
-AIqcSSQAAAEAipxJJD8AAAAAAAAABAAAAAIAAAAAAAAAAAAAAAAAAABEAAAAAQBWAGEAcgBGAGkA
-bABlAEkAbgBmAG8AAAAAACQABAAAAFQAcgBhAG4AcwBsAGEAdABpAG8AbgAAAAAAAACwBIIDAAAB
-AFMAdAByAGkAbgBnAEYAaQBsAGUASQBuAGYAbwAAAF4DAAABADAAMAAwADAAMAA0AGIAMAAAABoA
-AQABAEMAbwBtAG0AZQBuAHQAcwAAAAAAAAAmAAMAAQBDAG8AbQBwAGEAbgB5AE4AYQBtAGUAAAAA
-AEgAUAAAAAAAcAAkAAEARgBpAGwAZQBEAGUAcwBjAHIAaQBwAHQAaQBvAG4AAAAAAFMAVABfAGEA
-MQAzADYAZgBkADQAMQBmADcAMQA4ADQAYQA3AGEAOQA2AGIAOABlADgAYQA0ADgAMAA3ADkAMABi
-ADIAOQAAAD4ADwABAEYAaQBsAGUAVgBlAHIAcwBpAG8AbgAAAAAAMQAuADAALgA5ADIAOAA5AC4A
-NAAwADAANwA0AAAAAABwACgAAQBJAG4AdABlAHIAbgBhAGwATgBhAG0AZQAAAFMAVABfAGEAMQAz
-ADYAZgBkADQAMQBmADcAMQA4ADQAYQA3AGEAOQA2AGIAOABlADgAYQA0ADgAMAA3ADkAMABiADIA
-OQAuAGQAbABsAAAATAAUAAEATABlAGcAYQBsAEMAbwBwAHkAcgBpAGcAaAB0AAAAQwBvAHAAeQBy
-AGkAZwBoAHQAIABAACAASABQACAAMgAwADIANQAAACoAAQABAEwAZQBnAGEAbABUAHIAYQBkAGUA
-bQBhAHIAawBzAAAAAAAAAAAAeAAoAAEATwByAGkAZwBpAG4AYQBsAEYAaQBsAGUAbgBhAG0AZQAA
-AFMAVABfAGEAMQAzADYAZgBkADQAMQBmADcAMQA4ADQAYQA3AGEAOQA2AGIAOABlADgAYQA0ADgA
-MAA3ADkAMABiADIAOQAuAGQAbABsAAAAaAAkAAEAUAByAG8AZAB1AGMAdABOAGEAbQBlAAAAAABT
-AFQAXwBhADEAMwA2AGYAZAA0ADEAZgA3ADEAOAA0AGEANwBhADkANgBiADgAZQA4AGEANAA4ADAA
-NwA5ADAAYgAyADkAAABCAA8AAQBQAHIAbwBkAHUAYwB0AFYAZQByAHMAaQBvAG4AAAAxAC4AMAAu
-ADkAMgA4ADkALgA0ADAAMAA3ADQAAAAAAEYADwABAEEAcwBzAGUAbQBiAGwAeQAgAFYAZQByAHMA
-aQBvAG4AAAAxAC4AMAAuADkAMgA4ADkALgA0ADAAMAA3ADQAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAQAAAAGAAAgAAAAAAA
+AAAAAAAAAAAAAQABAAAAMAAAgAAAAAAAAAAAAAAAAAAAAQAAAAAASAAAAFhgAAAYBAAAAAAAAAAA
+AAAYBDQAAABWAFMAXwBWAEUAUgBTAEkATwBOAF8ASQBOAEYATwAAAAAAvQTv/gAAAQAAAAEAgQ5M
+JAAAAQCBDkwkPwAAAAAAAAAEAAAAAgAAAAAAAAAAAAAAAAAAAEQAAAABAFYAYQByAEYAaQBsAGUA
+SQBuAGYAbwAAAAAAJAAEAAAAVAByAGEAbgBzAGwAYQB0AGkAbwBuAAAAAAAAALAEeAMAAAEAUwB0
+AHIAaQBuAGcARgBpAGwAZQBJAG4AZgBvAAAAVAMAAAEAMAAwADAAMAAwADQAYgAwAAAAGgABAAEA
+QwBvAG0AbQBlAG4AdABzAAAAAAAAACYAAwABAEMAbwBtAHAAYQBuAHkATgBhAG0AZQAAAAAASABQ
+AAAAAABwACQAAQBGAGkAbABlAEQAZQBzAGMAcgBpAHAAdABpAG8AbgAAAAAAUwBUAF8AYQAxADMA
+NgBmAGQANAAxAGYANwAxADgANABhADcAYQA5ADYAYgA4AGUAOABhADQAOAAwADcAOQAwAGIAMgA5
+AAAAPAAOAAEARgBpAGwAZQBWAGUAcgBzAGkAbwBuAAAAAAAxAC4AMAAuADkAMgA5ADIALgAzADcA
+MQAzAAAAcAAoAAEASQBuAHQAZQByAG4AYQBsAE4AYQBtAGUAAABTAFQAXwAzADMANgBhADkANAA2
+ADMAZgA0AGEAOAA0ADcAMgA1ADkAMQBlAGUAMQBjADcAZAAxADkAMgBhADAAYQA5ADQALgBkAGwA
+bAAAAEwAFAABAEwAZQBnAGEAbABDAG8AcAB5AHIAaQBnAGgAdAAAAEMAbwBwAHkAcgBpAGcAaAB0
+ACAAQAAgAEgAUAAgADIAMAAyADUAAAAqAAEAAQBMAGUAZwBhAGwAVAByAGEAZABlAG0AYQByAGsA
+cwAAAAAAAAAAAHgAKAABAE8AcgBpAGcAaQBuAGEAbABGAGkAbABlAG4AYQBtAGUAAABTAFQAXwAz
+ADMANgBhADkANAA2ADMAZgA0AGEAOAA0ADcAMgA1ADkAMQBlAGUAMQBjADcAZAAxADkAMgBhADAA
+YQA5ADQALgBkAGwAbAAAAGgAJAABAFAAcgBvAGQAdQBjAHQATgBhAG0AZQAAAAAAUwBUAF8AYQAx
+ADMANgBmAGQANAAxAGYANwAxADgANABhADcAYQA5ADYAYgA4AGUAOABhADQAOAAwADcAOQAwAGIA
+MgA5AAAAQAAOAAEAUAByAG8AZAB1AGMAdABWAGUAcgBzAGkAbwBuAAAAMQAuADAALgA5ADIAOQAy
+AC4AMwA3ADEAMwAAAEQADgABAEEAcwBzAGUAbQBiAGwAeQAgAFYAZQByAHMAaQBvAG4AAAAxAC4A
+MAAuADkAMgA5ADIALgAzADcAMQAzAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAADAAAAIw+AAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABQAAAMAAAACDYAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
@@ -3498,7 +3700,7 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==</BinaryItem>
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA</BinaryItem>
                 </ScriptProject>
               </DTS:ObjectData>
             </DTS:Executable>
@@ -3507,7 +3709,7 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==</BinaryItem>
               DTS:CreationName="Microsoft.ScriptTask"
               DTS:Description="Script Task"
               DTS:Disabled="True"
-              DTS:DTSID="{93b58511-8e62-4458-9345-e1fd30ad97a2}"
+              DTS:DTSID="{E0C4EC97-46CD-40AB-83D0-4C580B55481C}"
               DTS:ExecutableType="Microsoft.ScriptTask"
               DTS:LocaleID="-1"
               DTS:ObjectName="Test valid sheets"
@@ -4240,7 +4442,7 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==</BinaryItem>
             <DTS:PrecedenceConstraint
               DTS:refId="Package\Loop Through Employee Folders ADO\Loop through each Excel File.PrecedenceConstraints[Constraint]"
               DTS:CreationName=""
-              DTS:DTSID="{EB220DB9-9303-41EF-9CDF-21ABB30D6E6E}"
+              DTS:DTSID="{B69A6E4C-DA4C-41E0-884C-84CCE41FDDF6}"
               DTS:From="Package\Loop Through Employee Folders ADO\Loop through each Excel File\Select Month Sheet"
               DTS:LogicalAnd="True"
               DTS:ObjectName="Constraint"
@@ -4249,7 +4451,7 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==</BinaryItem>
           <DTS:ForEachVariableMappings>
             <DTS:ForEachVariableMapping
               DTS:CreationName=""
-              DTS:DTSID="{043488f9-9b39-4f72-9820-51043945a20c}"
+              DTS:DTSID="{C05828FE-DFF5-4F10-8EA2-27638A4BE8AE}"
               DTS:ObjectName="{68F0C9C0-59C9-4DC4-B758-6AB8BA7D3908}"
               DTS:ValueIndex="0"
               DTS:VariableName="User::ExcelFilePath" />
@@ -4260,7 +4462,7 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==</BinaryItem>
         <DTS:PrecedenceConstraint
           DTS:refId="Package\Loop Through Employee Folders ADO.PrecedenceConstraints[Constraint 1]"
           DTS:CreationName=""
-          DTS:DTSID="{1b4ff9c4-b438-47cc-b08d-7b6a1b2b719d}"
+          DTS:DTSID="{D59F3955-8E34-465B-BFD2-907DC3EB4B7E}"
           DTS:From="Package\Loop Through Employee Folders ADO\Extract Employee Names"
           DTS:LogicalAnd="True"
           DTS:ObjectName="Constraint 1"
@@ -4269,7 +4471,7 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==</BinaryItem>
       <DTS:ForEachVariableMappings>
         <DTS:ForEachVariableMapping
           DTS:CreationName=""
-          DTS:DTSID="{131881f0-6d1a-4d36-8b58-5be500ba143f}"
+          DTS:DTSID="{2381FA72-7C1B-46D3-9CF8-BE59B1E2FE78}"
           DTS:ObjectName="{FED277DB-3753-47EB-A2B1-D213B2CB2C28}"
           DTS:ValueIndex="0"
           DTS:VariableName="User::EmployeeFolderPath" />
@@ -4280,7 +4482,7 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==</BinaryItem>
     <DTS:PrecedenceConstraint
       DTS:refId="Package.PrecedenceConstraints[Constraint]"
       DTS:CreationName=""
-      DTS:DTSID="{ae18b77d-193c-46b7-b8a0-996b836668de}"
+      DTS:DTSID="{3D69A2C3-47D3-480F-B02E-3AEE523C04BB}"
       DTS:From="Package\Loop Employee Folders Script"
       DTS:LogicalAnd="True"
       DTS:ObjectName="Constraint"
@@ -4288,7 +4490,7 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==</BinaryItem>
     <DTS:PrecedenceConstraint
       DTS:refId="Package.PrecedenceConstraints[Constraint 1]"
       DTS:CreationName=""
-      DTS:DTSID="{22C5328D-E63B-4B47-AFE3-3EDFBFA04498}"
+      DTS:DTSID="{EAC74803-3B64-49F7-8215-A14DA6C46563}"
       DTS:From="Package\Loop Through Employee Folders ADO"
       DTS:LogicalAnd="True"
       DTS:ObjectName="Constraint 1"
@@ -4296,7 +4498,7 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==</BinaryItem>
     <DTS:PrecedenceConstraint
       DTS:refId="Package.PrecedenceConstraints[Constraint 2]"
       DTS:CreationName=""
-      DTS:DTSID="{A4B3BDA5-A872-4179-9627-D0EC96555A27}"
+      DTS:DTSID="{DC57A9B1-2A6B-4CED-A90C-D5D428C019BF}"
       DTS:From="Package\Clean and Validate Timesheet Data"
       DTS:LogicalAnd="True"
       DTS:ObjectName="Constraint 2"
@@ -4304,7 +4506,7 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==</BinaryItem>
     <DTS:PrecedenceConstraint
       DTS:refId="Package.PrecedenceConstraints[Constraint 3]"
       DTS:CreationName=""
-      DTS:DTSID="{6E587881-54B2-427D-B047-1CD9A526E786}"
+      DTS:DTSID="{461B529A-89DD-4488-9626-ED6C072BF357}"
       DTS:From="Package\Load Timesheet Data"
       DTS:LogicalAnd="True"
       DTS:ObjectName="Constraint 3"
@@ -4349,25 +4551,25 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==</BinaryItem>
         <NodeLayout
           Size="168.8,41.6"
           Id="Package\Loop Through Employee Folders ADO\Loop through each Excel File\Select Month Sheet"
-          TopLeft="82.0666419886891,108.199998824795" />
+          TopLeft="82.8999752764912,108.199998824795" />
         <NodeLayout
           Size="156,41.6"
           Id="Package\Loop Through Employee Folders ADO\Loop through each Excel File\Test valid sheets"
           TopLeft="87.1333071983531,43.3999985355136" />
         <EdgeLayout
           Id="Package\Loop Through Employee Folders ADO\Loop through each Excel File.PrecedenceConstraints[Constraint]"
-          TopLeft="167.74997302269,149.799998824795">
+          TopLeft="168.166639666591,149.799998824795">
           <EdgeLayout.Curve>
             <mssgle:Curve
               StartConnector="{assembly:Null}"
-              EndConnector="0,40.7999971795083"
+              EndConnector="0,40.799997179508"
               Start="0,0"
-              End="0,33.2999971795083">
+              End="0,33.299997179508">
               <mssgle:Curve.Segments>
                 <mssgle:SegmentCollection
                   Capacity="5">
                   <mssgle:LineSegment
-                    End="0,33.2999971795083" />
+                    End="0,33.299997179508" />
                 </mssgle:SegmentCollection>
               </mssgle:Curve.Segments>
             </mssgle:Curve>
@@ -4414,18 +4616,18 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==</BinaryItem>
           TopLeft="424.999976779025,196.733331965274" />
         <EdgeLayout
           Id="Package.PrecedenceConstraints[Constraint]"
-          TopLeft="612.895807932546,132.599999367197">
+          TopLeft="612.895807932547,132.599999367197">
           <EdgeLayout.Curve>
             <mssgle:Curve
               StartConnector="{assembly:Null}"
-              EndConnector="0,64.133332598077"
+              EndConnector="0,64.1333325980766"
               Start="0,0"
-              End="0,56.633332598077">
+              End="0,56.6333325980766">
               <mssgle:Curve.Segments>
                 <mssgle:SegmentCollection
                   Capacity="5">
                   <mssgle:LineSegment
-                    End="0,56.633332598077" />
+                    End="0,56.6333325980766" />
                 </mssgle:SegmentCollection>
               </mssgle:Curve.Segments>
             </mssgle:Curve>
@@ -4436,18 +4638,18 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==</BinaryItem>
         </EdgeLayout>
         <EdgeLayout
           Id="Package.PrecedenceConstraints[Constraint 1]"
-          TopLeft="614.61664151061,782.333331965274">
+          TopLeft="614.616641510611,782.333331965274">
           <EdgeLayout.Curve>
             <mssgle:Curve
               StartConnector="{assembly:Null}"
-              EndConnector="0,76.9999986078345"
+              EndConnector="0,76.999998607835"
               Start="0,0"
-              End="0,69.4999986078345">
+              End="0,69.499998607835">
               <mssgle:Curve.Segments>
                 <mssgle:SegmentCollection
                   Capacity="5">
                   <mssgle:LineSegment
-                    End="0,69.4999986078345" />
+                    End="0,69.499998607835" />
                 </mssgle:SegmentCollection>
               </mssgle:Curve.Segments>
             </mssgle:Curve>
