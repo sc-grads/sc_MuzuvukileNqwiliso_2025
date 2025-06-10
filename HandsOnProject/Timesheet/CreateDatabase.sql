@@ -166,9 +166,8 @@ BEGIN
             BillableStatus VARCHAR(20) NOT NULL CHECK (BillableStatus IN ('Billable', 'Non-Billable')),
             Comments TEXT,
             TotalHours DECIMAL(5,2),
-            SartTime TIME,
+            StartTime TIME,
             EndTime TIME,
-            Sequence INT,
             FOREIGN KEY (EmployeeID) REFERENCES Timesheet.Employee(EmployeeID),
             FOREIGN KEY (ClientID) REFERENCES Timesheet.Client(ClientID),
             FOREIGN KEY (ProjectID) REFERENCES Timesheet.Project(ProjectID),
@@ -181,28 +180,40 @@ BEGIN
                 (ActivityID IS NULL AND LeaveType IS NOT NULL)
             )
         );
-        CREATE INDEX IX_Timesheet_Employee_Date ON Timesheet.Timesheet(EmployeeID, Date, Sequence);
+        CREATE INDEX IX_Timesheet_Employee_Date ON Timesheet.Timesheet(EmployeeID, Date);
         PRINT 'Timesheet table created.';
     END
 
+	
     -- Leave Table
-    IF OBJECT_ID('Timesheet.Leave', 'U') IS NULL
-    BEGIN
-        CREATE TABLE Timesheet.Leave (
-            LeaveID INT PRIMARY KEY IDENTITY(1,1),
-            EmployeeID INT NOT NULL,
-            LeaveType INT NOT NULL,
-            Start_Date DATE NOT NULL,
-            End_Date DATE NOT NULL,
-            Status VARCHAR(20) NOT NULL CHECK (Status IN ('Pending', 'Approved', 'Denied')),
-            Comments TEXT,
-            FOREIGN KEY (EmployeeID) REFERENCES Timesheet.Employee(EmployeeID),
-            FOREIGN KEY (LeaveType) REFERENCES Timesheet.LeaveType(LeaveType),
-            CONSTRAINT CHK_Leave_Dates CHECK (End_Date >= Start_Date)
-        );
-        CREATE INDEX IX_Leave_Employee_ID ON Timesheet.Leave(EmployeeID);
-        PRINT 'Leave table created.';
-    END
+	IF OBJECT_ID('Timesheet.LeaveRequest','U') IS NULL 
+	BEGIN
+		  CREATE TABLE Timesheet.LeaveRequest (
+			LeaveRequestID INT IDENTITY(1,1) PRIMARY KEY,
+			EmployeeID INT NOT NULL,
+			LeaveTypeID INT NOT NULL,  -- FK here instead of string
+			StartDate DATE NOT NULL,
+			EndDate DATE NOT NULL,
+			Status VARCHAR(20) NOT NULL DEFAULT 'Pending'
+				CHECK (Status IN ('Pending', 'Approved', 'Denied')),
+			NumberOfDays AS DATEDIFF(DAY, StartDate, EndDate) + 1 PERSISTED,
+			ApprovalObtained BIT NOT NULL DEFAULT 0,
+			SickNoteSubmitted BIT NULL,
+
+			CONSTRAINT FK_LeaveRequests_Employee FOREIGN KEY (EmployeeID)
+				REFERENCES Timesheet.Employee(EmployeeID),
+
+			CONSTRAINT FK_LeaveRequests_LeaveType FOREIGN KEY (LeaveTypeID)
+				REFERENCES Timesheet.LeaveType(LeaveType),
+
+			CONSTRAINT CHK_LeaveRequests_Dates CHECK (EndDate >= StartDate),
+
+			CONSTRAINT CHK_Approval_Status CHECK (
+				(Status = 'Approved' AND ApprovalObtained = 1) OR
+				(Status IN ('Pending', 'Denied'))
+			)
+		);
+     END
 
     -- Forecast Table
     IF OBJECT_ID('Timesheet.Forecast', 'U') IS NULL
@@ -254,26 +265,47 @@ BEGIN
         PRINT 'AuditLog table created.';
     END
 
+
+	IF OBJECT_ID('Timesheet.AuditLog', 'U') IS NULL 
+BEGIN
+    CREATE TABLE Timesheet.AuditLog (
+        AuditID INT IDENTITY(1,1) PRIMARY KEY,
+        EventType VARCHAR(50) NOT NULL, -- e.g., 'Error', 'Info'
+        Source VARCHAR(50) NOT NULL,    -- e.g., 'Staging_LeaveRequest'
+        EmployeeName NVARCHAR(255),     -- Employee name from staging
+        FileName NVARCHAR(255),         -- Excel file path
+        ColumnName VARCHAR(50),         -- Affected column (e.g., 'LeaveTypeName')
+        Value NVARCHAR(255),            -- Invalid or affected value
+        Message NVARCHAR(1000),         -- Error or info message
+        ProcessedDate DATETIME DEFAULT GETDATE(),
+
+    );
+END
+
     -- Timesheet_Staging Table
-    IF OBJECT_ID('Timesheet.Timesheet_Staging', 'U') IS NULL
-    BEGIN
-        CREATE TABLE Timesheet.TimesheetStaging (
-            Date DATE,
-            [DayOfWeek] VARCHAR(10),
-            ClientName VARCHAR(100),
-            ProjectName VARCHAR(100),
-            ActivityName VARCHAR(50),
-            BillableStatus VARCHAR(20),
-            Comments TEXT,
-            TotalHours DECIMAL(5,2),
-            SartTime TIME,
-            EndTime TIME,
-            FileName VARCHAR(255),
-            EmployeeID INT,
-            Sequence INT
-        );
-        PRINT 'Timesheet_Staging table created.';
-    END
+IF OBJECT_ID('Timesheet.TimesheetStaging', 'U') IS NOT NULL
+    DROP TABLE Timesheet.TimesheetStaging;
+
+CREATE TABLE Timesheet.TimesheetStaging (
+    StagingID INT IDENTITY(1,1) PRIMARY KEY,
+    [Date] NVARCHAR(50),           -- Raw string to handle Excel date formats
+    [DayOfWeek] VARCHAR(10),
+    ClientName VARCHAR(100),
+    ProjectName VARCHAR(100),
+    ActivityName VARCHAR(50),
+    BillableStatus VARCHAR(20),
+    Comments NVARCHAR(MAX),         -- TEXT is deprecated, use NVARCHAR(MAX)
+    TotalHours NVARCHAR(50),        -- Raw string to validate later
+    StartTime NVARCHAR(50),         -- Raw string for time
+    EndTime NVARCHAR(50),           -- Raw string for time
+    EmployeeName NVARCHAR(255),     -- From User::EmployeeName
+    FileName NVARCHAR(255),         -- From User::ExcelFilePath
+    ProcessedDate DATETIME DEFAULT GETDATE(),
+    IsValid BIT DEFAULT 0,          -- Flag for valid rows
+    --ErrorMessage NVARCHAR(1000)     -- Validation errors
+);
+
+PRINT 'Timesheet.TimesheetStaging table created.';
 
     -- FileEmployeeMapping Table
     IF OBJECT_ID('Timesheet.FileEmployeeMapping', 'U') IS NULL
@@ -389,3 +421,20 @@ BEGIN
 END;
 GO
 
+
+-- VIEWS 
+CREATE VIEW Timesheet.vw_LeaveRequestDetails AS
+SELECT
+    lr.LeaveRequestID,
+    e.EmployeeID,
+    e.EmployeeName,
+    lt.LeaveTypeName,
+    lr.StartDate,
+    lr.EndDate,
+    lr.NumberOfDays,
+    lr.Status,
+    lr.ApprovalObtained,
+    lr.SickNoteSubmitted
+FROM Timesheet.LeaveRequest lr
+JOIN Timesheet.Employee e ON lr.EmployeeID = e.EmployeeID
+JOIN Timesheet.LeaveType lt ON lr.LeaveTypeID = lt.LeaveType;
