@@ -76,7 +76,11 @@ EXEC Timesheet.CreateSqID @SequenceName = 'ProjectSeq', @StartValue = 3000;
 EXEC Timesheet.CreateSqID @SequenceName = 'LeaveTypeSeq', @StartValue = 4000;
 EXEC Timesheet.CreateSqID @SequenceName = 'ActivitySeq', @StartValue = 5000;
 EXEC Timesheet.CreateSqID @SequenceName = 'TimesheetSeq', @StartValue = 6000;
+EXEC Timesheet.CreateSqID @SequenceName = 'ForecastSeq', @StartValue = 7000;
 GO
+
+
+
 
 -- Drop CreateTimesheetTables if exists
 IF OBJECT_ID('Timesheet.CreateTimesheetTables', 'P') IS NOT NULL
@@ -215,23 +219,24 @@ BEGIN
 		);
      END
 
-    -- Forecast Table
-	IF OBJECT_ID('Timesheet.Forecast', 'U') IS NULL
-	BEGIN
-		CREATE TABLE Timesheet.Forecast (
-			ForecastID INT IDENTITY(1,1) PRIMARY KEY,
-			EmployeeID INT NOT NULL,
-			ForecastMonth DATE NOT NULL,
-			ForecastedHours DECIMAL(5,2) NOT NULL,
-			ForecastedWorkDays INT NOT NULL,
-			NonBillableHours DECIMAL(5,2) NOT NULL,
-			BillableHours DECIMAL(5,2) NOT NULL,
-			TotalHours DECIMAL(5,2) NOT NULL,
-			FOREIGN KEY (EmployeeID) REFERENCES Timesheet.Employee(EmployeeID),
-			CONSTRAINT UQ_Forecast_Employee_Month UNIQUE (EmployeeID, ForecastMonth)
-		);
-		PRINT 'Forecast table created.';
-	END
+-- Drop the table if it exists (must be before procedure creation)
+IF OBJECT_ID('Timesheet.Forecast', 'U') IS NOT NULL
+    DROP TABLE Timesheet.Forecast;
+  CREATE TABLE Timesheet.Forecast (
+    ForecastID INT PRIMARY KEY DEFAULT NEXT VALUE FOR Timesheet.ForecastSeq ,
+    EmployeeID INT NOT NULL,
+    ForecastMonth DATE NOT NULL,
+    ForecastedHours DECIMAL(5,2) NOT NULL DEFAULT (168.00),
+    ForecastedWorkDays INT NOT NULL DEFAULT (21),
+    NonBillableHours DECIMAL(5,2) NOT NULL,
+    BillableHours DECIMAL(5,2) NOT NULL,
+    TotalHours DECIMAL(5,2) NOT NULL,
+    FOREIGN KEY (EmployeeID) REFERENCES Timesheet.Employee(EmployeeID),
+    CONSTRAINT UQ_Forecast_Employee_Month UNIQUE (EmployeeID, ForecastMonth),
+    CONSTRAINT CK_Forecast_Total_vs_Planned CHECK (TotalHours >= ForecastedHours)
+);
+
+
     -- ProcessedFiles Table
     IF OBJECT_ID('Timesheet.ProcessedFiles', 'U') IS NULL
     BEGIN

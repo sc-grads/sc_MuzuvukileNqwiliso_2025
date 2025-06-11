@@ -11,8 +11,8 @@
   DTS:LocaleID="7177"
   DTS:ObjectName="LoadTimesheet"
   DTS:PackageType="5"
-  DTS:VersionBuild="81"
-  DTS:VersionGUID="{788AEE0A-77AE-4421-A364-59AEEC11BDF8}">
+  DTS:VersionBuild="89"
+  DTS:VersionGUID="{87BAAD97-4E94-4F53-A987-14B5889786AD}">
   <DTS:Property
     DTS:Name="PackageFormatVersion">8</DTS:Property>
   <DTS:ConnectionManagers>
@@ -166,6 +166,23 @@
       </DTS:ObjectData>
     </DTS:Executable>
     <DTS:Executable
+      DTS:refId="Package\Forecast Summary"
+      DTS:CreationName="Microsoft.ExecuteSQLTask"
+      DTS:Description="Execute SQL Task"
+      DTS:DTSID="{3C9768B5-C8E8-4FEC-82D9-BC3393CCFFFD}"
+      DTS:ExecutableType="Microsoft.ExecuteSQLTask"
+      DTS:LocaleID="-1"
+      DTS:ObjectName="Forecast Summary"
+      DTS:TaskContact="Execute SQL Task; Microsoft Corporation; SQL Server 2022; © 2022 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1"
+      DTS:ThreadHint="0">
+      <DTS:Variables />
+      <DTS:ObjectData>
+        <SQLTask:SqlTaskData
+          SQLTask:Connection="{953867F6-60BC-4801-81DA-6B94055DDBB6}"
+          SQLTask:SqlStatementSource="BEGIN TRY&#xA;    MERGE Timesheet.Forecast AS Target&#xA;    USING (&#xA;        SELECT &#xA;            T.EmployeeID,&#xA;            DATEADD(MONTH, DATEDIFF(MONTH, 0, T.[Date]), 0) AS ForecastMonth,&#xA;            SUM(CASE WHEN T.BillableStatus = 'Non-Billable' THEN T.TotalHours ELSE 0 END) AS NonBillableHours,&#xA;            SUM(CASE WHEN T.BillableStatus = 'Billable' THEN T.TotalHours ELSE 0 END) AS BillableHours,&#xA;            SUM(T.TotalHours) AS TotalHours&#xA;        FROM &#xA;            Timesheet.Timesheet T&#xA;        GROUP BY &#xA;            T.EmployeeID,&#xA;            DATEADD(MONTH, DATEDIFF(MONTH, 0, T.[Date]), 0)&#xA;    ) AS Source&#xA;    ON Target.EmployeeID = Source.EmployeeID &#xA;       AND Target.ForecastMonth = Source.ForecastMonth&#xA;    WHEN MATCHED THEN &#xA;        UPDATE SET &#xA;            Target.NonBillableHours = Source.NonBillableHours,&#xA;            Target.BillableHours = Source.BillableHours,&#xA;            Target.TotalHours = Source.TotalHours&#xA;    WHEN NOT MATCHED BY TARGET AND Source.TotalHours &gt; 168 THEN &#xA;        INSERT (&#xA;            EmployeeID, &#xA;            ForecastMonth, &#xA;            ForecastedHours, &#xA;            ForecastedWorkDays,&#xA;            NonBillableHours, &#xA;            BillableHours, &#xA;            TotalHours&#xA;        )&#xA;        VALUES (&#xA;            Source.EmployeeID, &#xA;            Source.ForecastMonth, &#xA;            168.00,   -- Default ForecastedHours&#xA;            21,       -- Default ForecastedWorkDays&#xA;            Source.NonBillableHours, &#xA;            Source.BillableHours, &#xA;            Source.TotalHours&#xA;        );&#xA;END TRY&#xA;BEGIN CATCH&#xA;    INSERT INTO ErrorLog (&#xA;        ErrorDate,&#xA;        ErrorTask,&#xA;        ErrorDescription,&#xA;        SourceComponent,&#xA;        RowData,&#xA;        UserName&#xA;    )&#xA;    VALUES (&#xA;        GETDATE(),&#xA;        'Timesheet Forecast MERGE',&#xA;        ERROR_MESSAGE(),&#xA;        'Timesheet.Forecast',&#xA;        ISNULL(&#xA;            (SELECT TOP 1 &#xA;                'EmployeeID: ' + CAST(EmployeeID AS NVARCHAR(10)) + ', ' +&#xA;                'Month: ' + CONVERT(NVARCHAR(10), ForecastMonth, 120) + ', ' +&#xA;                'BillableHrs: ' + CAST(BillableHours AS NVARCHAR(10)) + ', ' +&#xA;                'NonBillableHrs: ' + CAST(NonBillableHours AS NVARCHAR(10))&#xA;             FROM Source FOR JSON PATH),&#xA;            'No row data available'&#xA;        ),&#xA;        SUSER_SNAME()&#xA;    );&#xA;    &#xA;    THROW;&#xA;END CATCH" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
+      </DTS:ObjectData>
+    </DTS:Executable>
+    <DTS:Executable
       DTS:refId="Package\Load Timesheet Data"
       DTS:CreationName="Microsoft.ExecuteSQLTask"
       DTS:Description="Execute SQL Task"
@@ -179,7 +196,7 @@
       <DTS:ObjectData>
         <SQLTask:SqlTaskData
           SQLTask:Connection="{953867F6-60BC-4801-81DA-6B94055DDBB6}"
-          SQLTask:SqlStatementSource="-- Log duplicates&#xA;INSERT INTO Timesheet.AuditLog (&#xA;    EventType, Source, EmployeeName, FileName, ColumnName, Value, Message, ProcessedDate&#xA;)&#xA;SELECT &#xA;    'Info',&#xA;    'TimesheetStaging',&#xA;    s.EmployeeName,&#xA;    s.FileName,&#xA;    'Timesheet Data',&#xA;    COALESCE(s.ProjectName, 'Unknown') + ', ' + COALESCE(s.TotalHours, '0'),&#xA;    'Duplicate timesheet entry found in Timesheet table',&#xA;    GETDATE()&#xA;FROM Timesheet.TimesheetStaging s&#xA;JOIN Timesheet.Employee e ON s.EmployeeName = e.EmployeeName&#xA;LEFT JOIN Timesheet.Client c ON s.ClientName = c.ClientName&#xA;LEFT JOIN Timesheet.Project p ON s.ProjectName = p.ProjectName AND p.ClientID = c.ClientID&#xA;JOIN Timesheet.Timesheet t ON &#xA;    e.EmployeeID = t.EmployeeID&#xA;    AND TRY_CONVERT(DATE, s.[Date]) = t.[Date]&#xA;    AND TRY_CONVERT(TIME, s.StartTime) = t.StartTime&#xA;    AND TRY_CONVERT(TIME, s.EndTime) = t.EndTime&#xA;    AND COALESCE(c.ClientID, -1) = COALESCE(t.ClientID, -1)&#xA;    AND COALESCE(p.ProjectID, -1) = COALESCE(t.ProjectID, -1)&#xA;WHERE s.IsValid = 1&#xA;  AND s.ProcessedDate &gt;= DATEADD(DAY, -1, GETDATE())&#xA;  AND e.EmployeeID IS NOT NULL;&#xA;&#xA;-- Insert non-duplicate valid rows&#xA;INSERT INTO Timesheet.Timesheet (&#xA;    EmployeeID, [Date], [DayOfWeek], ClientID, ProjectID, ActivityID, LeaveType,&#xA;    BillableStatus, Comments, TotalHours, StartTime, EndTime&#xA;)&#xA;SELECT &#xA;    e.EmployeeID,&#xA;    TRY_CONVERT(DATE, s.[Date]),&#xA;    s.[DayOfWeek],&#xA;    c.ClientID,&#xA;    p.ProjectID,&#xA;    a.ActivityID,&#xA;    lt.LeaveType,&#xA;    s.BillableStatus,&#xA;    s.Comments,&#xA;    TRY_CONVERT(DECIMAL(5,2), s.TotalHours),&#xA;    TRY_CONVERT(TIME, s.StartTime),&#xA;    TRY_CONVERT(TIME, s.EndTime)&#xA;FROM Timesheet.TimesheetStaging s&#xA;LEFT JOIN Timesheet.Employee e ON s.EmployeeName = e.EmployeeName&#xA;LEFT JOIN Timesheet.Client c ON s.ClientName = c.ClientName&#xA;LEFT JOIN Timesheet.Project p ON s.ProjectName = p.ProjectName AND p.ClientID = c.ClientID&#xA;LEFT JOIN Timesheet.Activity a ON s.ActivityName = a.ActivityName&#xA;LEFT JOIN Timesheet.LeaveType lt ON s.ActivityName = lt.LeaveTypeName&#xA;WHERE s.IsValid = 1&#xA;  AND s.ProcessedDate &gt;= DATEADD(DAY, -1, GETDATE())&#xA;  AND e.EmployeeID IS NOT NULL&#xA;  AND (&#xA;        (a.ActivityID IS NOT NULL AND lt.LeaveType IS NULL) OR&#xA;        (a.ActivityID IS NULL AND lt.LeaveType IS NOT NULL)&#xA;      )&#xA;  AND NOT EXISTS (&#xA;        SELECT 1&#xA;        FROM Timesheet.Timesheet t&#xA;        WHERE t.EmployeeID = e.EmployeeID&#xA;          AND t.[Date] = TRY_CONVERT(DATE, s.[Date])&#xA;          AND t.StartTime = TRY_CONVERT(TIME, s.StartTime)&#xA;          AND t.EndTime = TRY_CONVERT(TIME, s.EndTime)&#xA;          AND COALESCE(t.ClientID, -1) = COALESCE(c.ClientID, -1)&#xA;          AND COALESCE(t.ProjectID, -1) = COALESCE(p.ProjectID, -1)&#xA;      );&#xA;&#xA;-- Log lookup failures&#xA;INSERT INTO Timesheet.AuditLog (&#xA;    EventType, Source, EmployeeName, FileName, ColumnName, Value, Message, ProcessedDate&#xA;)&#xA;SELECT &#xA;    'Error',&#xA;    'TimesheetStaging',&#xA;    s.EmployeeName,&#xA;    s.FileName,&#xA;    CASE &#xA;        WHEN e.EmployeeID IS NULL THEN 'EmployeeName'&#xA;        WHEN c.ClientID IS NULL THEN 'ClientName'&#xA;        WHEN p.ProjectID IS NULL THEN 'ProjectName'&#xA;        WHEN a.ActivityID IS NULL AND lt.LeaveType IS NULL THEN 'ActivityName/LeaveType'&#xA;        ELSE 'Unknown'&#xA;    END AS ColumnName,&#xA;    CASE &#xA;        WHEN e.EmployeeID IS NULL THEN s.EmployeeName&#xA;        WHEN c.ClientID IS NULL THEN s.ClientName&#xA;        WHEN p.ProjectID IS NULL THEN s.ProjectName&#xA;        WHEN a.ActivityID IS NULL AND lt.LeaveType IS NULL THEN s.ActivityName&#xA;        ELSE 'Unknown'&#xA;    END AS Value,&#xA;    CASE &#xA;        WHEN e.EmployeeID IS NULL THEN 'Employee not found in reference table'&#xA;        WHEN c.ClientID IS NULL THEN 'Client not found in reference table'&#xA;        WHEN p.ProjectID IS NULL THEN 'Project not found for specified client'&#xA;        WHEN a.ActivityID IS NULL AND lt.LeaveType IS NULL THEN 'Neither Activity nor LeaveType matched'&#xA;        ELSE 'Unknown validation error'&#xA;    END AS Message,&#xA;    GETDATE()&#xA;FROM Timesheet.TimesheetStaging s&#xA;LEFT JOIN Timesheet.Employee e ON s.EmployeeName = e.EmployeeName&#xA;LEFT JOIN Timesheet.Client c ON s.ClientName = c.ClientName&#xA;LEFT JOIN Timesheet.Project p ON s.ProjectName = p.ProjectName AND p.ClientID = c.ClientID&#xA;LEFT JOIN Timesheet.Activity a ON s.ActivityName = a.ActivityName&#xA;LEFT JOIN Timesheet.LeaveType lt ON s.ActivityName = lt.LeaveTypeName&#xA;WHERE s.IsValid = 1&#xA;  AND s.ProcessedDate &gt;= DATEADD(DAY, -1, GETDATE())&#xA;  AND (&#xA;        e.EmployeeID IS NULL OR&#xA;        c.ClientID IS NULL OR&#xA;        p.ProjectID IS NULL OR&#xA;        (a.ActivityID IS NULL AND lt.LeaveType IS NULL)&#xA;      );" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
+          SQLTask:SqlStatementSource="-- Log duplicates&#xA;INSERT INTO Timesheet.AuditLog (&#xA;    EventType, Source, EmployeeName, FileName, ColumnName, Value, Message, ProcessedDate&#xA;)&#xA;SELECT &#xA;    'Info',&#xA;    'TimesheetStaging',&#xA;    s.EmployeeName,&#xA;    s.FileName,&#xA;    'Timesheet Data',&#xA;    COALESCE(s.ProjectName, 'Unknown') + ', ' + COALESCE(s.TotalHours, '0'),&#xA;    'Duplicate timesheet entry found in Timesheet table',&#xA;    GETDATE()&#xA;FROM Timesheet.TimesheetStaging s&#xA;JOIN Timesheet.Employee e ON s.EmployeeName = e.EmployeeName&#xA;LEFT JOIN Timesheet.Client c ON s.ClientName = c.ClientName&#xA;LEFT JOIN Timesheet.Project p ON s.ProjectName = p.ProjectName AND p.ClientID = c.ClientID&#xA;JOIN Timesheet.Timesheet t ON &#xA;    e.EmployeeID = t.EmployeeID&#xA;    AND TRY_CONVERT(DATE, s.[Date]) = t.[Date]&#xA;    AND TRY_CONVERT(TIME, s.StartTime) = t.StartTime&#xA;    AND TRY_CONVERT(TIME, s.EndTime) = t.EndTime&#xA;    AND COALESCE(c.ClientID, -1) = COALESCE(t.ClientID, -1)&#xA;    AND COALESCE(p.ProjectID, -1) = COALESCE(t.ProjectID, -1)&#xA;WHERE s.IsValid = 1&#xA;  AND s.ProcessedDate &gt;= DATEADD(DAY, -1, GETDATE())&#xA;  AND e.EmployeeID IS NOT NULL;&#xA;&#xA;-- Insert non-duplicate valid rows&#xA;-- Insert non-duplicate valid rows (excluding holidays)&#xA;INSERT INTO Timesheet.Timesheet (&#xA;    EmployeeID, [Date], [DayOfWeek], ClientID, ProjectID, ActivityID, LeaveType,&#xA;    BillableStatus, Comments, TotalHours, StartTime, EndTime&#xA;)&#xA;SELECT &#xA;    e.EmployeeID,&#xA;    TRY_CONVERT(DATE, s.[Date]),&#xA;    s.[DayOfWeek],&#xA;    c.ClientID,&#xA;    p.ProjectID,&#xA;    a.ActivityID,&#xA;    lt.LeaveType,&#xA;    s.BillableStatus,&#xA;    s.Comments,&#xA;    TRY_CONVERT(DECIMAL(5,2), s.TotalHours),&#xA;    TRY_CONVERT(TIME, s.StartTime),&#xA;    TRY_CONVERT(TIME, s.EndTime)&#xA;FROM Timesheet.TimesheetStaging s&#xA;LEFT JOIN Timesheet.Employee e ON s.EmployeeName = e.EmployeeName&#xA;LEFT JOIN Timesheet.Client c ON s.ClientName = c.ClientName&#xA;LEFT JOIN Timesheet.Project p ON s.ProjectName = p.ProjectName AND p.ClientID = c.ClientID&#xA;LEFT JOIN Timesheet.Activity a ON s.ActivityName = a.ActivityName&#xA;LEFT JOIN Timesheet.LeaveType lt ON s.ActivityName = lt.LeaveTypeName&#xA;WHERE s.IsValid = 1&#xA;  AND s.ProcessedDate &gt;= DATEADD(DAY, -1, GETDATE())&#xA;  AND e.EmployeeID IS NOT NULL&#xA;  AND (&#xA;        (a.ActivityID IS NOT NULL AND lt.LeaveType IS NULL AND a.ActivityID &lt;&gt; 5020) OR&#xA;        (a.ActivityID IS NULL AND lt.LeaveType IS NOT NULL)&#xA;      )&#xA;  AND NOT EXISTS (&#xA;        SELECT 1&#xA;        FROM Timesheet.Timesheet t&#xA;        WHERE t.EmployeeID = e.EmployeeID&#xA;          AND t.[Date] = TRY_CONVERT(DATE, s.[Date])&#xA;          AND t.StartTime = TRY_CONVERT(TIME, s.StartTime)&#xA;          AND t.EndTime = TRY_CONVERT(TIME, s.EndTime)&#xA;          AND COALESCE(t.ClientID, -1) = COALESCE(c.ClientID, -1)&#xA;          AND COALESCE(t.ProjectID, -1) = COALESCE(p.ProjectID, -1)&#xA;      );&#xA;&#xA;-- Log lookup failures&#xA;INSERT INTO Timesheet.AuditLog (&#xA;    EventType, Source, EmployeeName, FileName, ColumnName, Value, Message, ProcessedDate&#xA;)&#xA;SELECT &#xA;    'Error',&#xA;    'TimesheetStaging',&#xA;    s.EmployeeName,&#xA;    s.FileName,&#xA;    CASE &#xA;        WHEN e.EmployeeID IS NULL THEN 'EmployeeName'&#xA;        WHEN c.ClientID IS NULL THEN 'ClientName'&#xA;        WHEN p.ProjectID IS NULL THEN 'ProjectName'&#xA;        WHEN a.ActivityID IS NULL AND lt.LeaveType IS NULL THEN 'ActivityName/LeaveType'&#xA;        ELSE 'Unknown'&#xA;    END AS ColumnName,&#xA;    CASE &#xA;        WHEN e.EmployeeID IS NULL THEN s.EmployeeName&#xA;        WHEN c.ClientID IS NULL THEN s.ClientName&#xA;        WHEN p.ProjectID IS NULL THEN s.ProjectName&#xA;        WHEN a.ActivityID IS NULL AND lt.LeaveType IS NULL THEN s.ActivityName&#xA;        ELSE 'Unknown'&#xA;    END AS Value,&#xA;    CASE &#xA;        WHEN e.EmployeeID IS NULL THEN 'Employee not found in reference table'&#xA;        WHEN c.ClientID IS NULL THEN 'Client not found in reference table'&#xA;        WHEN p.ProjectID IS NULL THEN 'Project not found for specified client'&#xA;        WHEN a.ActivityID IS NULL AND lt.LeaveType IS NULL THEN 'Neither Activity nor LeaveType matched'&#xA;        ELSE 'Unknown validation error'&#xA;    END AS Message,&#xA;    GETDATE()&#xA;FROM Timesheet.TimesheetStaging s&#xA;LEFT JOIN Timesheet.Employee e ON s.EmployeeName = e.EmployeeName&#xA;LEFT JOIN Timesheet.Client c ON s.ClientName = c.ClientName&#xA;LEFT JOIN Timesheet.Project p ON s.ProjectName = p.ProjectName AND p.ClientID = c.ClientID&#xA;LEFT JOIN Timesheet.Activity a ON s.ActivityName = a.ActivityName&#xA;LEFT JOIN Timesheet.LeaveType lt ON s.ActivityName = lt.LeaveTypeName&#xA;WHERE s.IsValid = 1&#xA;  AND s.ProcessedDate &gt;= DATEADD(DAY, -1, GETDATE())&#xA;  AND (&#xA;        e.EmployeeID IS NULL OR&#xA;        c.ClientID IS NULL OR&#xA;        p.ProjectID IS NULL OR&#xA;        (a.ActivityID IS NULL AND lt.LeaveType IS NULL)&#xA;      );" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
       </DTS:ObjectData>
     </DTS:Executable>
     <DTS:Executable
@@ -4665,10 +4682,18 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==</BinaryItem>
     <DTS:PrecedenceConstraint
       DTS:refId="Package.PrecedenceConstraints[Constraint 3]"
       DTS:CreationName=""
-      DTS:DTSID="{461B529A-89DD-4488-9626-ED6C072BF357}"
+      DTS:DTSID="{5C95AC12-290F-4706-BD0D-066B0BCE0079}"
       DTS:From="Package\Load Timesheet Data"
       DTS:LogicalAnd="True"
       DTS:ObjectName="Constraint 3"
+      DTS:To="Package\Forecast Summary" />
+    <DTS:PrecedenceConstraint
+      DTS:refId="Package.PrecedenceConstraints[Constraint 4]"
+      DTS:CreationName=""
+      DTS:DTSID="{6B948E85-DF05-40A8-9F5A-5C418921F7B6}"
+      DTS:From="Package\Forecast Summary"
+      DTS:LogicalAnd="True"
+      DTS:ObjectName="Constraint 4"
       DTS:To="Package\Clear Timesheet Staging Data" />
   </DTS:PrecedenceConstraints>
   <DTS:DesignTimeProperties><![CDATA[<?xml version="1.0"?>
@@ -4682,7 +4707,7 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==</BinaryItem>
     design-time-name="Package">
     <LayoutInfo>
       <GraphLayout
-        Capacity="16" xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph" xmlns:mssgle="clr-namespace:Microsoft.SqlServer.Graph.LayoutEngine;assembly=Microsoft.SqlServer.Graph" xmlns:assembly="http://schemas.microsoft.com/winfx/2006/xaml">
+        Capacity="32" xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph" xmlns:mssgle="clr-namespace:Microsoft.SqlServer.Graph.LayoutEngine;assembly=Microsoft.SqlServer.Graph" xmlns:assembly="http://schemas.microsoft.com/winfx/2006/xaml">
         <NodeLayout
           Size="242.4,41.6"
           Id="Package\Clean and Validate Timesheet Data"
@@ -4690,7 +4715,11 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==</BinaryItem>
         <NodeLayout
           Size="217.6,41.6"
           Id="Package\Clear Timesheet Staging Data"
-          TopLeft="515.833305149444,1044.93333028383" />
+          TopLeft="504.999972408018,1137.66666297231" />
+        <NodeLayout
+          Size="166.4,41.6"
+          Id="Package\Forecast Summary"
+          TopLeft="529.999971042078,1044.93333136863" />
         <NodeLayout
           Size="177.6,41.6"
           Id="Package\Load Timesheet Data"
@@ -4841,18 +4870,40 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==</BinaryItem>
         </EdgeLayout>
         <EdgeLayout
           Id="Package.PrecedenceConstraints[Constraint 3]"
-          TopLeft="621.29997145186,998.133330536948">
+          TopLeft="615.583304398177,998.133330536948">
           <EdgeLayout.Curve>
             <mssgle:Curve
               StartConnector="{assembly:Null}"
-              EndConnector="0,46.7999997468794"
+              EndConnector="0,46.800000831684"
               Start="0,0"
-              End="0,39.2999997468794">
+              End="0,39.300000831684">
               <mssgle:Curve.Segments>
                 <mssgle:SegmentCollection
                   Capacity="5">
                   <mssgle:LineSegment
-                    End="0,39.2999997468794" />
+                    End="0,39.300000831684" />
+                </mssgle:SegmentCollection>
+              </mssgle:Curve.Segments>
+            </mssgle:Curve>
+          </EdgeLayout.Curve>
+          <EdgeLayout.Labels>
+            <EdgeLabelCollection />
+          </EdgeLayout.Labels>
+        </EdgeLayout>
+        <EdgeLayout
+          Id="Package.PrecedenceConstraints[Constraint 4]"
+          TopLeft="613.499971725048,1086.53333136863">
+          <EdgeLayout.Curve>
+            <mssgle:Curve
+              StartConnector="{assembly:Null}"
+              EndConnector="0,51.133331603676"
+              Start="0,0"
+              End="0,43.633331603676">
+              <mssgle:Curve.Segments>
+                <mssgle:SegmentCollection
+                  Capacity="5">
+                  <mssgle:LineSegment
+                    End="0,43.633331603676" />
                 </mssgle:SegmentCollection>
               </mssgle:Curve.Segments>
             </mssgle:Curve>
