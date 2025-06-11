@@ -393,8 +393,8 @@ CREATE OR ALTER PROCEDURE Timesheet.ResetLeave
 AS
 BEGIN
     SET NOCOUNT ON;
-    DELETE FROM Timesheet.Leave;
-    DBCC CHECKIDENT ('Timesheet.Leave', RESEED, 0);
+    DELETE FROM Timesheet.LeaveRequest;
+    DBCC CHECKIDENT ('Timesheet.LeaveRequest', RESEED, 0);
 END;
 GO
 
