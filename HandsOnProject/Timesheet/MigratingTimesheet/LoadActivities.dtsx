@@ -11,8 +11,8 @@
   DTS:LocaleID="7177"
   DTS:ObjectName="LoadActivities"
   DTS:PackageType="5"
-  DTS:VersionBuild="39"
-  DTS:VersionGUID="{2AEA303A-533B-4BB4-8941-1C4F51E4CE9F}">
+  DTS:VersionBuild="40"
+  DTS:VersionGUID="{BE696957-4DFA-4A38-B9C9-1D281EDB5AF7}">
   <DTS:Property
     DTS:Name="PackageFormatVersion">8</DTS:Property>
   <DTS:ConnectionManagers>
@@ -100,7 +100,7 @@
       <DTS:ObjectData>
         <SQLTask:SqlTaskData
           SQLTask:Connection="{FAFBFD70-9B28-4D88-B61F-E690AB7A4F99}"
-          SQLTask:SqlStatementSource="&#xA;-- Insert Activities (no 'leave' in name)&#xA;INSERT INTO Timesheet.Activity (ActivityName)&#xA;SELECT DISTINCT als.ActivityOrLeaveType&#xA;FROM Timesheet.ActivityLeaveStaging als&#xA;WHERE LOWER( als.ActivityOrLeaveType) NOT LIKE '%leave%'&#xA;  AND NOT EXISTS (&#xA;      SELECT 1 FROM Timesheet.Activity a&#xA;      WHERE a.ActivityName =  als.ActivityOrLeaveType&#xA;  );&#xA;&#xA;&#xA;&#xA;-- Log Activity inserts&#xA;INSERT INTO Timesheet.AuditLog (FileName, TableName, Action, RecordID, ProcessedDate)&#xA;SELECT als.FileName, 'Activity', 'Insert', NEXT VALUE FOR Timesheet.ActivitySeq - 1, GETDATE()&#xA;FROM Timesheet.ActivityLeaveStaging als&#xA;WHERE LOWER(als.ActivityOrLeaveType) NOT LIKE '%leave%'&#xA;GROUP BY als.FileName;&#xA;&#xA;&#xA;-- Insert LeaveTypes (contains 'leave')&#xA;INSERT INTO Timesheet.LeaveType (LeaveTypeName)&#xA;SELECT DISTINCT als.ActivityOrLeaveType&#xA;FROM Timesheet.ActivityLeaveStaging als&#xA;WHERE LOWER(als.ActivityOrLeaveType) LIKE '%leave%'&#xA;  AND NOT EXISTS (&#xA;      SELECT 1 FROM Timesheet.LeaveType lt&#xA;      WHERE lt.LeaveTypeName = als.ActivityOrLeaveType&#xA;  );&#xA;&#xA;&#xA;&#xA;-- Log LeaveType inserts&#xA;INSERT INTO Timesheet.AuditLog (FileName, TableName, Action, RecordID, ProcessedDate)&#xA;SELECT als.FileName, 'LeaveType', 'Insert', NEXT VALUE FOR Timesheet.LeaveTypeSeq - 1, GETDATE()&#xA;FROM Timesheet.ActivityLeaveStaging als&#xA;WHERE LOWER(als.ActivityOrLeaveType) LIKE '%leave%'&#xA;GROUP BY als.FileName;&#xA;" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
+          SQLTask:SqlStatementSource="-- Insert Activities (no 'leave' in name)&#xA;INSERT INTO Timesheet.Activity (ActivityName)&#xA;SELECT DISTINCT als.ActivityOrLeaveType&#xA;FROM Timesheet.ActivityLeaveStaging als&#xA;WHERE LOWER(als.ActivityOrLeaveType) NOT LIKE '%leave%'&#xA;  AND NOT EXISTS (&#xA;      SELECT 1 FROM Timesheet.Activity a&#xA;      WHERE a.ActivityName = als.ActivityOrLeaveType&#xA;  );&#xA;&#xA;-- Log Activity inserts&#xA;INSERT INTO Timesheet.AuditLog (EventType, Source, FileName, ColumnName, Value, ProcessedDate)&#xA;SELECT &#xA;    'Insert' AS EventType,&#xA;    'Activity' AS Source,&#xA;    als.FileName,&#xA;    'ActivityName' AS ColumnName,&#xA;    als.ActivityOrLeaveType AS Value,&#xA;    GETDATE() AS ProcessedDate&#xA;FROM Timesheet.ActivityLeaveStaging als&#xA;WHERE LOWER(als.ActivityOrLeaveType) NOT LIKE '%leave%'&#xA;GROUP BY als.FileName, als.ActivityOrLeaveType;&#xA;&#xA;-- Insert LeaveTypes (contains 'leave')&#xA;INSERT INTO Timesheet.LeaveType (LeaveTypeName)&#xA;SELECT DISTINCT als.ActivityOrLeaveType&#xA;FROM Timesheet.ActivityLeaveStaging als&#xA;WHERE LOWER(als.ActivityOrLeaveType) LIKE '%leave%'&#xA;  AND NOT EXISTS (&#xA;      SELECT 1 FROM Timesheet.LeaveType lt&#xA;      WHERE lt.LeaveTypeName = als.ActivityOrLeaveType&#xA;  );&#xA;&#xA;-- Log LeaveType inserts&#xA;INSERT INTO Timesheet.AuditLog (EventType, Source, FileName, ColumnName, Value, ProcessedDate)&#xA;SELECT &#xA;    'Insert' AS EventType,&#xA;    'LeaveType' AS Source,&#xA;    als.FileName,&#xA;    'LeaveTypeName' AS ColumnName,&#xA;    als.ActivityOrLeaveType AS Value,&#xA;    GETDATE() AS ProcessedDate&#xA;FROM Timesheet.ActivityLeaveStaging als&#xA;WHERE LOWER(als.ActivityOrLeaveType) LIKE '%leave%'&#xA;GROUP BY als.FileName, als.ActivityOrLeaveType;" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
       </DTS:ObjectData>
     </DTS:Executable>
     <DTS:Executable
@@ -121,14 +121,35 @@
           Language="CSharp"
           ReadOnlyVariables="User::ExcelFilePath,User::ExcelRange,User::SQLConnectionString,User::TableName">
           <ProjectItem
-            Name="Properties\Settings.settings"
-            Encoding="UTF8"><![CDATA[<?xml version='1.0' encoding='iso-8859-1'?>
-<SettingsFile xmlns="uri:settings" CurrentProfile="(Default)">
-  <Profiles>
-    <Profile Name="(Default)" />
-  </Profiles>
-  <Settings />
-</SettingsFile>]]></ProjectItem>
+            Name="Properties\AssemblyInfo.cs"
+            Encoding="UTF8"><![CDATA[using System.Reflection;
+using System.Runtime.CompilerServices;
+
+//
+// General Information about an assembly is controlled through the following 
+// set of attributes. Change these attribute values to modify the information
+// associated with an assembly.
+//
+[assembly: AssemblyTitle("ST_02bc6161639641819f8532cb18c36ba5")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("HP")]
+[assembly: AssemblyProduct("ST_02bc6161639641819f8532cb18c36ba5")]
+[assembly: AssemblyCopyright("Copyright @ HP 2025")]
+[assembly: AssemblyTrademark("")]
+[assembly: AssemblyCulture("")]
+//
+// Version information for an assembly consists of the following four values:
+//
+//      Major Version
+//      Minor Version 
+//      Build Number
+//      Revision
+//
+// You can specify all the values or you can default the Revision and Build Numbers 
+// by using the '*' as shown below:
+
+[assembly: AssemblyVersion("1.0.*")]]]></ProjectItem>
           <ProjectItem
             Name="Properties\Resources.resx"
             Encoding="UTF8"><![CDATA[<?xml version="1.0" encoding="utf-8"?>
@@ -569,35 +590,14 @@ namespace ST_02bc6161639641819f8532cb18c36ba5.Properties {
     }
 }]]></ProjectItem>
           <ProjectItem
-            Name="Properties\AssemblyInfo.cs"
-            Encoding="UTF8"><![CDATA[using System.Reflection;
-using System.Runtime.CompilerServices;
-
-//
-// General Information about an assembly is controlled through the following 
-// set of attributes. Change these attribute values to modify the information
-// associated with an assembly.
-//
-[assembly: AssemblyTitle("ST_02bc6161639641819f8532cb18c36ba5")]
-[assembly: AssemblyDescription("")]
-[assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("HP")]
-[assembly: AssemblyProduct("ST_02bc6161639641819f8532cb18c36ba5")]
-[assembly: AssemblyCopyright("Copyright @ HP 2025")]
-[assembly: AssemblyTrademark("")]
-[assembly: AssemblyCulture("")]
-//
-// Version information for an assembly consists of the following four values:
-//
-//      Major Version
-//      Minor Version 
-//      Build Number
-//      Revision
-//
-// You can specify all the values or you can default the Revision and Build Numbers 
-// by using the '*' as shown below:
-
-[assembly: AssemblyVersion("1.0.*")]]]></ProjectItem>
+            Name="Properties\Settings.settings"
+            Encoding="UTF8"><![CDATA[<?xml version='1.0' encoding='iso-8859-1'?>
+<SettingsFile xmlns="uri:settings" CurrentProfile="(Default)">
+  <Profiles>
+    <Profile Name="(Default)" />
+  </Profiles>
+  <Settings />
+</SettingsFile>]]></ProjectItem>
           <ProjectItem
             Name="Properties\Resources.Designer.cs"
             Encoding="UTF8"><![CDATA[//------------------------------------------------------------------------------
