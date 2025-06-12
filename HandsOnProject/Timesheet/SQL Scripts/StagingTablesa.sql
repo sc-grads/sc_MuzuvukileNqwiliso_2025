@@ -1,7 +1,7 @@
 -- Staging Tables
 IF OBJECT_ID('Timesheet.StagingLeaveRequest', 'U') IS NULL 
 BEGIN
-    CREATE TABLE Timesheet.Staging_LeaveRequest (
+    CREATE TABLE Timesheet.StagingLeaveRequest (
         StagingID INT IDENTITY(1,1) PRIMARY KEY,
         LeaveTypeName NVARCHAR(255), -- Maps to Type of Leave
         StartDate NVARCHAR(50),      -- Maps to Start Date
@@ -32,3 +32,8 @@ CREATE TABLE Timesheet.StagingForecast (
 );
 
 PRINT 'Timesheet.StagingForecast table created.';
+
+
+
+
+

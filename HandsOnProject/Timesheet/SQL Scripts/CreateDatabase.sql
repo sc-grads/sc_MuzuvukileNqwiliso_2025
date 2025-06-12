@@ -76,7 +76,11 @@ EXEC Timesheet.CreateSqID @SequenceName = 'ProjectSeq', @StartValue = 3000;
 EXEC Timesheet.CreateSqID @SequenceName = 'LeaveTypeSeq', @StartValue = 4000;
 EXEC Timesheet.CreateSqID @SequenceName = 'ActivitySeq', @StartValue = 5000;
 EXEC Timesheet.CreateSqID @SequenceName = 'TimesheetSeq', @StartValue = 6000;
+EXEC Timesheet.CreateSqID @SequenceName = 'ForecastSeq', @StartValue = 7000;
 GO
+
+
+
 
 -- Drop CreateTimesheetTables if exists
 IF OBJECT_ID('Timesheet.CreateTimesheetTables', 'P') IS NOT NULL
@@ -215,23 +219,24 @@ BEGIN
 		);
      END
 
-    -- Forecast Table
-	IF OBJECT_ID('Timesheet.Forecast', 'U') IS NULL
-	BEGIN
-		CREATE TABLE Timesheet.Forecast (
-			ForecastID INT IDENTITY(1,1) PRIMARY KEY,
-			EmployeeID INT NOT NULL,
-			ForecastMonth DATE NOT NULL,
-			ForecastedHours DECIMAL(5,2) NOT NULL,
-			ForecastedWorkDays INT NOT NULL,
-			NonBillableHours DECIMAL(5,2) NOT NULL,
-			BillableHours DECIMAL(5,2) NOT NULL,
-			TotalHours DECIMAL(5,2) NOT NULL,
-			FOREIGN KEY (EmployeeID) REFERENCES Timesheet.Employee(EmployeeID),
-			CONSTRAINT UQ_Forecast_Employee_Month UNIQUE (EmployeeID, ForecastMonth)
-		);
-		PRINT 'Forecast table created.';
-	END
+-- Drop the table if it exists (must be before procedure creation)
+IF OBJECT_ID('Timesheet.Forecast', 'U') IS NOT NULL
+    DROP TABLE Timesheet.Forecast;
+  CREATE TABLE Timesheet.Forecast (
+    ForecastID INT PRIMARY KEY DEFAULT NEXT VALUE FOR Timesheet.ForecastSeq ,
+    EmployeeID INT NOT NULL,
+    ForecastMonth DATE NOT NULL,
+    ForecastedHours DECIMAL(5,2) NOT NULL DEFAULT (168.00),
+    ForecastedWorkDays INT NOT NULL DEFAULT (21),
+    NonBillableHours DECIMAL(5,2) NOT NULL,
+    BillableHours DECIMAL(5,2) NOT NULL,
+    TotalHours DECIMAL(5,2) NOT NULL,
+    FOREIGN KEY (EmployeeID) REFERENCES Timesheet.Employee(EmployeeID),
+    CONSTRAINT UQ_Forecast_Employee_Month UNIQUE (EmployeeID, ForecastMonth),
+    CONSTRAINT CK_Forecast_Total_vs_Planned CHECK (TotalHours >= ForecastedHours)
+);
+
+
     -- ProcessedFiles Table
     IF OBJECT_ID('Timesheet.ProcessedFiles', 'U') IS NULL
     BEGIN
@@ -247,38 +252,43 @@ BEGIN
         PRINT 'ProcessedFiles table created.';
     END
 
-    -- AuditLog Table
-    IF OBJECT_ID('Timesheet.AuditLog', 'U') IS NULL
-    BEGIN
-        CREATE TABLE Timesheet.AuditLog (
-            AuditID INT PRIMARY KEY IDENTITY(1,1),
-            FileName VARCHAR(255),
-            TableName VARCHAR(50) NOT NULL,
-            Action VARCHAR(20) NOT NULL CHECK (Action IN ('Insert', 'Update', 'Delete')),
-            RecordID INT,
-            TotalHours DECIMAL(5,2),
-            ProcessedDate DATETIME NOT NULL
-        );
-        CREATE INDEX IX_AuditLog_ProcessedDate ON Timesheet.AuditLog(ProcessedDate);
-        PRINT 'AuditLog table created.';
-    END
 
+ IF OBJECT_ID('Timesheet.AuditLog', 'U') IS NOT NULL
+    DROP TABLE Timesheet.AuditLog;
 
-	IF OBJECT_ID('Timesheet.AuditLog', 'U') IS NULL 
+CREATE TABLE Timesheet.AuditLog (
+    AuditID INT PRIMARY KEY IDENTITY(1,1),
+    EmployeeName NVARCHAR(255),          -- Added to identify the employee involved
+    FileName VARCHAR(255),              -- File associated with the action
+    TableName VARCHAR(50) NOT NULL,     -- Table affected by the action
+    Action VARCHAR(20) NOT NULL CHECK (Action IN ('Insert', 'Update', 'Delete', 'Processed', 'Skipped')), -- Expanded actions
+    RecordID INT,                       -- ID of the affected record
+    TotalHours DECIMAL(5,2),            -- Hours related to the action (if applicable)
+    Message NVARCHAR(1000),             -- Detailed context or reason
+    ProcessedDate DATETIME NOT NULL DEFAULT GETDATE() -- Default to current time
+);
+CREATE INDEX IX_AuditLog_ProcessedDate ON Timesheet.AuditLog(ProcessedDate);
+CREATE INDEX IX_AuditLog_EmployeeName ON Timesheet.AuditLog(EmployeeName);
+PRINT 'AuditLog table updated with EmployeeName.';
+
+IF OBJECT_ID('Timesheet.ErrorLog', 'U') IS NULL
 BEGIN
-    CREATE TABLE Timesheet.AuditLog (
-        AuditID INT IDENTITY(1,1) PRIMARY KEY,
-        EventType VARCHAR(50) NOT NULL, -- e.g., 'Error', 'Info'
-        Source VARCHAR(50) NOT NULL,    -- e.g., 'Staging_LeaveRequest'
-        EmployeeName NVARCHAR(255),     -- Employee name from staging
-        FileName NVARCHAR(255),         -- Excel file path
-        ColumnName VARCHAR(50),         -- Affected column (e.g., 'LeaveTypeName')
-        Value NVARCHAR(255),            -- Invalid or affected value
-        Message NVARCHAR(1000),         -- Error or info message
-        ProcessedDate DATETIME DEFAULT GETDATE(),
-
+    CREATE TABLE Timesheet.ErrorLog (
+        ErrorID INT PRIMARY KEY IDENTITY(1,1),
+        EmployeeName NVARCHAR(255),          -- Employee associated with the error
+        FileName VARCHAR(255),              -- File causing the error
+        TableName VARCHAR(50),              -- Table where error occurred
+        ErrorType VARCHAR(50) NOT NULL CHECK (ErrorType IN ('Validation', 'SSIS', 'Data', 'System')), -- Error category
+        ErrorMessage NVARCHAR(1000) NOT NULL, -- Detailed error description
+        RecordID INT,                       -- Affected record (if applicable)
+        StackTrace NVARCHAR(MAX),           -- Technical details (e.g., SSIS error stack)
+        ProcessedDate DATETIME NOT NULL DEFAULT GETDATE() -- When the error occurred
     );
+    CREATE INDEX IX_ErrorLog_ProcessedDate ON Timesheet.ErrorLog(ProcessedDate);
+    CREATE INDEX IX_ErrorLog_EmployeeName ON Timesheet.ErrorLog(EmployeeName);
+    PRINT 'ErrorLog table created.';
 END
+
 
     -- Timesheet_Staging Table
 IF OBJECT_ID('Timesheet.TimesheetStaging', 'U') IS NOT NULL
@@ -388,8 +398,8 @@ CREATE OR ALTER PROCEDURE Timesheet.ResetLeave
 AS
 BEGIN
     SET NOCOUNT ON;
-    DELETE FROM Timesheet.Leave;
-    DBCC CHECKIDENT ('Timesheet.Leave', RESEED, 0);
+    DELETE FROM Timesheet.LeaveRequest;
+    DBCC CHECKIDENT ('Timesheet.LeaveRequest', RESEED, 0);
 END;
 GO
 
