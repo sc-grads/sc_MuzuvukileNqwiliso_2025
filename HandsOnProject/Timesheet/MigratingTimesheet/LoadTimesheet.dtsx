@@ -11,8 +11,8 @@
   DTS:LocaleID="7177"
   DTS:ObjectName="LoadTimesheet"
   DTS:PackageType="5"
-  DTS:VersionBuild="89"
-  DTS:VersionGUID="{87BAAD97-4E94-4F53-A987-14B5889786AD}">
+  DTS:VersionBuild="94"
+  DTS:VersionGUID="{5DDB9E60-2C4B-4924-BE35-818EA0A572AE}">
   <DTS:Property
     DTS:Name="PackageFormatVersion">8</DTS:Property>
   <DTS:ConnectionManagers>
@@ -145,7 +145,7 @@
       <DTS:ObjectData>
         <SQLTask:SqlTaskData
           SQLTask:Connection="{953867F6-60BC-4801-81DA-6B94055DDBB6}"
-          SQLTask:SqlStatementSource="-- Step 1: Clean data&#xA;UPDATE Timesheet.TimesheetStaging&#xA;SET [Date] = NULLIF(TRIM([Date]), ''),&#xA;    [DayOfWeek] = NULLIF(TRIM(UPPER([DayOfWeek])), ''),&#xA;    ClientName = NULLIF(TRIM(ClientName), ''),&#xA;    ProjectName = NULLIF(TRIM(ProjectName), ''),&#xA;    ActivityName = NULLIF(TRIM(ActivityName), ''),&#xA;    BillableStatus = NULLIF(TRIM(UPPER(BillableStatus)), ''),&#xA;    Comments = NULLIF(TRIM(Comments), ''),&#xA;    TotalHours = NULLIF(TRIM(TotalHours), ''),&#xA;    StartTime = NULLIF(TRIM(StartTime), ''),&#xA;    EndTime = NULLIF(TRIM(EndTime), ''),&#xA;    EmployeeName = NULLIF(TRIM(EmployeeName), '')&#xA;WHERE ProcessedDate &gt;= DATEADD(DAY, -1, GETDATE());&#xA;&#xA;-- Step 2: Fill forward Date&#xA;WITH DateFill AS (&#xA;    SELECT StagingID, [Date], EmployeeName, FileName,&#xA;           LAG([Date]) OVER (PARTITION BY EmployeeName, FileName ORDER BY StagingID) AS PrevDate&#xA;    FROM Timesheet.TimesheetStaging&#xA;    WHERE ProcessedDate &gt;= DATEADD(DAY, -1, GETDATE())&#xA;)&#xA;UPDATE Timesheet.TimesheetStaging&#xA;SET [Date] = COALESCE(s.[Date], df.PrevDate)&#xA;FROM Timesheet.TimesheetStaging s&#xA;JOIN DateFill df ON s.StagingID = df.StagingID&#xA;WHERE s.ProcessedDate &gt;= DATEADD(DAY, -1, GETDATE());&#xA;&#xA;-- Step 3: Validate and standardize values&#xA;UPDATE Timesheet.TimesheetStaging&#xA;SET [DayOfWeek] = CASE &#xA;        WHEN [DayOfWeek] IN ('MON', 'MONDAY') THEN 'Monday'&#xA;        WHEN [DayOfWeek] IN ('TUE', 'TUESDAY') THEN 'Tuesday'&#xA;        WHEN [DayOfWeek] IN ('WED', 'WEDNESDAY') THEN 'Wednesday'&#xA;        WHEN [DayOfWeek] IN ('THU', 'THURSDAY') THEN 'Thursday'&#xA;        WHEN [DayOfWeek] IN ('FRI', 'FRIDAY') THEN 'Friday'&#xA;        WHEN [DayOfWeek] IN ('SAT', 'SATURDAY') THEN 'Saturday'&#xA;        WHEN [DayOfWeek] IN ('SUN', 'SUNDAY') THEN 'Sunday'&#xA;        ELSE NULL&#xA;    END,&#xA;    BillableStatus = CASE &#xA;        WHEN BillableStatus IN ('BILLABLE', 'B') THEN 'Billable'&#xA;        WHEN BillableStatus IN ('NON-BILLABLE', 'NON BILLABLE', 'NB') THEN 'Non-Billable'&#xA;        ELSE NULL&#xA;    END,&#xA;    TotalHours = CASE &#xA;        WHEN ISNUMERIC(TotalHours) = 1 AND CAST(TotalHours AS DECIMAL(5,2)) &gt;= 0 &#xA;        THEN TotalHours&#xA;        ELSE NULL&#xA;    END&#xA;WHERE ProcessedDate &gt;= DATEADD(DAY, -1, GETDATE());&#xA;&#xA;-- 🔄 Step 3.5: Calculate missing TotalHours from StartTime and EndTime&#xA;UPDATE Timesheet.TimesheetStaging&#xA;SET TotalHours = &#xA;    CAST(&#xA;        CAST(DATEDIFF(MINUTE, TRY_CONVERT(TIME, StartTime), TRY_CONVERT(TIME, EndTime)) / 60.0 AS DECIMAL(5,2))&#xA;        AS NVARCHAR(10)&#xA;    )&#xA;WHERE &#xA;    (TotalHours IS NULL OR TRY_CONVERT(DECIMAL(5,2), TotalHours) IS NULL)&#xA;    AND TRY_CONVERT(TIME, StartTime) IS NOT NULL&#xA;    AND TRY_CONVERT(TIME, EndTime) IS NOT NULL&#xA;    AND DATEDIFF(MINUTE, TRY_CONVERT(TIME, StartTime), TRY_CONVERT(TIME, EndTime)) &gt;= 0&#xA;    AND ProcessedDate &gt;= DATEADD(DAY, -1, GETDATE());&#xA;&#xA;-- Step 4: Mark valid rows&#xA;UPDATE Timesheet.TimesheetStaging&#xA;SET IsValid = 1&#xA;WHERE TRY_CONVERT(DATE, [Date]) IS NOT NULL&#xA;  AND [DayOfWeek] IS NOT NULL&#xA;  AND BillableStatus IS NOT NULL&#xA;  AND ActivityName IS NOT NULL&#xA;  AND EmployeeName IS NOT NULL&#xA;  AND TRY_CONVERT(DECIMAL(5,2), TotalHours) &gt;= 0&#xA;  AND ProcessedDate &gt;= DATEADD(DAY, -1, GETDATE());&#xA;&#xA;-- Step 5: Log invalid rows&#xA;INSERT INTO Timesheet.AuditLog (&#xA;    EventType,&#xA;    Source,&#xA;    EmployeeName,&#xA;    FileName,&#xA;    ColumnName,&#xA;    Value,&#xA;    Message,&#xA;    ProcessedDate&#xA;)&#xA;SELECT &#xA;    'Error',&#xA;    'TimesheetStaging',&#xA;    EmployeeName,&#xA;    FileName,&#xA;    'Timesheet Data',&#xA;    COALESCE(ProjectName, 'Unknown') + ', ' + COALESCE(TotalHours, '0'),&#xA;    'Invalid or missing fields',&#xA;    ProcessedDate&#xA;FROM Timesheet.TimesheetStaging&#xA;WHERE IsValid = 0&#xA;  AND ProcessedDate &gt;= DATEADD(DAY, -1, GETDATE());&#xA;" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
+          SQLTask:SqlStatementSource="-- Step 1: Clean data&#xA;UPDATE Timesheet.TimesheetStaging&#xA;SET [Date] = NULLIF(TRIM([Date]), ''),&#xA;    [DayOfWeek] = NULLIF(TRIM(UPPER([DayOfWeek])), ''),&#xA;    ClientName = NULLIF(TRIM(ClientName), ''),&#xA;    ProjectName = NULLIF(TRIM(ProjectName), ''),&#xA;    ActivityName = NULLIF(TRIM(ActivityName), ''),&#xA;    BillableStatus = NULLIF(TRIM(UPPER(BillableStatus)), ''),&#xA;    Comments = NULLIF(TRIM(Comments), ''),&#xA;    TotalHours = NULLIF(TRIM(TotalHours), ''),&#xA;    StartTime = NULLIF(TRIM(StartTime), ''),&#xA;    EndTime = NULLIF(TRIM(EndTime), ''),&#xA;    EmployeeName = NULLIF(TRIM(EmployeeName), '')&#xA;WHERE ProcessedDate &gt;= DATEADD(DAY, -1, GETDATE());&#xA;&#xA;-- Step 2: Fill forward Date&#xA;WITH DateFill AS (&#xA;    SELECT StagingID, [Date], EmployeeName, FileName,&#xA;           LAG([Date]) OVER (PARTITION BY EmployeeName, FileName ORDER BY StagingID) AS PrevDate&#xA;    FROM Timesheet.TimesheetStaging&#xA;    WHERE ProcessedDate &gt;= DATEADD(DAY, -1, GETDATE())&#xA;)&#xA;UPDATE Timesheet.TimesheetStaging&#xA;SET [Date] = COALESCE(s.[Date], df.PrevDate)&#xA;FROM Timesheet.TimesheetStaging s&#xA;JOIN DateFill df ON s.StagingID = df.StagingID&#xA;WHERE s.ProcessedDate &gt;= DATEADD(DAY, -1, GETDATE());&#xA;&#xA;-- Step 3: Validate and standardize values&#xA;UPDATE Timesheet.TimesheetStaging&#xA;SET [DayOfWeek] = CASE &#xA;        WHEN [DayOfWeek] IN ('MON', 'MONDAY') THEN 'Monday'&#xA;        WHEN [DayOfWeek] IN ('TUE', 'TUESDAY') THEN 'Tuesday'&#xA;        WHEN [DayOfWeek] IN ('WED', 'WEDNESDAY') THEN 'Wednesday'&#xA;        WHEN [DayOfWeek] IN ('THU', 'THURSDAY') THEN 'Thursday'&#xA;        WHEN [DayOfWeek] IN ('FRI', 'FRIDAY') THEN 'Friday'&#xA;        WHEN [DayOfWeek] IN ('SAT', 'SATURDAY') THEN 'Saturday'&#xA;        WHEN [DayOfWeek] IN ('SUN', 'SUNDAY') THEN 'Sunday'&#xA;        ELSE NULL&#xA;    END,&#xA;    BillableStatus = CASE &#xA;        WHEN BillableStatus IN ('BILLABLE', 'B') THEN 'Billable'&#xA;        WHEN BillableStatus IN ('NON-BILLABLE', 'NON BILLABLE', 'NB') THEN 'Non-Billable'&#xA;        ELSE NULL&#xA;    END,&#xA;    TotalHours = CASE &#xA;        WHEN ISNUMERIC(TotalHours) = 1 AND CAST(TotalHours AS DECIMAL(5,2)) &gt;= 0 &#xA;        THEN CAST(TotalHours AS DECIMAL(5,2))&#xA;        ELSE NULL&#xA;    END&#xA;WHERE ProcessedDate &gt;= DATEADD(DAY, -1, GETDATE());&#xA;&#xA;-- Step 3.5: Calculate missing TotalHours from StartTime and EndTime&#xA;UPDATE Timesheet.TimesheetStaging&#xA;SET TotalHours = CAST(&#xA;    CAST(DATEDIFF(MINUTE, TRY_CONVERT(TIME, StartTime), TRY_CONVERT(TIME, EndTime)) / 60.0 AS DECIMAL(5,2)) &#xA;    AS NVARCHAR(10))&#xA;WHERE &#xA;    (TotalHours IS NULL OR TRY_CONVERT(DECIMAL(5,2), TotalHours) IS NULL)&#xA;    AND TRY_CONVERT(TIME, StartTime) IS NOT NULL&#xA;    AND TRY_CONVERT(TIME, EndTime) IS NOT NULL&#xA;    AND DATEDIFF(MINUTE, TRY_CONVERT(TIME, StartTime), TRY_CONVERT(TIME, EndTime)) &gt;= 0&#xA;    AND ProcessedDate &gt;= DATEADD(DAY, -1, GETDATE());&#xA;&#xA;-- Step 4: Mark valid rows&#xA;UPDATE Timesheet.TimesheetStaging&#xA;SET IsValid = 1&#xA;WHERE TRY_CONVERT(DATE, [Date]) IS NOT NULL&#xA;  AND [DayOfWeek] IS NOT NULL&#xA;  AND BillableStatus IS NOT NULL&#xA;  AND ActivityName IS NOT NULL&#xA;  AND EmployeeName IS NOT NULL&#xA;  AND TRY_CONVERT(DECIMAL(5,2), TotalHours) &gt;= 0&#xA;  AND ProcessedDate &gt;= DATEADD(DAY, -1, GETDATE());&#xA;&#xA;" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
       </DTS:ObjectData>
     </DTS:Executable>
     <DTS:Executable
@@ -196,7 +196,7 @@
       <DTS:ObjectData>
         <SQLTask:SqlTaskData
           SQLTask:Connection="{953867F6-60BC-4801-81DA-6B94055DDBB6}"
-          SQLTask:SqlStatementSource="-- Log duplicates&#xA;INSERT INTO Timesheet.AuditLog (&#xA;    EventType, Source, EmployeeName, FileName, ColumnName, Value, Message, ProcessedDate&#xA;)&#xA;SELECT &#xA;    'Info',&#xA;    'TimesheetStaging',&#xA;    s.EmployeeName,&#xA;    s.FileName,&#xA;    'Timesheet Data',&#xA;    COALESCE(s.ProjectName, 'Unknown') + ', ' + COALESCE(s.TotalHours, '0'),&#xA;    'Duplicate timesheet entry found in Timesheet table',&#xA;    GETDATE()&#xA;FROM Timesheet.TimesheetStaging s&#xA;JOIN Timesheet.Employee e ON s.EmployeeName = e.EmployeeName&#xA;LEFT JOIN Timesheet.Client c ON s.ClientName = c.ClientName&#xA;LEFT JOIN Timesheet.Project p ON s.ProjectName = p.ProjectName AND p.ClientID = c.ClientID&#xA;JOIN Timesheet.Timesheet t ON &#xA;    e.EmployeeID = t.EmployeeID&#xA;    AND TRY_CONVERT(DATE, s.[Date]) = t.[Date]&#xA;    AND TRY_CONVERT(TIME, s.StartTime) = t.StartTime&#xA;    AND TRY_CONVERT(TIME, s.EndTime) = t.EndTime&#xA;    AND COALESCE(c.ClientID, -1) = COALESCE(t.ClientID, -1)&#xA;    AND COALESCE(p.ProjectID, -1) = COALESCE(t.ProjectID, -1)&#xA;WHERE s.IsValid = 1&#xA;  AND s.ProcessedDate &gt;= DATEADD(DAY, -1, GETDATE())&#xA;  AND e.EmployeeID IS NOT NULL;&#xA;&#xA;-- Insert non-duplicate valid rows&#xA;-- Insert non-duplicate valid rows (excluding holidays)&#xA;INSERT INTO Timesheet.Timesheet (&#xA;    EmployeeID, [Date], [DayOfWeek], ClientID, ProjectID, ActivityID, LeaveType,&#xA;    BillableStatus, Comments, TotalHours, StartTime, EndTime&#xA;)&#xA;SELECT &#xA;    e.EmployeeID,&#xA;    TRY_CONVERT(DATE, s.[Date]),&#xA;    s.[DayOfWeek],&#xA;    c.ClientID,&#xA;    p.ProjectID,&#xA;    a.ActivityID,&#xA;    lt.LeaveType,&#xA;    s.BillableStatus,&#xA;    s.Comments,&#xA;    TRY_CONVERT(DECIMAL(5,2), s.TotalHours),&#xA;    TRY_CONVERT(TIME, s.StartTime),&#xA;    TRY_CONVERT(TIME, s.EndTime)&#xA;FROM Timesheet.TimesheetStaging s&#xA;LEFT JOIN Timesheet.Employee e ON s.EmployeeName = e.EmployeeName&#xA;LEFT JOIN Timesheet.Client c ON s.ClientName = c.ClientName&#xA;LEFT JOIN Timesheet.Project p ON s.ProjectName = p.ProjectName AND p.ClientID = c.ClientID&#xA;LEFT JOIN Timesheet.Activity a ON s.ActivityName = a.ActivityName&#xA;LEFT JOIN Timesheet.LeaveType lt ON s.ActivityName = lt.LeaveTypeName&#xA;WHERE s.IsValid = 1&#xA;  AND s.ProcessedDate &gt;= DATEADD(DAY, -1, GETDATE())&#xA;  AND e.EmployeeID IS NOT NULL&#xA;  AND (&#xA;        (a.ActivityID IS NOT NULL AND lt.LeaveType IS NULL AND a.ActivityID &lt;&gt; 5020) OR&#xA;        (a.ActivityID IS NULL AND lt.LeaveType IS NOT NULL)&#xA;      )&#xA;  AND NOT EXISTS (&#xA;        SELECT 1&#xA;        FROM Timesheet.Timesheet t&#xA;        WHERE t.EmployeeID = e.EmployeeID&#xA;          AND t.[Date] = TRY_CONVERT(DATE, s.[Date])&#xA;          AND t.StartTime = TRY_CONVERT(TIME, s.StartTime)&#xA;          AND t.EndTime = TRY_CONVERT(TIME, s.EndTime)&#xA;          AND COALESCE(t.ClientID, -1) = COALESCE(c.ClientID, -1)&#xA;          AND COALESCE(t.ProjectID, -1) = COALESCE(p.ProjectID, -1)&#xA;      );&#xA;&#xA;-- Log lookup failures&#xA;INSERT INTO Timesheet.AuditLog (&#xA;    EventType, Source, EmployeeName, FileName, ColumnName, Value, Message, ProcessedDate&#xA;)&#xA;SELECT &#xA;    'Error',&#xA;    'TimesheetStaging',&#xA;    s.EmployeeName,&#xA;    s.FileName,&#xA;    CASE &#xA;        WHEN e.EmployeeID IS NULL THEN 'EmployeeName'&#xA;        WHEN c.ClientID IS NULL THEN 'ClientName'&#xA;        WHEN p.ProjectID IS NULL THEN 'ProjectName'&#xA;        WHEN a.ActivityID IS NULL AND lt.LeaveType IS NULL THEN 'ActivityName/LeaveType'&#xA;        ELSE 'Unknown'&#xA;    END AS ColumnName,&#xA;    CASE &#xA;        WHEN e.EmployeeID IS NULL THEN s.EmployeeName&#xA;        WHEN c.ClientID IS NULL THEN s.ClientName&#xA;        WHEN p.ProjectID IS NULL THEN s.ProjectName&#xA;        WHEN a.ActivityID IS NULL AND lt.LeaveType IS NULL THEN s.ActivityName&#xA;        ELSE 'Unknown'&#xA;    END AS Value,&#xA;    CASE &#xA;        WHEN e.EmployeeID IS NULL THEN 'Employee not found in reference table'&#xA;        WHEN c.ClientID IS NULL THEN 'Client not found in reference table'&#xA;        WHEN p.ProjectID IS NULL THEN 'Project not found for specified client'&#xA;        WHEN a.ActivityID IS NULL AND lt.LeaveType IS NULL THEN 'Neither Activity nor LeaveType matched'&#xA;        ELSE 'Unknown validation error'&#xA;    END AS Message,&#xA;    GETDATE()&#xA;FROM Timesheet.TimesheetStaging s&#xA;LEFT JOIN Timesheet.Employee e ON s.EmployeeName = e.EmployeeName&#xA;LEFT JOIN Timesheet.Client c ON s.ClientName = c.ClientName&#xA;LEFT JOIN Timesheet.Project p ON s.ProjectName = p.ProjectName AND p.ClientID = c.ClientID&#xA;LEFT JOIN Timesheet.Activity a ON s.ActivityName = a.ActivityName&#xA;LEFT JOIN Timesheet.LeaveType lt ON s.ActivityName = lt.LeaveTypeName&#xA;WHERE s.IsValid = 1&#xA;  AND s.ProcessedDate &gt;= DATEADD(DAY, -1, GETDATE())&#xA;  AND (&#xA;        e.EmployeeID IS NULL OR&#xA;        c.ClientID IS NULL OR&#xA;        p.ProjectID IS NULL OR&#xA;        (a.ActivityID IS NULL AND lt.LeaveType IS NULL)&#xA;      );" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
+          SQLTask:SqlStatementSource="-- Step 1: Log duplicates (rows that won't be inserted due to existing entries)&#xA;INSERT INTO Timesheet.AuditLog (&#xA;    EmployeeName,&#xA;    FileName,&#xA;    TableName,&#xA;    Action,&#xA;    Message,&#xA;    ProcessedDate&#xA;)&#xA;SELECT &#xA;    s.EmployeeName,&#xA;    s.FileName,&#xA;    'TimesheetStaging' AS TableName,&#xA;    'Skipped' AS Action,&#xA;    'Duplicate timesheet entry found in Timesheet table: ' + &#xA;        COALESCE(s.ProjectName, 'Unknown') + ', ' + COALESCE(CAST(s.TotalHours AS NVARCHAR(10)), '0') AS Message,&#xA;    GETDATE() AS ProcessedDate&#xA;FROM Timesheet.TimesheetStaging s&#xA;JOIN Timesheet.Employee e ON s.EmployeeName = e.EmployeeName&#xA;LEFT JOIN Timesheet.Client c ON s.ClientName = c.ClientName&#xA;LEFT JOIN Timesheet.Project p ON s.ProjectName = p.ProjectName AND p.ClientID = c.ClientID&#xA;JOIN Timesheet.Timesheet t ON &#xA;    e.EmployeeID = t.EmployeeID&#xA;    AND TRY_CONVERT(DATE, s.[Date]) = t.[Date]&#xA;    AND TRY_CONVERT(TIME, s.StartTime) = t.StartTime&#xA;    AND TRY_CONVERT(TIME, s.EndTime) = t.EndTime&#xA;    AND COALESCE(c.ClientID, -1) = COALESCE(t.ClientID, -1)&#xA;    AND COALESCE(p.ProjectID, -1) = COALESCE(t.ProjectID, -1)&#xA;WHERE s.IsValid = 1&#xA;  AND e.EmployeeID IS NOT NULL;&#xA;&#xA;-- Step 2: Insert non-duplicate valid rows (excluding holidays)&#xA;INSERT INTO Timesheet.Timesheet (&#xA;    EmployeeID, [Date], [DayOfWeek], ClientID, ProjectID, ActivityID, LeaveType,&#xA;    BillableStatus, Comments, TotalHours, StartTime, EndTime&#xA;)&#xA;SELECT &#xA;    e.EmployeeID,&#xA;    TRY_CONVERT(DATE, s.[Date]),&#xA;    s.[DayOfWeek],&#xA;    c.ClientID,&#xA;    p.ProjectID,&#xA;    a.ActivityID,&#xA;    lt.LeaveType,&#xA;    s.BillableStatus,&#xA;    s.Comments,&#xA;    TRY_CONVERT(DECIMAL(5,2), s.TotalHours),&#xA;    TRY_CONVERT(TIME, s.StartTime),&#xA;    TRY_CONVERT(TIME, s.EndTime)&#xA;FROM Timesheet.TimesheetStaging s&#xA;LEFT JOIN Timesheet.Employee e ON s.EmployeeName = e.EmployeeName&#xA;LEFT JOIN Timesheet.Client c ON s.ClientName = c.ClientName&#xA;LEFT JOIN Timesheet.Project p ON s.ProjectName = p.ProjectName AND p.ClientID = c.ClientID&#xA;LEFT JOIN Timesheet.Activity a ON s.ActivityName = a.ActivityName&#xA;LEFT JOIN Timesheet.LeaveType lt ON s.ActivityName = lt.LeaveTypeName&#xA;WHERE s.IsValid = 1&#xA;  AND e.EmployeeID IS NOT NULL&#xA;  AND (&#xA;        (a.ActivityID IS NOT NULL AND lt.LeaveType IS NULL AND a.ActivityID &lt;&gt; 5020) OR&#xA;        (a.ActivityID IS NULL AND lt.LeaveType IS NOT NULL)&#xA;      )&#xA;  AND NOT EXISTS (&#xA;        SELECT 1&#xA;        FROM Timesheet.Timesheet t&#xA;        WHERE t.EmployeeID = e.EmployeeID&#xA;          AND t.[Date] = TRY_CONVERT(DATE, s.[Date])&#xA;          AND t.StartTime = TRY_CONVERT(TIME, s.StartTime)&#xA;          AND t.EndTime = TRY_CONVERT(TIME, s.EndTime)&#xA;          AND COALESCE(t.ClientID, -1) = COALESCE(c.ClientID, -1)&#xA;          AND COALESCE(t.ProjectID, -1) = COALESCE(p.ProjectID, -1)&#xA;      );&#xA;&#xA;-- Step 3: Log successful insertions&#xA;INSERT INTO Timesheet.AuditLog (&#xA;    EmployeeName,&#xA;    FileName,&#xA;    TableName,&#xA;    Action,&#xA;    RecordID,&#xA;    Message,&#xA;    ProcessedDate&#xA;)&#xA;SELECT &#xA;    s.EmployeeName,&#xA;    s.FileName,&#xA;    'Timesheet' AS TableName,&#xA;    'Insert' AS Action,&#xA;    t.Timesheet_ID,&#xA;    'New timesheet entry inserted: ' + COALESCE(s.ProjectName, 'Unknown') + ', ' + COALESCE(CAST(s.TotalHours AS NVARCHAR(10)), '0') AS Message,&#xA;    GETDATE() AS ProcessedDate&#xA;FROM Timesheet.TimesheetStaging s&#xA;JOIN Timesheet.Employee e ON s.EmployeeName = e.EmployeeName&#xA;JOIN Timesheet.Timesheet t ON t.EmployeeID = e.EmployeeID&#xA;    AND t.[Date] = TRY_CONVERT(DATE, s.[Date])&#xA;    AND t.TotalHours = TRY_CONVERT(DECIMAL(5,2), s.TotalHours)&#xA;WHERE s.IsValid = 1&#xA;  AND NOT EXISTS (&#xA;        SELECT 1&#xA;        FROM Timesheet.Timesheet t2&#xA;        WHERE t2.EmployeeID = e.EmployeeID&#xA;          AND t2.[Date] = TRY_CONVERT(DATE, s.[Date])&#xA;          AND t2.StartTime = TRY_CONVERT(TIME, s.StartTime)&#xA;          AND t2.EndTime = TRY_CONVERT(TIME, s.EndTime)&#xA;          AND COALESCE(t2.ClientID, -1) = COALESCE(t.ClientID, -1)&#xA;          AND COALESCE(t2.ProjectID, -1) = COALESCE(t.ProjectID, -1)&#xA;          AND t2.Timesheet_ID &lt; t.Timesheet_ID&#xA;      );&#xA;&#xA;-- Step 4: Update existing rows based on staging data&#xA;UPDATE t&#xA;SET &#xA;    t.[DayOfWeek] = s.[DayOfWeek],&#xA;    t.ClientID = c.ClientID,&#xA;    t.ProjectID = p.ProjectID,&#xA;    t.ActivityID = a.ActivityID,&#xA;    t.LeaveType = lt.LeaveType,&#xA;    t.BillableStatus = s.BillableStatus,&#xA;    t.Comments = CASE WHEN s.Comments IS NULL THEN t.Comments ELSE CAST(s.Comments AS NVARCHAR(MAX)) END,&#xA;    t.TotalHours = TRY_CONVERT(DECIMAL(5,2), s.TotalHours),&#xA;    t.StartTime = TRY_CONVERT(TIME, s.StartTime),&#xA;    t.EndTime = TRY_CONVERT(TIME, s.EndTime)&#xA;FROM Timesheet.Timesheet t&#xA;JOIN Timesheet.Employee e ON e.EmployeeID = t.EmployeeID&#xA;JOIN Timesheet.TimesheetStaging s ON s.EmployeeName = e.EmployeeName&#xA;    AND t.[Date] = TRY_CONVERT(DATE, s.[Date])&#xA;    AND t.StartTime = TRY_CONVERT(TIME, s.StartTime)&#xA;    AND t.EndTime = TRY_CONVERT(TIME, s.EndTime)&#xA;LEFT JOIN Timesheet.Client c ON s.ClientName = c.ClientName&#xA;LEFT JOIN Timesheet.Project p ON s.ProjectName = p.ProjectName AND p.ClientID = c.ClientID&#xA;LEFT JOIN Timesheet.Activity a ON s.ActivityName = a.ActivityName&#xA;LEFT JOIN Timesheet.LeaveType lt ON s.ActivityName = lt.LeaveTypeName&#xA;WHERE s.IsValid = 1&#xA;  AND (&#xA;        ISNULL(t.[DayOfWeek], '') &lt;&gt; ISNULL(s.[DayOfWeek], '') OR&#xA;        ISNULL(t.ClientID, -1) &lt;&gt; ISNULL(c.ClientID, -1) OR&#xA;        ISNULL(t.ProjectID, -1) &lt;&gt; ISNULL(p.ProjectID, -1) OR&#xA;        ISNULL(t.ActivityID, -1) &lt;&gt; ISNULL(a.ActivityID, -1) OR&#xA;        ISNULL(t.LeaveType, '') &lt;&gt; ISNULL(lt.LeaveType, '') OR&#xA;        ISNULL(t.BillableStatus, '') &lt;&gt; ISNULL(s.BillableStatus, '') OR&#xA;        ISNULL(CAST(t.Comments AS NVARCHAR(MAX)), '') &lt;&gt; ISNULL(s.Comments, '') OR&#xA;        ISNULL(t.TotalHours, 0) &lt;&gt; ISNULL(TRY_CONVERT(DECIMAL(5,2), s.TotalHours), 0) OR&#xA;        ISNULL(t.StartTime, '') &lt;&gt; ISNULL(TRY_CONVERT(TIME, s.StartTime), '') OR&#xA;        ISNULL(t.EndTime, '') &lt;&gt; ISNULL(TRY_CONVERT(TIME, s.EndTime), '')&#xA;      );&#xA;&#xA;-- Step 5: Log successful updates&#xA;INSERT INTO Timesheet.AuditLog (&#xA;    EmployeeName,&#xA;    FileName,&#xA;    TableName,&#xA;    Action,&#xA;    RecordID,&#xA;    Message,&#xA;    ProcessedDate&#xA;)&#xA;SELECT &#xA;    s.EmployeeName,&#xA;    s.FileName,&#xA;    'Timesheet' AS TableName,&#xA;    'Update' AS Action,&#xA;    t.Timesheet_ID,&#xA;    'Timesheet entry updated: ' + COALESCE(s.ProjectName, 'Unknown') + ', ' + COALESCE(CAST(s.TotalHours AS NVARCHAR(10)), '0') AS Message,&#xA;    GETDATE() AS ProcessedDate&#xA;FROM Timesheet.TimesheetStaging s&#xA;JOIN Timesheet.Employee e ON s.EmployeeName = e.EmployeeName&#xA;JOIN Timesheet.Timesheet t ON t.EmployeeID = e.EmployeeID&#xA;    AND t.[Date] = TRY_CONVERT(DATE, s.[Date])&#xA;    AND t.TotalHours = TRY_CONVERT(DECIMAL(5,2), s.TotalHours)&#xA;WHERE s.IsValid = 1&#xA;  AND EXISTS (&#xA;      SELECT 1&#xA;      FROM Timesheet.Timesheet t2&#xA;      JOIN Timesheet.TimesheetStaging s2 ON s2.EmployeeName = e.EmployeeName&#xA;          AND t2.[Date] = TRY_CONVERT(DATE, s2.[Date])&#xA;          AND t2.TotalHours = TRY_CONVERT(DECIMAL(5,2), s2.TotalHours)&#xA;      WHERE s2.IsValid = 1&#xA;        AND (&#xA;            ISNULL(t2.[DayOfWeek], '') &lt;&gt; ISNULL(s2.[DayOfWeek], '') OR&#xA;            ISNULL(t2.ClientID, -1) &lt;&gt; ISNULL((SELECT ClientID FROM Timesheet.Client WHERE ClientName = s2.ClientName), -1) OR&#xA;            ISNULL(t2.ProjectID, -1) &lt;&gt; ISNULL((SELECT ProjectID FROM Timesheet.Project WHERE ProjectName = s2.ProjectName AND ClientID = (SELECT ClientID FROM Timesheet.Client WHERE ClientName = s2.ClientName)), -1) OR&#xA;            ISNULL(t2.ActivityID, -1) &lt;&gt; ISNULL((SELECT ActivityID FROM Timesheet.Activity WHERE ActivityName = s2.ActivityName), -1) OR&#xA;            ISNULL(t2.LeaveType, '') &lt;&gt; ISNULL((SELECT LeaveType FROM Timesheet.LeaveType WHERE LeaveTypeName = s2.ActivityName), '') OR&#xA;            ISNULL(t2.BillableStatus, '') &lt;&gt; ISNULL(s2.BillableStatus, '') OR&#xA;            ISNULL(CAST(t2.Comments AS NVARCHAR(MAX)), '') &lt;&gt; ISNULL(s2.Comments, '') OR&#xA;            ISNULL(t2.TotalHours, 0) &lt;&gt; ISNULL(TRY_CONVERT(DECIMAL(5,2), s2.TotalHours), 0) OR&#xA;            ISNULL(t2.StartTime, '') &lt;&gt; ISNULL(TRY_CONVERT(TIME, s2.StartTime), '') OR&#xA;            ISNULL(t2.EndTime, '') &lt;&gt; ISNULL(TRY_CONVERT(TIME, s2.EndTime), '')&#xA;        )&#xA;  );&#xA;&#xA;&#xA;-- Step 6: Delete rows marked for deletion in staging&#xA;DELETE t&#xA;FROM Timesheet.Timesheet t&#xA;JOIN Timesheet.Employee e ON e.EmployeeID = t.EmployeeID&#xA;JOIN Timesheet.TimesheetStaging s ON s.EmployeeName = e.EmployeeName&#xA;    AND t.[Date] = TRY_CONVERT(DATE, s.[Date])&#xA;    AND t.StartTime = TRY_CONVERT(TIME, s.StartTime)&#xA;    AND t.EndTime = TRY_CONVERT(TIME, s.EndTime)&#xA;WHERE s.IsValid = 1&#xA;  AND TRY_CONVERT(DECIMAL(5,2), s.TotalHours) = -1;  -- Convert to decimal before comparison&#xA;&#xA;-- Step 7: Log successful deletes&#xA;INSERT INTO Timesheet.AuditLog (&#xA;    EmployeeName,&#xA;    FileName,&#xA;    TableName,&#xA;    Action,&#xA;    RecordID,&#xA;    Message,&#xA;    ProcessedDate&#xA;)&#xA;SELECT &#xA;    s.EmployeeName,&#xA;    s.FileName,&#xA;    'Timesheet' AS TableName,&#xA;    'Delete' AS Action,&#xA;    t.Timesheet_ID,&#xA;    'Timesheet entry deleted: ' + COALESCE(s.ProjectName, 'Unknown') + ', ' + COALESCE(s.TotalHours, '0') AS Message,&#xA;    GETDATE() AS ProcessedDate&#xA;FROM Timesheet.TimesheetStaging s&#xA;JOIN Timesheet.Employee e ON s.EmployeeName = e.EmployeeName&#xA;JOIN Timesheet.Timesheet t ON t.EmployeeID = e.EmployeeID&#xA;    AND t.[Date] = TRY_CONVERT(DATE, s.[Date])&#xA;    AND t.TotalHours = TRY_CONVERT(DECIMAL(5,2), s.TotalHours)&#xA;WHERE s.IsValid = 1&#xA;  AND TRY_CONVERT(DECIMAL(5,2), s.TotalHours) = -1  -- Convert to decimal before comparison&#xA;  AND NOT EXISTS (SELECT 1 FROM Timesheet.Timesheet t2 WHERE t2.Timesheet_ID = t.Timesheet_ID);" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
       </DTS:ObjectData>
     </DTS:Executable>
     <DTS:Executable
@@ -2739,35 +2739,14 @@ where [refTable].[StartTime] = ? and [refTable].[EndTime] = ? and [refTable].[Em
                   ReadOnlyVariables="User::ExcelFilePath"
                   ReadWriteVariables="User::ExcelConnectionString,User::SelectedSheet">
                   <ProjectItem
-                    Name="Properties\AssemblyInfo.cs"
-                    Encoding="UTF8"><![CDATA[using System.Reflection;
-using System.Runtime.CompilerServices;
-
-//
-// General Information about an assembly is controlled through the following 
-// set of attributes. Change these attribute values to modify the information
-// associated with an assembly.
-//
-[assembly: AssemblyTitle("ST_a136fd41f7184a7a96b8e8a480790b29")]
-[assembly: AssemblyDescription("")]
-[assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("HP")]
-[assembly: AssemblyProduct("ST_a136fd41f7184a7a96b8e8a480790b29")]
-[assembly: AssemblyCopyright("Copyright @ HP 2025")]
-[assembly: AssemblyTrademark("")]
-[assembly: AssemblyCulture("")]
-//
-// Version information for an assembly consists of the following four values:
-//
-//      Major Version
-//      Minor Version 
-//      Build Number
-//      Revision
-//
-// You can specify all the values or you can default the Revision and Build Numbers 
-// by using the '*' as shown below:
-
-[assembly: AssemblyVersion("1.0.*")]]]></ProjectItem>
+                    Name="Properties\Settings.settings"
+                    Encoding="UTF8"><![CDATA[<?xml version='1.0' encoding='iso-8859-1'?>
+<SettingsFile xmlns="uri:settings" CurrentProfile="(Default)">
+  <Profiles>
+    <Profile Name="(Default)" />
+  </Profiles>
+  <Settings />
+</SettingsFile>]]></ProjectItem>
                   <ProjectItem
                     Name="Properties\Resources.resx"
                     Encoding="UTF8"><![CDATA[<?xml version="1.0" encoding="utf-8"?>
@@ -2887,6 +2866,35 @@ using System.Runtime.CompilerServices;
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
 </root>]]></ProjectItem>
+                  <ProjectItem
+                    Name="Properties\Settings.Designer.cs"
+                    Encoding="UTF8"><![CDATA[//------------------------------------------------------------------------------
+// <auto-generated>
+//     This code was generated by a tool.
+//
+//     Changes to this file may cause incorrect behavior and will be lost if
+//     the code is regenerated.
+// </auto-generated>
+//------------------------------------------------------------------------------
+
+[assembly: global::System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Scope="member", Target="ST_a136fd41f7184a7a96b8e8a480790b29.Properties.Settings.get_Default():ST_a136fd41f7184a7a96b8e8a480790b29.Properties.Sett" +
+    "ings")]
+
+namespace ST_a136fd41f7184a7a96b8e8a480790b29.Properties {
+    
+    
+    internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase {
+        
+        [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
+        private static Settings defaultInstance = new Settings();
+        
+        public static Settings Default {
+            get {
+                return defaultInstance;
+            }
+        }
+    }
+}]]></ProjectItem>
                   <ProjectItem
                     Name="ScriptMain.cs"
                     Encoding="UTF8"><![CDATA[#region Help:  Introduction to the script task
@@ -3368,6 +3376,56 @@ namespace ST_a136fd41f7184a7a96b8e8a480790b29
     
 }]]></ProjectItem>
                   <ProjectItem
+                    Name="Project"
+                    Encoding="UTF16LE"><![CDATA[<?xml version="1.0" encoding="UTF-16" standalone="yes"?>
+<c:Project xmlns:c="http://schemas.microsoft.com/codeprojectml/2010/08/main" xmlns:msb="http://schemas.microsoft.com/developer/msbuild/2003" runtimeVersion="4.0" schemaVersion="1.0">
+  <msb:PropertyGroup>
+    <msb:CodeName>ST_336a9463f4a8472591ee1c7d192a0a94</msb:CodeName>
+    <msb:Language>msBuild</msb:Language>
+    <msb:DisplayName>ST_336a9463f4a8472591ee1c7d192a0a94</msb:DisplayName>
+    <msb:ProjectId>{BDD112C7-5489-426D-857C-8B4D19625A44}</msb:ProjectId>
+  </msb:PropertyGroup>
+  <msb:ItemGroup>
+    <msb:Project Include="ST_336a9463f4a8472591ee1c7d192a0a94.csproj" />
+    <msb:File Include="Properties\Settings.settings" />
+    <msb:File Include="Properties\AssemblyInfo.cs" />
+    <msb:File Include="Properties\Resources.resx" />
+    <msb:File Include="Properties\Resources.Designer.cs" />
+    <msb:File Include="Properties\Settings.Designer.cs" />
+    <msb:File Include="ScriptMain.cs" />
+  </msb:ItemGroup>
+</c:Project>]]></ProjectItem>
+                  <ProjectItem
+                    Name="Properties\AssemblyInfo.cs"
+                    Encoding="UTF8"><![CDATA[using System.Reflection;
+using System.Runtime.CompilerServices;
+
+//
+// General Information about an assembly is controlled through the following 
+// set of attributes. Change these attribute values to modify the information
+// associated with an assembly.
+//
+[assembly: AssemblyTitle("ST_a136fd41f7184a7a96b8e8a480790b29")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("HP")]
+[assembly: AssemblyProduct("ST_a136fd41f7184a7a96b8e8a480790b29")]
+[assembly: AssemblyCopyright("Copyright @ HP 2025")]
+[assembly: AssemblyTrademark("")]
+[assembly: AssemblyCulture("")]
+//
+// Version information for an assembly consists of the following four values:
+//
+//      Major Version
+//      Minor Version 
+//      Build Number
+//      Revision
+//
+// You can specify all the values or you can default the Revision and Build Numbers 
+// by using the '*' as shown below:
+
+[assembly: AssemblyVersion("1.0.*")]]]></ProjectItem>
+                  <ProjectItem
                     Name="ST_336a9463f4a8472591ee1c7d192a0a94.csproj"
                     Encoding="UTF8"><![CDATA[<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
@@ -3453,64 +3511,6 @@ namespace ST_a136fd41f7184a7a96b8e8a480790b29
     </VisualStudio>
   </ProjectExtensions>
 </Project>]]></ProjectItem>
-                  <ProjectItem
-                    Name="Project"
-                    Encoding="UTF16LE"><![CDATA[<?xml version="1.0" encoding="UTF-16" standalone="yes"?>
-<c:Project xmlns:c="http://schemas.microsoft.com/codeprojectml/2010/08/main" xmlns:msb="http://schemas.microsoft.com/developer/msbuild/2003" runtimeVersion="4.0" schemaVersion="1.0">
-  <msb:PropertyGroup>
-    <msb:CodeName>ST_336a9463f4a8472591ee1c7d192a0a94</msb:CodeName>
-    <msb:Language>msBuild</msb:Language>
-    <msb:DisplayName>ST_336a9463f4a8472591ee1c7d192a0a94</msb:DisplayName>
-    <msb:ProjectId>{BDD112C7-5489-426D-857C-8B4D19625A44}</msb:ProjectId>
-  </msb:PropertyGroup>
-  <msb:ItemGroup>
-    <msb:Project Include="ST_336a9463f4a8472591ee1c7d192a0a94.csproj" />
-    <msb:File Include="Properties\Settings.settings" />
-    <msb:File Include="Properties\AssemblyInfo.cs" />
-    <msb:File Include="Properties\Resources.resx" />
-    <msb:File Include="Properties\Resources.Designer.cs" />
-    <msb:File Include="Properties\Settings.Designer.cs" />
-    <msb:File Include="ScriptMain.cs" />
-  </msb:ItemGroup>
-</c:Project>]]></ProjectItem>
-                  <ProjectItem
-                    Name="Properties\Settings.Designer.cs"
-                    Encoding="UTF8"><![CDATA[//------------------------------------------------------------------------------
-// <auto-generated>
-//     This code was generated by a tool.
-//
-//     Changes to this file may cause incorrect behavior and will be lost if
-//     the code is regenerated.
-// </auto-generated>
-//------------------------------------------------------------------------------
-
-[assembly: global::System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Scope="member", Target="ST_a136fd41f7184a7a96b8e8a480790b29.Properties.Settings.get_Default():ST_a136fd41f7184a7a96b8e8a480790b29.Properties.Sett" +
-    "ings")]
-
-namespace ST_a136fd41f7184a7a96b8e8a480790b29.Properties {
-    
-    
-    internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase {
-        
-        [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-        private static Settings defaultInstance = new Settings();
-        
-        public static Settings Default {
-            get {
-                return defaultInstance;
-            }
-        }
-    }
-}]]></ProjectItem>
-                  <ProjectItem
-                    Name="Properties\Settings.settings"
-                    Encoding="UTF8"><![CDATA[<?xml version='1.0' encoding='iso-8859-1'?>
-<SettingsFile xmlns="uri:settings" CurrentProfile="(Default)">
-  <Profiles>
-    <Profile Name="(Default)" />
-  </Profiles>
-  <Settings />
-</SettingsFile>]]></ProjectItem>
                   <ProjectItem
                     Name="Properties\Resources.Designer.cs"
                     Encoding="UTF8"><![CDATA[//------------------------------------------------------------------------------
