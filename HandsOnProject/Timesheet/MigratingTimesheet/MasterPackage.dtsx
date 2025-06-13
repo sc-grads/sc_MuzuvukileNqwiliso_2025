@@ -11,8 +11,8 @@
   DTS:LocaleID="7177"
   DTS:ObjectName="MasterPackage"
   DTS:PackageType="5"
-  DTS:VersionBuild="16"
-  DTS:VersionGUID="{F713DF8B-C505-4A37-856E-312DA37B7524}">
+  DTS:VersionBuild="17"
+  DTS:VersionGUID="{0370D568-E023-4511-9ECB-7F8588182A41}">
   <DTS:Property
     DTS:Name="PackageFormatVersion">8</DTS:Property>
   <DTS:ConnectionManagers>
@@ -53,13 +53,13 @@
       <DTS:Variables />
       <DTS:Executables>
         <DTS:Executable
-          DTS:refId="Package\SC_Process Data\EPT_Clinet"
+          DTS:refId="Package\SC_Process Data\EPT_Client"
           DTS:CreationName="Microsoft.ExecutePackageTask"
           DTS:Description="Execute Package Task"
           DTS:DTSID="{CB4FC3BA-CCF8-497D-A224-148A60394226}"
           DTS:ExecutableType="Microsoft.ExecutePackageTask"
           DTS:LocaleID="-1"
-          DTS:ObjectName="EPT_Clinet"
+          DTS:ObjectName="EPT_Client"
           DTS:TaskContact="Microsoft Corporation; Microsoft SQL Server; Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1">
           <DTS:Variables />
           <DTS:ObjectData>
@@ -163,12 +163,12 @@
           DTS:From="Package\SC_Process Data\EPT_Employee"
           DTS:LogicalAnd="True"
           DTS:ObjectName="Constraint"
-          DTS:To="Package\SC_Process Data\EPT_Clinet" />
+          DTS:To="Package\SC_Process Data\EPT_Client" />
         <DTS:PrecedenceConstraint
           DTS:refId="Package\SC_Process Data.PrecedenceConstraints[Constraint 1]"
           DTS:CreationName=""
           DTS:DTSID="{9326D40D-B543-4FB5-B297-7FC609C5218C}"
-          DTS:From="Package\SC_Process Data\EPT_Clinet"
+          DTS:From="Package\SC_Process Data\EPT_Client"
           DTS:LogicalAnd="True"
           DTS:ObjectName="Constraint 1"
           DTS:To="Package\SC_Process Data\EPT_LeaveType" />
@@ -276,7 +276,7 @@
         Capacity="16" xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph" xmlns:mssgle="clr-namespace:Microsoft.SqlServer.Graph.LayoutEngine;assembly=Microsoft.SqlServer.Graph" xmlns:assembly="http://schemas.microsoft.com/winfx/2006/xaml">
         <NodeLayout
           Size="131.2,41.6"
-          Id="Package\SC_Process Data\EPT_Clinet"
+          Id="Package\SC_Process Data\EPT_Client"
           TopLeft="101.566636115149,114.266664726072" />
         <NodeLayout
           Size="150.4,41.6"
@@ -300,7 +300,7 @@
           TopLeft="97.1221919135373,351.56296127482" />
         <EdgeLayout
           Id="Package\SC_Process Data.PrecedenceConstraints[Constraint]"
-          TopLeft="165.716636456633,76.1333319471943">
+          TopLeft="165.716636456634,76.1333319471943">
           <EdgeLayout.Curve>
             <mssgle:Curve
               StartConnector="{assembly:Null}"
@@ -322,18 +322,18 @@
         </EdgeLayout>
         <EdgeLayout
           Id="Package\SC_Process Data.PrecedenceConstraints[Constraint 1]"
-          TopLeft="166.699969812732,155.866664726072">
+          TopLeft="166.699969812733,155.866664726072">
           <EdgeLayout.Curve>
             <mssgle:Curve
               StartConnector="{assembly:Null}"
-              EndConnector="0,40.0666663713588"
+              EndConnector="0,40.066666371359"
               Start="0,0"
-              End="0,32.5666663713588">
+              End="0,32.566666371359">
               <mssgle:Curve.Segments>
                 <mssgle:SegmentCollection
                   Capacity="5">
                   <mssgle:LineSegment
-                    End="0,32.5666663713588" />
+                    End="0,32.566666371359" />
                 </mssgle:SegmentCollection>
               </mssgle:Curve.Segments>
             </mssgle:Curve>
