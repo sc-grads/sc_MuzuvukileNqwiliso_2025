@@ -11,8 +11,8 @@
   DTS:LocaleID="7177"
   DTS:ObjectName="MasterPackage"
   DTS:PackageType="5"
-  DTS:VersionBuild="4"
-  DTS:VersionGUID="{254E70A5-3F64-43A1-851A-DB058DB7C5EE}">
+  DTS:VersionBuild="16"
+  DTS:VersionGUID="{F713DF8B-C505-4A37-856E-312DA37B7524}">
   <DTS:Property
     DTS:Name="PackageFormatVersion">8</DTS:Property>
   <DTS:ConnectionManagers>
@@ -29,7 +29,18 @@
       </DTS:ObjectData>
     </DTS:ConnectionManager>
   </DTS:ConnectionManagers>
-  <DTS:Variables />
+  <DTS:Variables>
+    <DTS:Variable
+      DTS:CreationName=""
+      DTS:DTSID="{80E2F241-A8CA-4FBD-B3FC-99355E008FD0}"
+      DTS:IncludeInDebugDump="2345"
+      DTS:Namespace="User"
+      DTS:ObjectName="ErrorRowData">
+      <DTS:VariableValue
+        DTS:DataType="8"
+        xml:space="preserve"></DTS:VariableValue>
+    </DTS:Variable>
+  </DTS:Variables>
   <DTS:Executables>
     <DTS:Executable
       DTS:refId="Package\SC_Process Data"
@@ -228,6 +239,29 @@
       </DTS:EventHandlers>
     </DTS:Executable>
   </DTS:Executables>
+  <DTS:EventHandlers>
+    <DTS:EventHandler
+      DTS:refId="Package.EventHandlers[OnError]"
+      DTS:CreationName="OnError"
+      DTS:DTSID="{0CE9232D-16F4-4E0C-B971-0C09BDEC1723}"
+      DTS:EventID="830590784"
+      DTS:EventName="OnError"
+      DTS:LocaleID="-1">
+      <DTS:Variables>
+        <DTS:Variable
+          DTS:CreationName=""
+          DTS:Description="The propagate property of the event"
+          DTS:DTSID="{69132089-18E8-47ED-B4AE-21CB7EEA9274}"
+          DTS:IncludeInDebugDump="6789"
+          DTS:Namespace="System"
+          DTS:ObjectName="Propagate">
+          <DTS:VariableValue
+            DTS:DataType="11">-1</DTS:VariableValue>
+        </DTS:Variable>
+      </DTS:Variables>
+      <DTS:Executables />
+    </DTS:EventHandler>
+  </DTS:EventHandlers>
   <DTS:DesignTimeProperties><![CDATA[<?xml version="1.0"?>
 <!--This CDATA section contains the layout information of the package. The section includes information such as (x,y) coordinates, width, and height.-->
 <!--If you manually edit this section and make a mistake, you can delete it. -->
@@ -241,13 +275,17 @@
       <GraphLayout
         Capacity="16" xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph" xmlns:mssgle="clr-namespace:Microsoft.SqlServer.Graph.LayoutEngine;assembly=Microsoft.SqlServer.Graph" xmlns:assembly="http://schemas.microsoft.com/winfx/2006/xaml">
         <NodeLayout
+          Size="131.2,41.6"
+          Id="Package\SC_Process Data\EPT_Clinet"
+          TopLeft="101.566636115149,114.266664726072" />
+        <NodeLayout
           Size="150.4,41.6"
           Id="Package\SC_Process Data\EPT_Employee"
           TopLeft="89.0666367981182,34.5333319471943" />
         <NodeLayout
-          Size="131.2,41.6"
-          Id="Package\SC_Process Data\EPT_Clinet"
-          TopLeft="101.566636115149,114.266664726072" />
+          Size="171.2,41.6"
+          Id="Package\SC_Process Data\EPT_LeaveRequest"
+          TopLeft="91.5666366615241,430.190473109976" />
         <NodeLayout
           Size="156,41.6"
           Id="Package\SC_Process Data\EPT_LeaveType"
@@ -256,10 +294,6 @@
           Size="136.8,41.6"
           Id="Package\SC_Process Data\EPT_Project"
           TopLeft="104.159228566088,274.799997504949" />
-        <NodeLayout
-          Size="171.2,41.6"
-          Id="Package\SC_Process Data\EPT_LeaveRequest"
-          TopLeft="91.5666366615241,430.190473109976" />
         <NodeLayout
           Size="147.2,41.6"
           Id="Package\SC_Process Data\EPT_Timsheet"
