@@ -253,41 +253,39 @@ IF OBJECT_ID('Timesheet.Forecast', 'U') IS NOT NULL
     END
 
 
- IF OBJECT_ID('Timesheet.AuditLog', 'U') IS NOT NULL
+IF OBJECT_ID('Timesheet.AuditLog', 'U') IS NOT NULL
     DROP TABLE Timesheet.AuditLog;
 
 CREATE TABLE Timesheet.AuditLog (
     AuditID INT PRIMARY KEY IDENTITY(1,1),
-    EmployeeName NVARCHAR(255),          -- Added to identify the employee involved
-    FileName VARCHAR(255),              -- File associated with the action
-    TableName VARCHAR(50) NOT NULL,     -- Table affected by the action
-    Action VARCHAR(20) NOT NULL CHECK (Action IN ('Insert', 'Update', 'Delete', 'Processed', 'Skipped')), -- Expanded actions
-    RecordID INT,                       -- ID of the affected record
-    TotalHours DECIMAL(5,2),            -- Hours related to the action (if applicable)
-    Message NVARCHAR(1000),             -- Detailed context or reason
-    ProcessedDate DATETIME NOT NULL DEFAULT GETDATE() -- Default to current time
+    EmployeeName NVARCHAR(255),      
+    FileName VARCHAR(255),         
+    TableName VARCHAR(50) NOT NULL,  
+    Action VARCHAR(20) NOT NULL CHECK (Action IN ('Insert', 'Update', 'Delete', 'Processed', 'Skipped')), 
+    Message NVARCHAR(1000),   
+    ProcessedDate DATETIME NOT NULL DEFAULT GETDATE()
 );
+
+CREATE INDEX IX_AuditLog_ProcessedDate ON Timesheet.AuditLog(ProcessedDate);
+CREATE INDEX IX_AuditLog_EmployeeName ON Timesheet.AuditLog(EmployeeName);
+
+PRINT 'AuditLog table recreated successfully without RecordID and TotalHours.';
+
+
 CREATE INDEX IX_AuditLog_ProcessedDate ON Timesheet.AuditLog(ProcessedDate);
 CREATE INDEX IX_AuditLog_EmployeeName ON Timesheet.AuditLog(EmployeeName);
 PRINT 'AuditLog table updated with EmployeeName.';
 
 IF OBJECT_ID('Timesheet.ErrorLog', 'U') IS NULL
-BEGIN
-    CREATE TABLE Timesheet.ErrorLog (
-        ErrorID INT PRIMARY KEY IDENTITY(1,1),
-        EmployeeName NVARCHAR(255),          -- Employee associated with the error
-        FileName VARCHAR(255),              -- File causing the error
-        TableName VARCHAR(50),              -- Table where error occurred
-        ErrorType VARCHAR(50) NOT NULL CHECK (ErrorType IN ('Validation', 'SSIS', 'Data', 'System')), -- Error category
-        ErrorMessage NVARCHAR(1000) NOT NULL, -- Detailed error description
-        RecordID INT,                       -- Affected record (if applicable)
-        StackTrace NVARCHAR(MAX),           -- Technical details (e.g., SSIS error stack)
-        ProcessedDate DATETIME NOT NULL DEFAULT GETDATE() -- When the error occurred
-    );
-    CREATE INDEX IX_ErrorLog_ProcessedDate ON Timesheet.ErrorLog(ProcessedDate);
-    CREATE INDEX IX_ErrorLog_EmployeeName ON Timesheet.ErrorLog(EmployeeName);
-    PRINT 'ErrorLog table created.';
-END
+CREATE TABLE Timesheet.ErrorLog (
+    ErrorLogID INT IDENTITY(1,1) PRIMARY KEY,
+    ErrorDate DATETIME NOT NULL DEFAULT GETDATE(),
+    ErrorTask NVARCHAR(255) NOT NULL,
+    ErrorDescription NVARCHAR(MAX) NOT NULL,
+    SourceComponent NVARCHAR(255) NULL,
+    UserName NVARCHAR(100) NULL
+);
+
 
 
     -- Timesheet_Staging Table
