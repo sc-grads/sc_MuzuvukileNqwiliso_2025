@@ -249,18 +249,21 @@ BEGIN
     END;
 
     -- AuditLog Table
-    CREATE TABLE Timesheet.AuditLog (
-        AuditID INT PRIMARY KEY IDENTITY(1,1),
-        EmployeeName NVARCHAR(255),
-        FileName VARCHAR(255),
-        TableName VARCHAR(50) NOT NULL,
-        Action VARCHAR(20) NOT NULL CHECK (Action IN ('Insert', 'Update', 'Delete', 'Processed', 'Skipped')),
-        Message NVARCHAR(1000),
-        ProcessedDate DATETIME NOT NULL DEFAULT GETDATE()
-    );
-    CREATE INDEX IX_AuditLog_ProcessedDate ON Timesheet.AuditLog(ProcessedDate);
-    CREATE INDEX IX_AuditLog_EmployeeName ON Timesheet.AuditLog(EmployeeName);
-    PRINT 'AuditLog table created.';
+ IF OBJECT_ID('Timesheet.AuditLog') IS NOT NULL
+    DROP TABLE Timesheet.AuditLog;
+
+CREATE TABLE Timesheet.AuditLog (
+    AuditID INT PRIMARY KEY IDENTITY(1,1),
+    EmployeeName NVARCHAR(255),
+    FileName VARCHAR(255),
+    TableName VARCHAR(50) NOT NULL,
+    Action VARCHAR(20) NOT NULL CHECK (Action IN ('Insert', 'Update', 'Delete')),
+    Message NVARCHAR(1000),
+    ProcessedDate DATETIME NOT NULL DEFAULT GETDATE()
+);
+CREATE INDEX IX_AuditLog_ProcessedDate ON Timesheet.AuditLog(ProcessedDate);
+CREATE INDEX IX_AuditLog_EmployeeName ON Timesheet.AuditLog(EmployeeName);
+PRINT 'AuditLog table created or altered.';
 
     -- ErrorLog Table
     IF OBJECT_ID('Timesheet.ErrorLog', 'U') IS NULL
@@ -453,13 +456,22 @@ BEGIN
 END;
 GO
 
-CREATE OR ALTER PROCEDURE Timesheet.ResetForecast
+CREATE OR ALTER PROCEDURE [Timesheet].[ResetForecast]
 AS
 BEGIN
     SET NOCOUNT ON;
     DELETE FROM Timesheet.Forecast;
-    DBCC CHECKIDENT ('Timesheet.Forecast', RESEED, 0);
+    ALTER SEQUENCE Timesheet.ForecastSeq RESTART WITH 7000;
 END;
+GO
+
+CREATE OR ALTER PROCEDURE Timesheet.ResetDescription
+AS
+BEGIN
+	SET NOCOUNT ON;
+	DELETE FROM Timesheet.Description;
+    ALTER SEQUENCE Timesheet.DescriptionSeq RESTART WITH 8000;
+END
 GO
 
 CREATE OR ALTER PROCEDURE Timesheet.ResetAll
@@ -469,12 +481,11 @@ BEGIN
     EXEC Timesheet.ResetForecast;
     EXEC Timesheet.ResetLeave;
     EXEC Timesheet.ResetTimesheet;
-    DELETE FROM Timesheet.Description;
-    ALTER SEQUENCE Timesheet.DescriptionSeq RESTART WITH 8000;
     EXEC Timesheet.ResetActivity;
     EXEC Timesheet.ResetLeaveType;
     EXEC Timesheet.ResetProject;
     EXEC Timesheet.ResetClient;
+	EXEC Timesheet.ResetDescription
     EXEC Timesheet.ResetEmployee;
 END;
 GO
