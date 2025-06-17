@@ -1,0 +1,19 @@
+name: Deploy SQL Database
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  deploy-sql:
+    uses: ./.github/workflows/deploy-sql-setup-template.yml
+    with:
+      sql_file: HandsOnProject/Timesheet/SQL Scripts/CreateDatabase.sql
+    secrets:
+      sql_server: ${{ secrets.SQL_SERVER }}
+      sql_user: ${{ secrets.SQL_USER }}
+      sql_password: ${{ secrets.SQL_PASSWORD }}
