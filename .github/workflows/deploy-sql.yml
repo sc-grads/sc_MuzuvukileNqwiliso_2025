@@ -3,14 +3,15 @@ name: Deploy SQL Database
 on:
   push:
     branches:
-      - main
+      - master
   pull_request:
     branches:
-      - main
+      - master
+  workflow_dispatch: 
 
 jobs:
   deploy-sql:
-    uses: ./.github/workflows/deploy-sql-setup-template.yml
+    uses: ./.github/workflows/sql-setup-template.yml
     with:
       sql_file: HandsOnProject/Timesheet/SQL Scripts/CreateDatabase.sql
     secrets:
