@@ -24,12 +24,12 @@ jobs:
             exit 1
         }
         Write-Output "Project file found successfully"
-        Get-ChildItem -Path $projectPath -Recurse
       shell: powershell
 
-    # Setup SSIS DevOps Tools (using the official action)
+    # Setup SSIS DevOps Tools (using Windows PowerShell)
     - name: Setup SSIS DevOps Tools
       uses: jonlabelle/setup-ssis-devops-tools@v1
+      shell: powershell  # <-- This forces Windows PowerShell instead of pwsh
 
     # Build SSIS Project
     - name: Build SSIS Project
