@@ -13,15 +13,16 @@ jobs:
 
     - name: Install SSISBuild extension
       run: |
-        dotnet tool install --global Microsoft.Build.Sql -v q
-
+        # Try installing from NuGet directly
+        dotnet tool install --global SSISBuild --version 3.3.0
+        
     - name: Build SSIS project (.dtproj)
       run: |
         "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\MSBuild.exe" `
-          "C:\sc_MuzuvukileNqwiliso_2025\HandsOnProject\Timesheet\MigratingTimesheet\MigratingTimesheet.dtproj" `
+          "${{ github.workspace }}\MigratingTimesheet\MigratingTimesheet.dtproj" `
           /p:Configuration=Development `
           /p:OutputPath="C:\SSISOutput"
-
+          
     - name: Deploy SSIS .ispac to SSISDB
       run: |
         "C:\Program Files\Microsoft SQL Server\160\DTS\Binn\ISDeploymentWizard.exe" `
