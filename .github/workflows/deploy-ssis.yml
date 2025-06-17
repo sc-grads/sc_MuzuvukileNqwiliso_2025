@@ -9,7 +9,7 @@ permissions:
 jobs:
   build_and_deploy:
     runs-on: windows-latest  # Use windows-latest for cloud runner; change to self-hosted if needed
-    environment: production
+    #environment: production
 
     steps:
     # Step 1: Checkout the repository
