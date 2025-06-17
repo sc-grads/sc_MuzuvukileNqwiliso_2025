@@ -55,16 +55,16 @@ x64/
 *.suo
 *.user
 *.sln.docstates
-*.params
+# *.params
 
 # Visual Studio database and deployment
 *.dbmdl
 *.deploymanifest
 *.database
-*.dtproj
+# *.dtproj
 *.dtproj.user
 *.dtsConfig
-*.ispac
+# *.ispac
 *.rptproj.user
 *.sqlproj.user
 *.designer.cs
