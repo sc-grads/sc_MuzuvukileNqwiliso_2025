@@ -1,28 +1,27 @@
 name: SSIS Build and Deploy
 
 on:
-  workflow_call:  
   workflow_dispatch:
 
 jobs:
   build_and_deploy:
-    runs-on: self-hosted  
+    runs-on: self-hosted
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: List files (debugging)
-        run: |
-          dir "${{ github.workspace }}\HandsOnProject\Timesheet\MigratingTimesheet" /s
+      - name: List repository files (debugging)
+        run: dir "C:\actions-runner\_work\sc_MuzuvukileNqwiliso_2025\sc_MuzuvukileNqwiliso_2025\HandsOnProject\Timesheet\MigratingTimesheet" -Recurse
+        shell: powershell
 
-      - name: Setup SSIS DevOps Tools
+      - name: Setup SQL Server SSIS DevOps Tools
         uses: jonlabelle/setup-ssis-devops-tools@v1
 
       - name: Build SSIS Packages
-        run: |
-          SSISBuild.exe -p:"${{ github.workspace }}\HandsOnProject\Timesheet\MigratingTimesheet\MigratingTimesheet.dtproj" -o:"${{ github.workspace }}\SSISOutput"
+        run: SSISBuild.exe -p:"C:\actions-runner\_work\sc_MuzuvukileNqwiliso_2025\sc_MuzuvukileNqwiliso_2025\HandsOnProject\Timesheet\MigratingTimesheet\MigratingTimesheet.dtproj" -o:"C:\actions-runner\_work\SSISOutput"
+        shell: powershell
 
       - name: Deploy SSIS Packages
-        run: |
-          SSISDeploy.exe -s:"${{ github.workspace }}\SSISOutput\MigratingTimesheet.ispac" -d:"catalog;/SSISDB/TimesheetDeploy/MigratingTimesheet;LAPTOP-62JJ49T4"
+        run: SSISDeploy.exe -s:"C:\actions-runner\_work\SSISOutput\MigratingTimesheet.ispac" -d:"catalog;/SSISDB/TimesheetDeploy/MigratingTimesheet;LAPTOP-62JJ49T4" -at:SQL -u:Auto_user -p:SecurePass2025
+        shell: powershell
