@@ -1,0 +1,28 @@
+name: SSIS Build and Deploy
+
+on:
+  workflow_call:  
+  workflow_dispatch:
+
+jobs:
+  build_and_deploy:
+    runs-on: self-hosted  
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: List files (debugging)
+        run: |
+          dir "${{ github.workspace }}\HandsOnProject\Timesheet\MigratingTimesheet" /s
+
+      - name: Setup SSIS DevOps Tools
+        uses: jonlabelle/setup-ssis-devops-tools@v1
+
+      - name: Build SSIS Packages
+        run: |
+          SSISBuild.exe -p:"${{ github.workspace }}\HandsOnProject\Timesheet\MigratingTimesheet\MigratingTimesheet.dtproj" -o:"${{ github.workspace }}\SSISOutput"
+
+      - name: Deploy SSIS Packages
+        run: |
+          SSISDeploy.exe -s:"${{ github.workspace }}\SSISOutput\MigratingTimesheet.ispac" -d:"catalog;/SSISDB/TimesheetDeploy/MigratingTimesheet;LAPTOP-62JJ49T4"
