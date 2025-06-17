@@ -1,0 +1,38 @@
+name: Build and Deploy SSIS Project
+
+on:
+  push:
+    branches:
+      - 17June2025
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy SSIS Project to SSISDB
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Build SSIS project (.dtproj)
+        run: |
+          "C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe" ^
+          "C:\sc_MuzuvukileNqwiliso_2025\HandsOnProject\Timesheet\MigratingTimesheet\MigratingTimesheet.dtproj" ^
+          /p:Configuration=Development ^
+          /p:DeployOnBuild=true ^
+          /p:OutputPath="C:\sc_MuzuvukileNqwiliso_2025\HandsOnProject\Timesheet\BuildOutput"
+
+      - name: Deploy SSIS to SSISDB using ISDeploymentWizard
+        run: |
+          "C:\Program Files (x86)\Microsoft SQL Server\160\DTS\Binn\ISDeploymentWizard.exe" ^
+          /Silent ^
+          /SourcePath:"C:\sc_MuzuvukileNqwiliso_2025\HandsOnProject\Timesheet\BuildOutput\MigratingTimesheet.ispac" ^
+          /DestinationServer:"LAPTOP-62JJ49T4" ^
+          /DestinationPath:"/SSISDB/TimesheetDeploy/MigratingTimesheet" ^
+          /SQServerInstance:"LAPTOP-62JJ49T4" ^
+          /Overwrite:true ^
+          /UserName:"Auto_user" ^
+          /Password:"SecurePass2025"
