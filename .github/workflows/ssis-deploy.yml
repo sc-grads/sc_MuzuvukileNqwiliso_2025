@@ -18,7 +18,7 @@ jobs:
     # Verify repository structure
     - name: Verify repository structure
       run: |
-        $projectPath = "C:\actions-runner\_work\sc_MuzuvukileNqwiliso_2025\sc_MuzuvukileNqwiliso_2025\HandsOnProject\Timesheet\MigratingTimesheet"
+        $projectPath = "${{ github.workspace }}\HandsOnProject\Timesheet\MigratingTimesheet"
         if (-not (Test-Path "$projectPath\MigratingTimesheet.dtproj")) {
             Write-Error "SSIS project file not found at expected location: $projectPath"
             exit 1
@@ -27,26 +27,15 @@ jobs:
         Get-ChildItem -Path $projectPath -Recurse
       shell: powershell
 
-    # Setup SSIS DevOps Tools
+    # Setup SSIS DevOps Tools (using the official action)
     - name: Setup SSIS DevOps Tools
-      run: |
-        $toolsPath = "C:\actions-runner\_work\_actions\jonlabelle\setup-ssis-devops-tools\v1\ssis-tools"
-        if (-not (Test-Path $toolsPath)) {
-            mkdir $toolsPath
-        }
-        # Download and extract SSIS DevOps Tools
-        Invoke-WebRequest -Uri "https://github.com/jonlabelle/SSISDevOpsTools/releases/download/v1.0/SSISDevOpsTools.zip" -OutFile "$toolsPath\SSISDevOpsTools.zip"
-        Expand-Archive -Path "$toolsPath\SSISDevOpsTools.zip" -DestinationPath $toolsPath
-        # Add to PATH
-        $env:PATH = "$toolsPath;$env:PATH"
-        [Environment]::SetEnvironmentVariable("PATH", $env:PATH, [EnvironmentVariableTarget]::Machine)
-      shell: powershell
+      uses: jonlabelle/setup-ssis-devops-tools@v1
 
     # Build SSIS Project
     - name: Build SSIS Project
       run: |
-        $projectPath = "C:\actions-runner\_work\sc_MuzuvukileNqwiliso_2025\sc_MuzuvukileNqwiliso_2025\HandsOnProject\Timesheet\MigratingTimesheet\MigratingTimesheet.dtproj"
-        $outputPath = "C:\actions-runner\_work\SSISOutput"
+        $projectPath = "${{ github.workspace }}\HandsOnProject\Timesheet\MigratingTimesheet\MigratingTimesheet.dtproj"
+        $outputPath = "${{ runner.temp }}\SSISOutput"
         
         if (-not (Test-Path $outputPath)) {
             New-Item -ItemType Directory -Path $outputPath -Force
@@ -69,7 +58,7 @@ jobs:
         SSIS_FOLDER: "TimesheetDeploy"
         SSIS_PROJECT: "MigratingTimesheet"
       run: |
-        $ispacPath = "C:\actions-runner\_work\SSISOutput\MigratingTimesheet.ispac"
+        $ispacPath = "${{ runner.temp }}\SSISOutput\MigratingTimesheet.ispac"
         $folderPath = "/SSISDB/$($env:SSIS_FOLDER)/$($env:SSIS_PROJECT)"
         
         SSISDeploy.exe -s:"$ispacPath" -d:"catalog;$folderPath;$($env:SQL_SERVER)" -at:Windows -v:Diagnostic
