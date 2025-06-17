@@ -1,35 +1,31 @@
-name: SSIS Build and Deploy
+name: SSIS Build and Deploy (Manual)
 
 on:
-  workflow_dispatch: 
+  workflow_dispatch:  # Enables manual run via GitHub UI
+
+permissions:
+  contents: read
 
 jobs:
-  build-deploy:
-    runs-on: windows-latest
+  build_and_deploy:
+    runs-on: windows-latest  # Use windows-latest for cloud runner; change to self-hosted if needed
+    environment: production
 
     steps:
-    - name: Checkout source code
+    # Step 1: Checkout the repository
+    - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Install SSISBuild extension
+    # Step 2: Set up SSIS DevOps Tools
+    - name: Setup SQL Server SSIS DevOps Tools
+      uses: jonlabelle/setup-ssis-devops-tools@v1
+
+    # Step 3: Build SSIS Project
+    - name: Build SSIS Packages
       run: |
-        # Try installing from NuGet directly
-        dotnet tool install --global SSISBuild --version 3.3.0
-        
-    - name: Build SSIS project (.dtproj)
+        SSISBuild.exe -p:"${{ github.workspace }}\HandsOnProject\Timesheet\MigratingTimesheet\MigratingTimesheet.dtproj" -o:"${{ github.workspace }}\SSISOutput"
+
+    # Step 4: Deploy SSIS Package to SSISDB
+    - name: Deploy SSIS Packages
       run: |
-        "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\MSBuild.exe" `
-          "${{ github.workspace }}\MigratingTimesheet\MigratingTimesheet.dtproj" `
-          /p:Configuration=Development `
-          /p:OutputPath="C:\SSISOutput"
-          
-    - name: Deploy SSIS .ispac to SSISDB
-      run: |
-        "C:\Program Files\Microsoft SQL Server\160\DTS\Binn\ISDeploymentWizard.exe" `
-          /Silent `
-          /ModelType:Project `
-          /SourcePath:"C:\SSISOutput\MigratingTimesheet.ispac" `
-          /DestinationServer:"LAPTOP-62JJ49T4" `
-          /DestinationPath:"/SSISDB/TimesheetDeploy/MigratingTimesheet" `
-          /DestinationUser:"Auto_user" `
-          /DestinationPassword:"SecurePass2025"
+        SSISDeploy.exe -s:"${{ github.workspace }}\SSISOutput\MigratingTimesheet.ispac" -d:"catalog;/SSISDB/TimesheetDeploy/MigratingTimesheet;LAPTOP-62JJ49T4" -at:SQL -u:Auto_user -p:SecurePass2025
