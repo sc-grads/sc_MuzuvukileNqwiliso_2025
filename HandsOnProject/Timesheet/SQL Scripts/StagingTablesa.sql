@@ -34,6 +34,61 @@ CREATE TABLE Timesheet.StagingForecast (
 PRINT 'Timesheet.StagingForecast table created.';
 
 
+IF OBJECT_ID('Timesheet.ProjectStaging', 'U') IS NOT NULL
+    DROP TABLE Timesheet.ProjectStaging;
+
+CREATE TABLE Timesheet.ProjectStaging (
+    StagingID INT IDENTITY(1,1) PRIMARY KEY,         -- Unique identifier for each row
+    ProjectName NVARCHAR(255) NOT NULL,              -- Project name to be inserted
+    ClientName NVARCHAR(255) NOT NULL,               -- Client name to join with Timesheet.Client
+    FileName VARCHAR(255) NOT NULL,                  -- Source file name for tracking
+    ProcessedDate DATETIME DEFAULT GETDATE(),        -- Optional, for tracking when data was staged
+    IsProcessed BIT DEFAULT 0                        -- Flag to mark rows as processed (optional)
+);
+
+CREATE INDEX IX_ProjectStaging_ProjectName ON Timesheet.ProjectStaging(ProjectName);
+CREATE INDEX IX_ProjectStaging_ClientName ON Timesheet.ProjectStaging(ClientName);
+CREATE INDEX IX_ProjectStaging_FileName ON Timesheet.ProjectStaging(FileName);
+PRINT 'Timesheet.ProjectStaging table created.';
+
+
+IF OBJECT_ID('Timesheet.ActivityLeaveStaging', 'U') IS NOT NULL
+    DROP TABLE Timesheet.ActivityLeaveStaging;
+
+CREATE TABLE Timesheet.ActivityLeaveStaging (
+    StagingID INT IDENTITY(1,1) PRIMARY KEY,         -- Unique identifier for each row
+    ActivityOrLeaveType NVARCHAR(255) NOT NULL,      -- Column to determine activity or leave type
+    FileName VARCHAR(255) NOT NULL,                  -- Source file name for tracking
+    EmployeeName NVARCHAR(255),                      -- Optional, if employee-specific data is included
+    ProcessedDate DATETIME DEFAULT GETDATE(),        -- Optional, for tracking when data was staged
+    IsProcessed BIT DEFAULT 0                        -- Flag to mark rows as processed (optional)
+);
+
+CREATE INDEX IX_ActivityLeaveStaging_ActivityOrLeaveType ON Timesheet.ActivityLeaveStaging(ActivityOrLeaveType);
+CREATE INDEX IX_ActivityLeaveStaging_FileName ON Timesheet.ActivityLeaveStaging(FileName);
+PRINT 'Timesheet.ActivityLeaveStaging table created.';
 
 
 
+
+ IF OBJECT_ID('Timesheet.LeaveRequest','U') IS NOT NULL
+    DROP TABLE Timesheet.LeaveRequest
+-- Create the LeaveRequest table with constraints defined inline
+CREATE TABLE Timesheet.LeaveRequest (
+    LeaveRequestID INT IDENTITY(1,1) PRIMARY KEY,
+    EmployeeID INT NOT NULL,
+    LeaveTypeID INT NOT NULL,
+    StartDate DATE NOT NULL,
+    EndDate DATE NOT NULL,
+    Status NVARCHAR(20) NOT NULL CHECK (Status IN ('Pending', 'Approved', 'Rejected')),
+    ApprovalObtained BIT NOT NULL DEFAULT 0,
+    SickNoteSubmitted BIT NULL,
+    CreatedDate DATETIME NOT NULL DEFAULT GETDATE(),
+
+    -- Foreign Key Constraints
+    CONSTRAINT FK_LeaveRequest_Employee FOREIGN KEY (EmployeeID)
+        REFERENCES Timesheet.Employee(EmployeeID),
+
+    CONSTRAINT FK_LeaveRequest_LeaveType FOREIGN KEY (LeaveTypeID)
+        REFERENCES Timesheet.LeaveType(LeaveType)
+);

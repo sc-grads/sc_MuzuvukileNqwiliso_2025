@@ -11,8 +11,8 @@
   DTS:LocaleID="7177"
   DTS:ObjectName="MasterPackage"
   DTS:PackageType="5"
-  DTS:VersionBuild="16"
-  DTS:VersionGUID="{F713DF8B-C505-4A37-856E-312DA37B7524}">
+  DTS:VersionBuild="28"
+  DTS:VersionGUID="{FD2B47DB-69D1-446C-9FD6-8D87F1F5E299}">
   <DTS:Property
     DTS:Name="PackageFormatVersion">8</DTS:Property>
   <DTS:ConnectionManagers>
@@ -29,6 +29,18 @@
       </DTS:ObjectData>
     </DTS:ConnectionManager>
   </DTS:ConnectionManagers>
+  <DTS:LogProviders>
+    <DTS:LogProvider
+      DTS:ConfigString="LocalHost.TimesheetDB"
+      DTS:CreationName="Microsoft.LogProviderSQLServer"
+      DTS:Description="Writes log entries for events to a SQL Server database"
+      DTS:DTSID="{D1E792FC-542C-4C74-8FB6-FEA250E91935}"
+      DTS:ObjectName="SSIS log provider for SQL Server">
+      <DTS:ObjectData>
+        <InnerObject />
+      </DTS:ObjectData>
+    </DTS:LogProvider>
+  </DTS:LogProviders>
   <DTS:Variables>
     <DTS:Variable
       DTS:CreationName=""
@@ -41,6 +53,67 @@
         xml:space="preserve"></DTS:VariableValue>
     </DTS:Variable>
   </DTS:Variables>
+  <DTS:LoggingOptions
+    DTS:FilterKind="0"
+    DTS:LoggingMode="1">
+    <DTS:Property
+      DTS:DataType="8"
+      DTS:Name="EventFilter">3,7,OnError,12,OnTaskFailed,9,OnWarning</DTS:Property>
+    <DTS:Property
+      DTS:EventName="OnError"
+      DTS:Name="ColumnFilter">
+      <DTS:Property
+        DTS:Name="Computer">-1</DTS:Property>
+      <DTS:Property
+        DTS:Name="Operator">-1</DTS:Property>
+      <DTS:Property
+        DTS:Name="SourceName">-1</DTS:Property>
+      <DTS:Property
+        DTS:Name="SourceID">-1</DTS:Property>
+      <DTS:Property
+        DTS:Name="ExecutionID">-1</DTS:Property>
+      <DTS:Property
+        DTS:Name="MessageText">-1</DTS:Property>
+      <DTS:Property
+        DTS:Name="DataBytes">-1</DTS:Property>
+    </DTS:Property>
+    <DTS:Property
+      DTS:EventName="OnTaskFailed"
+      DTS:Name="ColumnFilter">
+      <DTS:Property
+        DTS:Name="Computer">-1</DTS:Property>
+      <DTS:Property
+        DTS:Name="Operator">-1</DTS:Property>
+      <DTS:Property
+        DTS:Name="SourceName">-1</DTS:Property>
+      <DTS:Property
+        DTS:Name="SourceID">-1</DTS:Property>
+      <DTS:Property
+        DTS:Name="ExecutionID">-1</DTS:Property>
+      <DTS:Property
+        DTS:Name="MessageText">-1</DTS:Property>
+      <DTS:Property
+        DTS:Name="DataBytes">-1</DTS:Property>
+    </DTS:Property>
+    <DTS:Property
+      DTS:EventName="OnWarning"
+      DTS:Name="ColumnFilter">
+      <DTS:Property
+        DTS:Name="Computer">-1</DTS:Property>
+      <DTS:Property
+        DTS:Name="Operator">-1</DTS:Property>
+      <DTS:Property
+        DTS:Name="SourceName">-1</DTS:Property>
+      <DTS:Property
+        DTS:Name="SourceID">-1</DTS:Property>
+      <DTS:Property
+        DTS:Name="ExecutionID">-1</DTS:Property>
+      <DTS:Property
+        DTS:Name="MessageText">-1</DTS:Property>
+      <DTS:Property
+        DTS:Name="DataBytes">-1</DTS:Property>
+    </DTS:Property>
+  </DTS:LoggingOptions>
   <DTS:Executables>
     <DTS:Executable
       DTS:refId="Package\SC_Process Data"
@@ -51,17 +124,23 @@
       DTS:LocaleID="-1"
       DTS:ObjectName="SC_Process Data">
       <DTS:Variables />
+      <DTS:LoggingOptions
+        DTS:FilterKind="0"
+        DTS:LoggingMode="1" />
       <DTS:Executables>
         <DTS:Executable
-          DTS:refId="Package\SC_Process Data\EPT_Clinet"
+          DTS:refId="Package\SC_Process Data\EPT_Client"
           DTS:CreationName="Microsoft.ExecutePackageTask"
           DTS:Description="Execute Package Task"
           DTS:DTSID="{CB4FC3BA-CCF8-497D-A224-148A60394226}"
           DTS:ExecutableType="Microsoft.ExecutePackageTask"
           DTS:LocaleID="-1"
-          DTS:ObjectName="EPT_Clinet"
+          DTS:ObjectName="EPT_Client"
           DTS:TaskContact="Microsoft Corporation; Microsoft SQL Server; Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1">
           <DTS:Variables />
+          <DTS:LoggingOptions
+            DTS:FilterKind="0"
+            DTS:LoggingMode="1" />
           <DTS:ObjectData>
             <ExecutePackageTask>
               <UseProjectReference>True</UseProjectReference>
@@ -79,6 +158,9 @@
           DTS:ObjectName="EPT_Employee"
           DTS:TaskContact="Microsoft Corporation; Microsoft SQL Server; Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1">
           <DTS:Variables />
+          <DTS:LoggingOptions
+            DTS:FilterKind="0"
+            DTS:LoggingMode="1" />
           <DTS:ObjectData>
             <ExecutePackageTask>
               <UseProjectReference>True</UseProjectReference>
@@ -96,6 +178,9 @@
           DTS:ObjectName="EPT_LeaveRequest"
           DTS:TaskContact="Microsoft Corporation; Microsoft SQL Server; Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1">
           <DTS:Variables />
+          <DTS:LoggingOptions
+            DTS:FilterKind="0"
+            DTS:LoggingMode="1" />
           <DTS:ObjectData>
             <ExecutePackageTask>
               <UseProjectReference>True</UseProjectReference>
@@ -113,6 +198,9 @@
           DTS:ObjectName="EPT_LeaveType"
           DTS:TaskContact="Microsoft Corporation; Microsoft SQL Server; Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1">
           <DTS:Variables />
+          <DTS:LoggingOptions
+            DTS:FilterKind="0"
+            DTS:LoggingMode="1" />
           <DTS:ObjectData>
             <ExecutePackageTask>
               <UseProjectReference>True</UseProjectReference>
@@ -130,6 +218,9 @@
           DTS:ObjectName="EPT_Project"
           DTS:TaskContact="Microsoft Corporation; Microsoft SQL Server; Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1">
           <DTS:Variables />
+          <DTS:LoggingOptions
+            DTS:FilterKind="0"
+            DTS:LoggingMode="1" />
           <DTS:ObjectData>
             <ExecutePackageTask>
               <UseProjectReference>True</UseProjectReference>
@@ -147,6 +238,49 @@
           DTS:ObjectName="EPT_Timsheet"
           DTS:TaskContact="Microsoft Corporation; Microsoft SQL Server; Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1">
           <DTS:Variables />
+          <DTS:LoggingOptions
+            DTS:FilterKind="0"
+            DTS:LoggingMode="1">
+            <DTS:Property
+              DTS:DataType="8"
+              DTS:Name="EventFilter">2,7,OnError,12,OnTaskFailed</DTS:Property>
+            <DTS:Property
+              DTS:EventName="OnError"
+              DTS:Name="ColumnFilter">
+              <DTS:Property
+                DTS:Name="Computer">-1</DTS:Property>
+              <DTS:Property
+                DTS:Name="Operator">-1</DTS:Property>
+              <DTS:Property
+                DTS:Name="SourceName">-1</DTS:Property>
+              <DTS:Property
+                DTS:Name="SourceID">-1</DTS:Property>
+              <DTS:Property
+                DTS:Name="ExecutionID">-1</DTS:Property>
+              <DTS:Property
+                DTS:Name="MessageText">-1</DTS:Property>
+              <DTS:Property
+                DTS:Name="DataBytes">-1</DTS:Property>
+            </DTS:Property>
+            <DTS:Property
+              DTS:EventName="OnTaskFailed"
+              DTS:Name="ColumnFilter">
+              <DTS:Property
+                DTS:Name="Computer">-1</DTS:Property>
+              <DTS:Property
+                DTS:Name="Operator">-1</DTS:Property>
+              <DTS:Property
+                DTS:Name="SourceName">-1</DTS:Property>
+              <DTS:Property
+                DTS:Name="SourceID">-1</DTS:Property>
+              <DTS:Property
+                DTS:Name="ExecutionID">-1</DTS:Property>
+              <DTS:Property
+                DTS:Name="MessageText">-1</DTS:Property>
+              <DTS:Property
+                DTS:Name="DataBytes">-1</DTS:Property>
+            </DTS:Property>
+          </DTS:LoggingOptions>
           <DTS:ObjectData>
             <ExecutePackageTask>
               <UseProjectReference>True</UseProjectReference>
@@ -163,12 +297,12 @@
           DTS:From="Package\SC_Process Data\EPT_Employee"
           DTS:LogicalAnd="True"
           DTS:ObjectName="Constraint"
-          DTS:To="Package\SC_Process Data\EPT_Clinet" />
+          DTS:To="Package\SC_Process Data\EPT_Client" />
         <DTS:PrecedenceConstraint
           DTS:refId="Package\SC_Process Data.PrecedenceConstraints[Constraint 1]"
           DTS:CreationName=""
           DTS:DTSID="{9326D40D-B543-4FB5-B297-7FC609C5218C}"
-          DTS:From="Package\SC_Process Data\EPT_Clinet"
+          DTS:From="Package\SC_Process Data\EPT_Client"
           DTS:LogicalAnd="True"
           DTS:ObjectName="Constraint 1"
           DTS:To="Package\SC_Process Data\EPT_LeaveType" />
@@ -259,7 +393,26 @@
             DTS:DataType="11">-1</DTS:VariableValue>
         </DTS:Variable>
       </DTS:Variables>
-      <DTS:Executables />
+      <DTS:Executables>
+        <DTS:Executable
+          DTS:refId="Package.EventHandlers[OnError]\Execute SQL Task"
+          DTS:CreationName="Microsoft.ExecuteSQLTask"
+          DTS:Description="Execute SQL Task"
+          DTS:DTSID="{D0532AA5-D4F2-4B36-892A-7CBB1BEF2578}"
+          DTS:ExecutableType="Microsoft.ExecuteSQLTask"
+          DTS:LocaleID="-1"
+          DTS:ObjectName="Execute SQL Task"
+          DTS:TaskContact="Execute SQL Task; Microsoft Corporation; SQL Server 2022; © 2022 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1">
+          <DTS:Variables />
+          <DTS:PropertyExpression
+            DTS:Name="SqlStatementSource">"INSERT INTO Timesheet.ErrorLog( @[System::TaskName] , @[System::ErrorDescription], @[System::SourceName] , @[System::UserName] )"</DTS:PropertyExpression>
+          <DTS:ObjectData>
+            <SQLTask:SqlTaskData
+              SQLTask:Connection="{32825DCD-7BEB-43DF-8491-C861D78E171F}"
+              SQLTask:SqlStatementSource="INSERT INTO Timesheet.ErrorLog( @[System::TaskName] , @[System::ErrorDescription], @[System::SourceName] , @[System::UserName] )" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
+          </DTS:ObjectData>
+        </DTS:Executable>
+      </DTS:Executables>
     </DTS:EventHandler>
   </DTS:EventHandlers>
   <DTS:DesignTimeProperties><![CDATA[<?xml version="1.0"?>
@@ -276,7 +429,7 @@
         Capacity="16" xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph" xmlns:mssgle="clr-namespace:Microsoft.SqlServer.Graph.LayoutEngine;assembly=Microsoft.SqlServer.Graph" xmlns:assembly="http://schemas.microsoft.com/winfx/2006/xaml">
         <NodeLayout
           Size="131.2,41.6"
-          Id="Package\SC_Process Data\EPT_Clinet"
+          Id="Package\SC_Process Data\EPT_Client"
           TopLeft="101.566636115149,114.266664726072" />
         <NodeLayout
           Size="150.4,41.6"
@@ -300,7 +453,7 @@
           TopLeft="97.1221919135373,351.56296127482" />
         <EdgeLayout
           Id="Package\SC_Process Data.PrecedenceConstraints[Constraint]"
-          TopLeft="165.716636456633,76.1333319471943">
+          TopLeft="165.716636456634,76.1333319471943">
           <EdgeLayout.Curve>
             <mssgle:Curve
               StartConnector="{assembly:Null}"
@@ -322,18 +475,18 @@
         </EdgeLayout>
         <EdgeLayout
           Id="Package\SC_Process Data.PrecedenceConstraints[Constraint 1]"
-          TopLeft="166.699969812732,155.866664726072">
+          TopLeft="166.699969812733,155.866664726072">
           <EdgeLayout.Curve>
             <mssgle:Curve
               StartConnector="{assembly:Null}"
-              EndConnector="0,40.0666663713588"
+              EndConnector="0,40.066666371359"
               Start="0,0"
-              End="0,32.5666663713588">
+              End="0,32.566666371359">
               <mssgle:Curve.Segments>
                 <mssgle:SegmentCollection
                   Capacity="5">
                   <mssgle:LineSegment
-                    End="0,32.5666663713588" />
+                    End="0,32.566666371359" />
                 </mssgle:SegmentCollection>
               </mssgle:Curve.Segments>
             </mssgle:Curve>
@@ -348,14 +501,14 @@
           <EdgeLayout.Curve>
             <mssgle:Curve
               StartConnector="{assembly:Null}"
-              EndConnector="0,37.2666664075187"
+              EndConnector="0,37.266666407518"
               Start="0,0"
-              End="0,29.7666664075187">
+              End="0,29.766666407518">
               <mssgle:Curve.Segments>
                 <mssgle:SegmentCollection
                   Capacity="5">
                   <mssgle:LineSegment
-                    End="0,29.7666664075187" />
+                    End="0,29.766666407518" />
                 </mssgle:SegmentCollection>
               </mssgle:Curve.Segments>
             </mssgle:Curve>
@@ -370,14 +523,14 @@
           <EdgeLayout.Curve>
             <mssgle:Curve
               StartConnector="{assembly:Null}"
-              EndConnector="0,35.1629637698702"
+              EndConnector="0,35.162963769871"
               Start="0,0"
-              End="0,27.6629637698702">
+              End="0,27.662963769871">
               <mssgle:Curve.Segments>
                 <mssgle:SegmentCollection
                   Capacity="5">
                   <mssgle:LineSegment
-                    End="0,27.6629637698702" />
+                    End="0,27.662963769871" />
                 </mssgle:SegmentCollection>
               </mssgle:Curve.Segments>
             </mssgle:Curve>
@@ -392,14 +545,14 @@
           <EdgeLayout.Curve>
             <mssgle:Curve
               StartConnector="{assembly:Null}"
-              EndConnector="0,37.0275118351562"
+              EndConnector="0,37.027511835156"
               Start="0,0"
-              End="0,29.5275118351562">
+              End="0,29.527511835156">
               <mssgle:Curve.Segments>
                 <mssgle:SegmentCollection
                   Capacity="5">
                   <mssgle:LineSegment
-                    End="0,29.5275118351562" />
+                    End="0,29.527511835156" />
                 </mssgle:SegmentCollection>
               </mssgle:Curve.Segments>
             </mssgle:Curve>
@@ -418,6 +571,18 @@
       </GraphLayout>
     </LayoutInfo>
   </Package>
+  <DtsEventHandler
+    design-time-name="Package.EventHandlers[OnError]">
+    <LayoutInfo>
+      <GraphLayout
+        Capacity="4" xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph">
+        <NodeLayout
+          Size="164.8,41.6"
+          Id="Package.EventHandlers[OnError]\Execute SQL Task"
+          TopLeft="436.666642808253,89.2666660459174" />
+      </GraphLayout>
+    </LayoutInfo>
+  </DtsEventHandler>
   <DtsEventHandler
     design-time-name="Package\SC_Process Data.EventHandlers[OnError]">
     <LayoutInfo>
