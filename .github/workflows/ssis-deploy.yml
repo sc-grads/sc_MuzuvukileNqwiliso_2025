@@ -1,96 +1,95 @@
-name: SSIS Build and Deploy
+name: Deploy SSIS Packages to SQL Server
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
-  build_and_deploy:
+  deploy-ssis:
     runs-on: self-hosted
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+    # Checkout the repository
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-      - name: Verify repository structure
-        run: |
-          $projectPath = "C:\actions-runner\_work\sc_MuzuvukileNqwiliso_2025\sc_MuzuvukileNqwiliso_2025\HandsOnProject\Timesheet\MigratingTimesheet"
-          if (-not (Test-Path "$projectPath\MigratingTimesheet.dtproj")) {
-              Write-Error "SSIS project file not found at expected location: $projectPath"
-              exit 1
-          }
-          Write-Output "Project file found successfully"
-          Get-ChildItem -Path $projectPath -Recurse
-        shell: powershell
+    # Verify repository structure
+    - name: Verify repository structure
+      run: |
+        $projectPath = "C:\actions-runner\_work\sc_MuzuvukileNqwiliso_2025\sc_MuzuvukileNqwiliso_2025\HandsOnProject\Timesheet\MigratingTimesheet"
+        if (-not (Test-Path "$projectPath\MigratingTimesheet.dtproj")) {
+            Write-Error "SSIS project file not found at expected location: $projectPath"
+            exit 1
+        }
+        Write-Output "Project file found successfully"
+        Get-ChildItem -Path $projectPath -Recurse
+      shell: powershell
 
-      - name: Setup SSIS DevOps Tools
-        run: |
-          $toolsPath = "C:\actions-runner\_work\_actions\jonlabelle\setup-ssis-devops-tools\v1\ssis-tools"
-          if (-not (Test-Path $toolsPath)) {
-              mkdir $toolsPath
-          }
-          # Download and extract SSIS DevOps tools
-          Invoke-WebRequest -Uri "https://github.com/jonlabelle/SSIS DevOps Tools/releases/download/v1.0/SSISDevOpsTools.zip" -OutFile "$toolsPath\SSISDevOpsTools.zip"
-          Expand-Archive -Path "$toolsPath\SSISDevOpsTools.zip" -DestinationPath $toolsPath
-          # Add to PATH
-          $env:PATH = "$toolsPath;$env:PATH"
-          [Environment]::SetEnvironmentVariable("PATH", $env:PATH, [EnvironmentVariableTarget]::Machine)
-        shell: powershell
+    # Build SSIS Project
+    - name: Build SSIS Project
+      run: |
+        $projectPath = "C:\actions-runner\_work\sc_MuzuvukileNqwiliso_2025\sc_MuzuvukileNqwiliso_2025\HandsOnProject\Timesheet\MigratingTimesheet\MigratingTimesheet.dtproj"
+        $outputPath = "C:\actions-runner\_work\SSISOutput"
+        
+        if (-not (Test-Path $outputPath)) {
+            New-Item -ItemType Directory -Path $outputPath -Force
+        }
+        
+        msbuild "$projectPath" /p:Configuration=Release /p:Platform="Any CPU"
+        
+        if (-not (Test-Path "$outputPath\MigratingTimesheet.ispac")) {
+            Write-Error "Build failed - ispac file not created"
+            exit 1
+        }
+        Write-Output "Build completed successfully"
+      shell: powershell
 
-      - name: Build SSIS Project
-        run: |
-          $projectPath = "C:\actions-runner\_work\sc_MuzuvukileNqwiliso_2025\sc_MuzuvukileNqwiliso_2025\HandsOnProject\Timesheet\MigratingTimesheet\MigratingTimesheet.dtproj"
-          $outputPath = "C:\actions-runner\_work\SSISOutput"
-          
-          if (-not (Test-Path $outputPath)) {
-              New-Item -ItemType Directory -Path $outputPath -Force
-          }
-          
-          SSISBuild.exe -p:"$projectPath" -o:"$outputPath" -v:Diagnostic
-          
-          if (-not (Test-Path "$outputPath\MigratingTimesheet.ispac")) {
-              Write-Error "Build failed - ispac file not created"
-              exit 1
-          }
-          Write-Output "Build completed successfully"
-        shell: powershell
+    # Deploy SSIS Packages to SQL Server
+    - name: Deploy SSIS Packages
+      env:
+        SQL_SERVER: "LAPTOP-62JJ49T4"
+        SSIS_CATALOG: "SSISDB"
+        SSIS_FOLDER: "TimesheetDeploy"
+        SSIS_PROJECT: "MigratingTimesheet"
+      run: |
+        # Ensure dtutil is available
+        $dtutilPath = "dtutil.exe"
+        if (-not (Test-Path $dtutilPath)) {
+          Write-Error "dtutil.exe not found. Ensure SQL Server command-line tools are installed on the self-hosted runner."
+          exit 1
+        }
 
-      - name: Deploy SSIS Package
-        run: |
-          $ispacPath = "C:\actions-runner\_work\SSISOutput\MigratingTimesheet.ispac"
-          $serverName = "LAPTOP-62JJ49T4"
-          $username = "Auto_user"
-          $password = "SecurePass2025"
-          $folderPath = "/SSISDB/TimesheetDeploy/MigratingTimesheet"
-          
-          SSISDeploy.exe -s:"$ispacPath" -d:"catalog;$folderPath;$serverName" -at:SQL -u:$username -p:$password -v:Diagnostic
-          
-          Write-Output "Deployment completed successfully"
-        shell: powershell
+        # Deploy .ispac file to SSIS Catalog
+        $ispacFile = "C:\actions-runner\_work\SSISOutput\MigratingTimesheet.ispac"
+        $catalogPath = "/SSISDB/$($env:SSIS_FOLDER)/$($env:SSIS_PROJECT)"
 
-      - name: Verify Deployment
-        run: |
-          $serverName = "LAPTOP-62JJ49T4"
-          $username = "Auto_user"
-          $password = "SecurePass2025"
-          $folderPath = "TimesheetDeploy/MigratingTimesheet"
-          
-          $connectionString = "Data Source=$serverName;User ID=$username;Password=$password;Initial Catalog=SSISDB;"
-          $query = "SELECT COUNT(1) FROM [catalog].[projects] WHERE [name] = 'MigratingTimesheet' AND [folder_name] = '$folderPath'"
-          
-          $connection = New-Object System.Data.SqlClient.SqlConnection
-          $connection.ConnectionString = $connectionString
-          $command = New-Object System.Data.SqlClient.SqlCommand
-          $command.Connection = $connection
-          $command.CommandText = $query
-          
-          $connection.Open()
-          $result = $command.ExecuteScalar()
-          $connection.Close()
-          
-          if ($result -eq 1) {
-              Write-Output "Verification successful - package deployed to SSISDB"
-          } else {
-              Write-Error "Verification failed - package not found in SSISDB"
-              exit 1
-          }
-        shell: powershell
+        # Create folder in SSISDB if it doesn't exist
+        & $dtutilPath /SQL "$catalogPath" /EXISTS | Out-Null
+        if ($LASTEXITCODE -ne 0) {
+          & $dtutilPath /SQL "$($env:SSIS_FOLDER)" /CREATE
+        }
+
+        # Deploy the .ispac file using Windows Authentication
+        & $dtutilPath /FILE "$ispacFile" /DESTServer "$($env:SQL_SERVER)" /COPY SQL;"$catalogPath" /QUIET
+      shell: powershell
+
+    # Validate SSIS Deployment
+    - name: Validate SSIS Deployment
+      env:
+        SQL_SERVER: "LAPTOP-62JJ49T4"
+        SSIS_CATALOG: "SSISDB"
+        SSIS_FOLDER: "TimesheetDeploy"
+        SSIS_PROJECT: "MigratingTimesheet"
+      run: |
+        # Check if the project exists in SSISDB
+        $catalogPath = "/SSISDB/$($env:SSIS_FOLDER)/$($env:SSIS_PROJECT)"
+        & dtutil.exe /SQL "$catalogPath" /EXISTS
+        if ($LASTEXITCODE -eq 0) {
+          Write-Output "SSIS Project $($env:SSIS_PROJECT) successfully deployed to $($env:SSIS_CATALOG)/$($env:SSIS_FOLDER)"
+        } else {
+          Write-Error "Deployment validation failed for $($env:SSIS_PROJECT)"
+          exit 1
+        }
+      shell: powershell
