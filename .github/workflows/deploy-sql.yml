@@ -1,20 +1,37 @@
 name: Deploy SQL Database
 
 on:
-  push:
-    branches:
-      - master
-  pull_request:
-    branches:
-      - master
+  # push:
+  #   branches:
+  #     - maaster
+  # pull_request:
+  #   branches:
+  #     - master
   workflow_dispatch: 
 
 jobs:
-  deploy-sql:
-    uses: ./.github/workflows/deploy-sql-setup-template.yml
-    with:
-      sql_file: HandsOnProject/Timesheet/SQL Scripts/CreateDatabase.sql
-    secrets:
-      sql_server: ${{ secrets.SQL_SERVER }}
-      sql_user: ${{ secrets.SQL_USER }}
-      sql_password: ${{ secrets.SQL_PASSWORD }}
+  run-sql:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Verify SQL file exists
+        run: |
+          if [ -f "HandsOnProject/Timesheet/SQL Scripts/CreateDatabase.sql" ]; then
+            echo "SQL file found"
+          else
+            echo "SQL file NOT found"
+            exit 1
+          fi
+
+      - name: Run SQL Script with Docker
+        env:
+          SQL_SERVER: ${{ secrets.SQL_SERVER }}
+          SQL_USER: ${{ secrets.SQL_USER }}
+          SQL_PASSWORD: ${{ secrets.SQL_PASSWORD }}
+        run: |
+          echo "Starting SQL execution at $(date)"
+          docker run --rm -v $(pwd):/work mcr.microsoft.com/mssql/server:2019-latest \
+            bash -c "echo 'Running sqlcmd' && /opt/mssql-tools18/bin/sqlcmd -S ${SQL_SERVER} -U ${SQL_USER} -P '${SQL_PASSWORD}' -C -b -t 30 -i /work/HandsOnProject/Timesheet/SQL Scripts/CreateDatabase.sql || echo 'sqlcmd failed'"
+          echo "Finished at $(date)"
