@@ -1,21 +1,13 @@
-name: Test Workflow
-on: [workflow_dispatch]
+# .github/workflows/test-runner.yml
+name: Test Self-Hosted Runner
+
+on:
+  workflow_dispatch:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, windows]
+
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Install Node.js
-        uses: actions/setup-node@v1
-        with:
-          node-version: "16"
-
-      - name: Install dependencies
-        run: npm install
-        working-directory: "DevOps/GithubActions/01 Starting Project"
-
-      - name: Done
-        run: echo "All done! ${{ github.event_name }} triggered this workflow."
+      - name: Print whoami
+        run: whoami
