@@ -32,5 +32,6 @@ jobs:
     needs: run-sql
     uses: ./.github/workflows/deploy-ssis.yml
 
-
-
+  call-job-creation:
+    needs: call-ssis
+    uses: ./.github/workflows/run-master-package.yml
