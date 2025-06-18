@@ -19,17 +19,8 @@ jobs:
           $packageName = "MasterPackage.dtsx"
 
           Write-Output "Starting execution of $packageName..."
-          $query = @"
-          DECLARE @execution_id BIGINT;
-          EXEC [SSISDB].[catalog].[create_execution]
-              @package_name=N'$packageName',
-              @execution_id=@execution_id OUTPUT,
-              @folder_name=N'$folderName',
-              @project_name=N'$projectName',
-              @use32bitruntime=False,
-              @reference_id=NULL;
-          EXEC [SSISDB].[catalog].[start_execution] @execution_id;
-            "@
+
+          $query = "DECLARE @execution_id BIGINT; EXEC [SSISDB].[catalog].[create_execution] @package_name=N'$packageName', @execution_id=@execution_id OUTPUT, @folder_name=N'$folderName', @project_name=N'$projectName', @use32bitruntime=False, @reference_id=NULL; EXEC [SSISDB].[catalog].[start_execution] @execution_id;"
 
           sqlcmd -S $ssisServer -d SSISDB -E -Q $query
           Write-Output "Execution triggered."
