@@ -19,6 +19,7 @@ jobs:
           $packageName = "MasterPackage.dtsx"
 
           Write-Output "Starting execution of $packageName..."
+
           $query = @"
           DECLARE @execution_id BIGINT;
           EXEC [SSISDB].[catalog].[create_execution]
@@ -29,7 +30,7 @@ jobs:
               @use32bitruntime=False,
               @reference_id=NULL;
           EXEC [SSISDB].[catalog].[start_execution] @execution_id;
-            "@
+          "@
 
           sqlcmd -S $ssisServer -d SSISDB -E -Q $query
           Write-Output "Execution triggered."
