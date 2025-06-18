@@ -1,9 +1,8 @@
 name: Deploy SSIS Packages to SQL Server
 
 on:
-  # workflow_dispatch:
   workflow_call:
-  # secrets: inherit
+
 jobs:
   deploy-ssis:
     runs-on: self-hosted
@@ -22,7 +21,7 @@ jobs:
       - name: Verify SSIS project file exists
         shell: powershell
         run: |
-          $projectPath = "${{ github.workspace }}\MigratingTimesheet"
+          $projectPath = "${{ github.workspace }}\HandsOnProject\Timesheet\MigratingTimesheet"
           if (-not (Test-Path "$projectPath\MigratingTimesheet.dtproj")) {
             Write-Error "SSIS project file not found at: $projectPath"
             exit 1
@@ -49,7 +48,7 @@ jobs:
       - name: Build SSIS Project
         shell: powershell
         run: |
-          $projectFile = "${{ github.workspace }}\MigratingTimesheet\MigratingTimesheet.dtproj"
+          $projectFile = "${{ github.workspace }}\HandsOnProject\Timesheet\MigratingTimesheet\MigratingTimesheet.dtproj"
           $outputDir = "${{ runner.temp }}\SSISOutput"
           $config = "Development"
           if (-not (Test-Path $outputDir)) {
