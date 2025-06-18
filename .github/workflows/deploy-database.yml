@@ -59,7 +59,7 @@ jobs:
       - name: Run SQL Script using sqlcmd with Windows Auth
         shell: powershell
         run: |
-          $sqlServer = "YOUR_SQL_SERVER_NAME"
+          $sqlServer = "LAPTOP-62JJ49T4"
           $sqlFile = "HandsOnProject\Timesheet\SQL Scripts\CreateDatabase.sql"
           Write-Output "Starting SQL execution at $(Get-Date)"
           & sqlcmd.exe -S $sqlServer -E -i $sqlFile -b
