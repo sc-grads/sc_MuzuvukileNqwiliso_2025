@@ -41,10 +41,10 @@ EXEC msdb.dbo.sp_add_jobstep
     @subsystem = 'TSQL',
     @command = N'
 DELETE FROM [TimesheetDB].[Timesheet].[AuditLog]
-WHERE [ProcessedDate] < DATEADD(MINUTES, -4, GETDATE());
+WHERE [ProcessedDate] < DATEADD(MINUTE, -4, GETDATE());
 
 DELETE FROM [TimesheetDB].[Timesheet].[ErrorLog]
-WHERE [ProcessedDate] < DATEADD(MINUTES, -4, GETDATE());
+WHERE [ProcessedDate] < DATEADD(MINUTE, -4, GETDATE());
 ',
     @database_name = 'TimesheetDB',
     @on_success_action = 1,
