@@ -2,6 +2,7 @@ name: Deploy SSIS SQL Agent Job
 
 on:
   workflow_call:
+  workflow_dispatch:
 
 jobs:
   deploy-ssis-job:
@@ -24,31 +25,31 @@ jobs:
           $ownerLogin = "LAPTOP-62JJ49T4\MuzuvukileNqwiliso"
           $scheduleName = "Timesheet_Migration_Schedule"
 
-          # Build SSIS command
-          $command = "/ISSERVER `"\SSISDB\$ssisFolder\$ssisProject\$ssisPackage`" /SERVER `"$sqlServer`" /Par `"`$ServerOption::SYNCHRONIZED(Boolean)`";True /CALLERINFO SQLAGENT /REPORTING E"
+          # Build SSIS command with proper escaping
+          $escapedCommand = "/ISSERVER ""\SSISDB\$ssisFolder\$ssisProject\$ssisPackage"" /SERVER ""$sqlServer"" /Par ""`$ServerOption::SYNCHRONIZED(Boolean)"";True /CALLERINFO SQLAGENT /REPORTING E"
 
-          # T-SQL script
+          # T-SQL script with proper escaping
           $sql = @"
           USE [msdb];
-
-          IF EXISTS (SELECT job_id FROM msdb.dbo.sysjobs WHERE name = '$jobName')
-            EXEC msdb.dbo.sp_delete_job @job_name = '$jobName';
+          
+          IF EXISTS (SELECT job_id FROM msdb.dbo.sysjobs WHERE name = N'$jobName')
+            EXEC msdb.dbo.sp_delete_job @job_name = N'$jobName';
 
           EXEC msdb.dbo.sp_add_job 
-              @job_name = '$jobName',
-              @description = 'Runs SSIS MasterPackage every 1 minute',
-              @owner_login_name = '$ownerLogin';
+              @job_name = N'$jobName',
+              @description = N'Runs SSIS MasterPackage every 1 minute',
+              @owner_login_name = N'$ownerLogin';
 
           EXEC msdb.dbo.sp_add_jobstep
-              @job_name = '$jobName',
-              @step_name = 'Execute_SSIS_Package',
-              @subsystem = 'SSIS',
-              @command = '$command',
-              @database_name = 'SSISDB';
+              @job_name = N'$jobName',
+              @step_name = N'Execute_SSIS_Package',
+              @subsystem = N'SSIS',
+              @command = N'$($escapedCommand.Replace("'","''"))',
+              @database_name = N'SSISDB';
 
-          IF NOT EXISTS (SELECT 1 FROM msdb.dbo.sysschedules WHERE name = '$scheduleName')
+          IF NOT EXISTS (SELECT 1 FROM msdb.dbo.sysschedules WHERE name = N'$scheduleName')
           EXEC msdb.dbo.sp_add_schedule
-              @schedule_name = '$scheduleName',
+              @schedule_name = N'$scheduleName',
               @freq_type = 4,
               @freq_interval = 1,
               @freq_subday_type = 4,
@@ -56,15 +57,25 @@ jobs:
               @active_start_time = 000000;
 
           EXEC msdb.dbo.sp_attach_schedule
-              @job_name = '$jobName',
-              @schedule_name = '$scheduleName';
+              @job_name = N'$jobName',
+              @schedule_name = N'$scheduleName';
 
           EXEC msdb.dbo.sp_add_jobserver
-              @job_name = '$jobName',
+              @job_name = N'$jobName',
               @server_name = @@SERVERNAME;
           "@
 
-          # Execute T-SQL with sqlcmd
-          sqlcmd -S $sqlServer -E -Q $sql
-
-          echo "Successfully deployed SQL Agent job '$jobName' with schedule '$scheduleName' (runs every 1 minute)"
+          # Execute with Windows Authentication
+          try {
+              $output = sqlcmd -S $sqlServer -E -Q $sql -b
+              if ($LASTEXITCODE -ne 0) {
+                  Write-Error "SQL command failed with exit code $LASTEXITCODE"
+                  Write-Error "Output: $output"
+                  exit 1
+              }
+              Write-Output "Successfully deployed SQL Agent job '$jobName' with schedule '$scheduleName' (runs every 1 minute)"
+          }
+          catch {
+              Write-Error "Failed to create SQL Agent Job: $_"
+              exit 1
+          }
