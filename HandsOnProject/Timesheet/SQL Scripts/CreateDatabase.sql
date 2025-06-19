@@ -1,5 +1,4 @@
-﻿
-USE master;
+﻿USE master;
 GO
 
 -- Drop and recreate TimesheetDB
@@ -13,8 +12,6 @@ BEGIN
     DECLARE @DatabaseName NVARCHAR(128) = 'TimesheetDB';
 
     IF EXISTS (SELECT 1 FROM sys.databases WHERE name = @DatabaseName)
-   
-
     BEGIN
         EXEC('ALTER DATABASE [' + @DatabaseName + '] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;');
         EXEC('DROP DATABASE [' + @DatabaseName + '];');
@@ -183,7 +180,7 @@ BEGIN
         PRINT 'Activity table created.';
     END;
 
-    -- Description Table (Fixed typo: removed 'compagnon')
+    -- Description Table
     IF OBJECT_ID('Timesheet.Description', 'U') IS NULL
     BEGIN
         CREATE TABLE Timesheet.Description (
@@ -235,39 +232,36 @@ BEGIN
 
     -- ProcessedFiles Table
     IF OBJECT_ID('Timesheet.ProcessedFiles', 'U') IS NOT NULL
-	    DROP TABLE Timesheet.ProcessedFiles
-    BEGIN
-        CREATE TABLE Timesheet.ProcessedFiles (
-            FileID INT PRIMARY KEY IDENTITY(1,1),
-            FilePath VARCHAR(500) NOT NULL,
-            FileName VARCHAR(255) NOT NULL,
-            LastModifiedDate DATETIME NOT NULL,
-            ProcessedDate DATETIME NOT NULL,
-            FileHash VARCHAR(64),
-			[RowCount] INT NOT NULL,
-			ColumnHash VARCHAR(64) NOT NULL,
-			ProcessedDataHash VARCHAR(64) NULL
-        );
-        CREATE INDEX IX_ProcessedFiles_FileName ON Timesheet.ProcessedFiles(FileName);
-        PRINT 'ProcessedFiles table created.';
-    END;
+        DROP TABLE Timesheet.ProcessedFiles;
+    CREATE TABLE Timesheet.ProcessedFiles (
+        FileID INT PRIMARY KEY IDENTITY(1,1),
+        FilePath VARCHAR(500) NOT NULL,
+        FileName VARCHAR(255) NOT NULL,
+        LastModifiedDate DATETIME NOT NULL,
+        ProcessedDate DATETIME NOT NULL,
+        FileHash VARCHAR(64),
+        [RowCount] INT NOT NULL,
+        ColumnHash VARCHAR(64) NOT NULL,
+        ProcessedDataHash VARCHAR(64) NULL
+    );
+    CREATE INDEX IX_ProcessedFiles_FileName ON Timesheet.ProcessedFiles(FileName);
+    PRINT 'ProcessedFiles table created.';
 
     -- AuditLog Table
- IF OBJECT_ID('Timesheet.AuditLog') IS NOT NULL
-    DROP TABLE Timesheet.AuditLog;
-
-CREATE TABLE Timesheet.AuditLog (
-    AuditID INT PRIMARY KEY IDENTITY(1,1),
-    EmployeeName NVARCHAR(255),
-    FileName VARCHAR(255),
-    TableName VARCHAR(50) NOT NULL,
-    Action VARCHAR(20) NOT NULL CHECK (Action IN ('Insert', 'Update', 'Delete')),
-    Message NVARCHAR(1000),
-    ProcessedDate DATETIME NOT NULL DEFAULT GETDATE()
-);
-CREATE INDEX IX_AuditLog_ProcessedDate ON Timesheet.AuditLog(ProcessedDate);
-CREATE INDEX IX_AuditLog_EmployeeName ON Timesheet.AuditLog(EmployeeName);
-PRINT 'AuditLog table created or altered.';
+    IF OBJECT_ID('Timesheet.AuditLog', 'U') IS NOT NULL
+        DROP TABLE Timesheet.AuditLog;
+    CREATE TABLE Timesheet.AuditLog (
+        AuditID INT PRIMARY KEY IDENTITY(1,1),
+        EmployeeName NVARCHAR(255),
+        FileName VARCHAR(255),
+        TableName VARCHAR(50) NOT NULL,
+        Action VARCHAR(20) NOT NULL CHECK (Action IN ('Insert', 'Update', 'Delete')),
+        Message NVARCHAR(1000),
+        ProcessedDate DATETIME NOT NULL DEFAULT GETDATE()
+    );
+    CREATE INDEX IX_AuditLog_ProcessedDate ON Timesheet.AuditLog(ProcessedDate);
+    CREATE INDEX IX_AuditLog_EmployeeName ON Timesheet.AuditLog(EmployeeName);
+    PRINT 'AuditLog table created or altered.';
 
     -- ErrorLog Table
     IF OBJECT_ID('Timesheet.ErrorLog', 'U') IS NULL
@@ -393,6 +387,33 @@ PRINT 'AuditLog table created or altered.';
 END;
 GO
 
+-- Create view for clean Timesheet display without IDs
+IF OBJECT_ID('Timesheet.vw_TimesheetDisplay', 'V') IS NOT NULL
+    DROP VIEW Timesheet.vw_TimesheetDisplay;
+GO
+CREATE VIEW Timesheet.vw_TimesheetDisplay
+AS
+SELECT 
+    e.EmployeeName,
+    t.[Date],
+    t.[DayOfWeek],
+    c.ClientName,
+    p.ProjectName,
+    d.DescriptionName AS ActivityOrLeave,
+    t.BillableStatus,
+    t.Comments,
+    t.TotalHours,
+    t.StartTime,
+    t.EndTime
+FROM Timesheet.Timesheet t
+INNER JOIN Timesheet.Employee e ON t.EmployeeID = e.EmployeeID
+LEFT JOIN Timesheet.Client c ON t.ClientID = c.ClientID
+LEFT JOIN Timesheet.Project p ON t.ProjectID = p.ProjectID
+INNER JOIN Timesheet.Description d ON t.DescriptionID = d.DescriptionID;
+GO
+PRINT 'View vw_TimesheetDisplay created.';
+GO
+
 -- Execute table creation
 EXEC Timesheet.CreateTimesheetTables;
 GO
@@ -473,10 +494,10 @@ GO
 CREATE OR ALTER PROCEDURE Timesheet.ResetDescription
 AS
 BEGIN
-	SET NOCOUNT ON;
-	DELETE FROM Timesheet.Description;
+    SET NOCOUNT ON;
+    DELETE FROM Timesheet.Description;
     ALTER SEQUENCE Timesheet.DescriptionSeq RESTART WITH 8000;
-END
+END;
 GO
 
 CREATE OR ALTER PROCEDURE Timesheet.ResetAll
@@ -490,226 +511,7 @@ BEGIN
     EXEC Timesheet.ResetLeaveType;
     EXEC Timesheet.ResetProject;
     EXEC Timesheet.ResetClient;
-	EXEC Timesheet.ResetDescription
+    EXEC Timesheet.ResetDescription;
     EXEC Timesheet.ResetEmployee;
-END;
-GO
-
--- Timesheet processing procedure to prevent DescriptionID 8020
-IF OBJECT_ID('Timesheet.ProcessTimesheetStaging', 'P') IS NOT NULL
-    DROP PROCEDURE Timesheet.ProcessTimesheetStaging;
-GO
-CREATE PROCEDURE Timesheet.ProcessTimesheetStaging
-AS
-BEGIN
-    SET NOCOUNT ON;
-    BEGIN TRY
-        -- Step 0: Log records with missing or invalid mappings, including DescriptionID 8020
-        INSERT INTO Timesheet.AuditLog (
-            EmployeeName,
-            FileName,
-            TableName,
-            Action,
-            Message,
-            ProcessedDate
-        )
-        SELECT 
-            s.EmployeeName,
-            s.FileName,
-            'TimesheetStaging' AS TableName,
-            'Skipped' AS Action,
-            'Data error(s): ' +
-                CASE WHEN e.EmployeeID IS NULL THEN 'Missing EmployeeID; ' ELSE '' END +
-                CASE WHEN c.ClientID IS NULL AND s.ClientName IS NOT NULL THEN 'Missing ClientID; ' ELSE '' END +
-                CASE WHEN p.ProjectID IS NULL AND s.ProjectName IS NOT NULL THEN 'Missing ProjectID; ' ELSE '' END +
-                CASE WHEN d.DescriptionID IS NULL THEN 'Missing Description; ' 
-                     WHEN d.DescriptionID = 8020 THEN 'Public Holiday (DescriptionID 8020); ' 
-                     ELSE '' END +
-                CASE WHEN TRY_CONVERT(DATE, s.[Date]) IS NULL THEN 'Invalid Date; ' ELSE '' END +
-                CASE WHEN TRY_CONVERT(TIME, s.StartTime) IS NULL THEN 'Invalid StartTime; ' ELSE '' END +
-                CASE WHEN TRY_CONVERT(TIME, s.EndTime) IS NULL THEN 'Invalid EndTime; ' ELSE '' END,
-            GETDATE()
-        FROM Timesheet.TimesheetStaging s
-        LEFT JOIN Timesheet.Employee e ON s.EmployeeName = e.EmployeeName
-        LEFT JOIN Timesheet.Client c ON s.ClientName = c.ClientName
-        LEFT JOIN Timesheet.Project p ON s.ProjectName = p.ProjectName AND p.ClientID = c.ClientID
-        LEFT JOIN Timesheet.Description d ON s.ActivityName = d.DescriptionName
-        WHERE s.IsValid = 1 AND (
-            e.EmployeeID IS NULL OR
-            (s.ClientName IS NOT NULL AND c.ClientID IS NULL) OR
-            (s.ProjectName IS NOT NULL AND p.ProjectID IS NULL) OR
-            d.DescriptionID IS NULL OR
-            d.DescriptionID = 8020 OR
-            TRY_CONVERT(DATE, s.[Date]) IS NULL OR
-            TRY_CONVERT(TIME, s.StartTime) IS NULL OR
-            TRY_CONVERT(TIME, s.EndTime) IS NULL
-        );
-
-        -- Step 1: Log skipped/duplicate records
-        INSERT INTO Timesheet.AuditLog (
-            EmployeeName,
-            FileName,
-            TableName,
-            Action,
-            Message,
-            ProcessedDate
-        )
-        SELECT 
-            s.EmployeeName,
-            s.FileName,
-            'TimesheetStaging' AS TableName,
-            'Skipped' AS Action,
-            'Duplicate timesheet entry found for project: ' + 
-                COALESCE(s.ProjectName, 'Unknown') + 
-                ', Hours: ' + COALESCE(CAST(s.TotalHours AS NVARCHAR(10)), '0') AS Message,
-            GETDATE()
-        FROM Timesheet.TimesheetStaging s
-        JOIN Timesheet.Employee e ON s.EmployeeName = e.EmployeeName
-        LEFT JOIN Timesheet.Client c ON s.ClientName = c.ClientName
-        LEFT JOIN Timesheet.Project p ON s.ProjectName = p.ProjectName AND p.ClientID = c.ClientID
-        JOIN Timesheet.Timesheet t ON 
-            e.EmployeeID = t.EmployeeID
-            AND TRY_CONVERT(DATE, s.[Date]) = t.[Date]
-            AND TRY_CONVERT(TIME, s.StartTime) = t.StartTime
-            AND TRY_CONVERT(TIME, s.EndTime) = t.EndTime
-            AND COALESCE(c.ClientID, -1) = COALESCE(t.ClientID, -1)
-            AND COALESCE(p.ProjectID, -1) = COALESCE(t.ProjectID, -1)
-        WHERE s.IsValid = 1;
-
-        -- Step 2: Insert valid, non-duplicate records, excluding DescriptionID 8020
-        INSERT INTO Timesheet.Timesheet (
-            EmployeeID, [Date], [DayOfWeek], ClientID, ProjectID, DescriptionID,
-            BillableStatus, Comments, TotalHours, StartTime, EndTime
-        )
-        SELECT 
-            e.EmployeeID,
-            TRY_CONVERT(DATE, s.[Date]),
-            s.[DayOfWeek],
-            c.ClientID,
-            p.ProjectID,
-            d.DescriptionID,
-            s.BillableStatus,
-            s.Comments,
-            TRY_CONVERT(DECIMAL(5,2), s.TotalHours),
-            TRY_CONVERT(TIME, s.StartTime),
-            TRY_CONVERT(TIME, s.EndTime)
-        FROM Timesheet.TimesheetStaging s
-        LEFT JOIN Timesheet.Employee e ON s.EmployeeName = e.EmployeeName
-        LEFT JOIN Timesheet.Client c ON s.ClientName = c.ClientName
-        LEFT JOIN Timesheet.Project p ON s.ProjectName = p.ProjectName AND p.ClientID = c.ClientID
-        LEFT JOIN Timesheet.Description d ON s.ActivityName = d.DescriptionName
-        WHERE s.IsValid = 1
-          AND e.EmployeeID IS NOT NULL
-          AND d.DescriptionID IS NOT NULL AND d.DescriptionID <> 8020
-          AND NOT EXISTS (
-                SELECT 1
-                FROM Timesheet.Timesheet t
-                WHERE t.EmployeeID = e.EmployeeID
-                  AND t.[Date] = TRY_CONVERT(DATE, s.[Date])
-                  AND t.StartTime = TRY_CONVERT(TIME, s.StartTime)
-                  AND t.EndTime = TRY_CONVERT(TIME, s.EndTime)
-                  AND COALESCE(t.ClientID, -1) = COALESCE(c.ClientID, -1)
-                  AND COALESCE(t.ProjectID, -1) = COALESCE(p.ProjectID, -1)
-            );
-
-        -- Step 3: Log inserted records
-        INSERT INTO Timesheet.AuditLog (
-            EmployeeName,
-            FileName,
-            TableName,
-            Action,
-            Message,
-            ProcessedDate
-        )
-        SELECT 
-            s.EmployeeName,
-            s.FileName,
-            'Timesheet' AS TableName,
-            'Insert' AS Action,
-            'New timesheet inserted: ' + COALESCE(s.ProjectName, 'Unknown') + ', Hours: ' + COALESCE(CAST(s.TotalHours AS NVARCHAR(10)), '0'),
-            GETDATE()
-        FROM Timesheet.TimesheetStaging s
-        JOIN Timesheet.Employee e ON s.EmployeeName = e.EmployeeName
-        JOIN Timesheet.Timesheet t ON t.EmployeeID = e.EmployeeID
-            AND t.[Date] = TRY_CONVERT(DATE, s.[Date])
-            AND t.TotalHours = TRY_CONVERT(DECIMAL(5,2), s.TotalHours)
-        WHERE s.IsValid = 1;
-
-        -- Step 4: Log updates
-        INSERT INTO Timesheet.AuditLog (
-            EmployeeName,
-            FileName,
-            TableName,
-            Action,
-            Message,
-            ProcessedDate
-        )
-        SELECT 
-            s.EmployeeName,
-            s.FileName,
-            'Timesheet' AS TableName,
-            'Update' AS Action,
-            'Timesheet updated for project: ' + COALESCE(s.ProjectName, 'Unknown') + ', New Hours: ' + COALESCE(CAST(s.TotalHours AS NVARCHAR(10)), '0'),
-            GETDATE()
-        FROM Timesheet.TimesheetStaging s
-        JOIN Timesheet.Employee e ON s.EmployeeName = e.EmployeeName
-        JOIN Timesheet.Timesheet t ON t.EmployeeID = e.EmployeeID
-            AND t.[Date] = TRY_CONVERT(DATE, s.[Date])
-            AND t.TotalHours = TRY_CONVERT(DECIMAL(5,2), s.TotalHours)
-        WHERE s.IsValid = 1;
-
-        -- Step 5: Delete records with -1 hours
-        DELETE t
-        FROM Timesheet.Timesheet t
-        JOIN Timesheet.Employee e ON e.EmployeeID = t.EmployeeID
-        JOIN Timesheet.TimesheetStaging s ON s.EmployeeName = e.EmployeeName
-            AND t.[Date] = TRY_CONVERT(DATE, s.[Date])
-            AND t.StartTime = TRY_CONVERT(TIME, s.StartTime)
-            AND t.EndTime = TRY_CONVERT(TIME, s.EndTime)
-        WHERE s.IsValid = 1
-          AND TRY_CONVERT(DECIMAL(5,2), s.TotalHours) = -1;
-
-        -- Step 6: Log deleted records
-        INSERT INTO Timesheet.AuditLog (
-            EmployeeName,
-            FileName,
-            TableName,
-            Action,
-            Message,
-            ProcessedDate
-        )
-        SELECT 
-            s.EmployeeName,
-            s.FileName,
-            'Timesheet' AS TableName,
-            'Delete' AS Action,
-            'Timesheet deleted for project: ' + COALESCE(s.ProjectName, 'Unknown'),
-            GETDATE()
-        FROM Timesheet.TimesheetStaging s
-        JOIN Timesheet.Employee e ON s.EmployeeName = e.EmployeeName
-        JOIN Timesheet.Timesheet t ON t.EmployeeID = e.EmployeeID
-            AND t.[Date] = TRY_CONVERT(DATE, s.[Date])
-            AND t.TotalHours = TRY_CONVERT(DECIMAL(5,2), s.TotalHours)
-        WHERE s.IsValid = 1
-          AND TRY_CONVERT(DECIMAL(5,2), s.TotalHours) = -1
-          AND NOT EXISTS (SELECT 1 FROM Timesheet.Timesheet t2 WHERE t2.Timesheet_ID = t.Timesheet_ID);
-    END TRY
-    BEGIN CATCH
-        INSERT INTO Timesheet.ErrorLog (
-            ErrorDate,
-            ErrorTask,
-            ErrorDescription,
-            SourceComponent,
-            UserName
-        )
-        VALUES (
-            GETDATE(),
-            'Timesheet Import Process',
-            ERROR_MESSAGE(),
-            'TimesheetETL',
-            SYSTEM_USER
-        );
-        THROW;
-    END CATCH;
 END;
 GO
