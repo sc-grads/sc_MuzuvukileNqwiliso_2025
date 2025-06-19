@@ -278,7 +278,8 @@ PRINT 'AuditLog table created or altered.';
             ErrorTask NVARCHAR(255) NOT NULL,
             ErrorDescription NVARCHAR(MAX) NOT NULL,
             SourceComponent NVARCHAR(255) NULL,
-            UserName NVARCHAR(100) NULL
+            UserName NVARCHAR(100) NULL,
+            ProcessedDate DATETIME NOT NULL DEFAULT GETDATE()
         );
         PRINT 'ErrorLog table created.';
     END;
