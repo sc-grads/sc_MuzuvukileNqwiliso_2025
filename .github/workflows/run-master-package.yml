@@ -1,26 +1,70 @@
-name: Run MasterPackage Every 1 Minute
+name: Deploy SSIS SQL Agent Job
 
 on:
-  schedule:
-    - cron: "* * * * *"
   workflow_call:
 
 jobs:
-  run-master-package:
+  deploy-ssis-job:
     runs-on: self-hosted
+    timeout-minutes: 5
 
     steps:
-      - name: Run SSIS MasterPackage
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create 1-Minute SQL Agent Job
         shell: powershell
         run: |
-          $ssisServer = "LAPTOP-62JJ49T4"
-          $folderName = "TimesheetDeploy"
-          $projectName = "MigratingTimesheet"
-          $packageName = "MasterPackage.dtsx"
+          # Configure variables
+          $sqlServer = "LAPTOP-62JJ49T4"
+          $jobName = "Run_SSIS_MasterPackage"
+          $ssisFolder = "TimesheetDeploy"
+          $ssisProject = "MigratingTimesheet"
+          $ssisPackage = "MasterPackage.dtsx"
+          $ownerLogin = "LAPTOP-62JJ49T4\MuzuvukileNqwiliso"
+          $scheduleName = "Timesheet_Migration_Schedule"
 
-          Write-Output "Starting execution of $packageName..."
+          # Build SSIS command
+          $command = "/ISSERVER `"\SSISDB\$ssisFolder\$ssisProject\$ssisPackage`" /SERVER `"$sqlServer`" /Par `"`$ServerOption::SYNCHRONIZED(Boolean)`";True /CALLERINFO SQLAGENT /REPORTING E"
 
-          $query = "DECLARE @execution_id BIGINT; EXEC [SSISDB].[catalog].[create_execution] @package_name=N'$packageName', @execution_id=@execution_id OUTPUT, @folder_name=N'$folderName', @project_name=N'$projectName', @use32bitruntime=False, @reference_id=NULL; EXEC [SSISDB].[catalog].[start_execution] @execution_id;"
+          # T-SQL script
+          $sql = @"
+          USE [msdb];
 
-          sqlcmd -S $ssisServer -d SSISDB -E -Q $query
-          Write-Output "Execution triggered."
+          IF EXISTS (SELECT job_id FROM msdb.dbo.sysjobs WHERE name = '$jobName')
+            EXEC msdb.dbo.sp_delete_job @job_name = '$jobName';
+
+          EXEC msdb.dbo.sp_add_job 
+              @job_name = '$jobName',
+              @description = 'Runs SSIS MasterPackage every 1 minute',
+              @owner_login_name = '$ownerLogin';
+
+          EXEC msdb.dbo.sp_add_jobstep
+              @job_name = '$jobName',
+              @step_name = 'Execute_SSIS_Package',
+              @subsystem = 'SSIS',
+              @command = '$command',
+              @database_name = 'SSISDB';
+
+          IF NOT EXISTS (SELECT 1 FROM msdb.dbo.sysschedules WHERE name = '$scheduleName')
+          EXEC msdb.dbo.sp_add_schedule
+              @schedule_name = '$scheduleName',
+              @freq_type = 4,
+              @freq_interval = 1,
+              @freq_subday_type = 4,
+              @freq_subday_interval = 1,
+              @active_start_time = 000000;
+
+          EXEC msdb.dbo.sp_attach_schedule
+              @job_name = '$jobName',
+              @schedule_name = '$scheduleName';
+
+          EXEC msdb.dbo.sp_add_jobserver
+              @job_name = '$jobName',
+              @server_name = @@SERVERNAME;
+          "@
+
+          # Execute T-SQL with sqlcmd
+          sqlcmd -S $sqlServer -E -Q $sql
+
+          echo "Successfully deployed SQL Agent job '$jobName' with schedule '$scheduleName' (runs every 1 minute)"
