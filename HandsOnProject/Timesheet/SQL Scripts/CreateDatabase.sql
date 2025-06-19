@@ -234,7 +234,8 @@ BEGIN
     PRINT 'Forecast table created.';
 
     -- ProcessedFiles Table
-    IF OBJECT_ID('Timesheet.ProcessedFiles', 'U') IS NULL
+    IF OBJECT_ID('Timesheet.ProcessedFiles', 'U') IS NOT NULL
+	    DROP TABLE Timesheet.ProcessedFiles
     BEGIN
         CREATE TABLE Timesheet.ProcessedFiles (
             FileID INT PRIMARY KEY IDENTITY(1,1),
@@ -242,7 +243,10 @@ BEGIN
             FileName VARCHAR(255) NOT NULL,
             LastModifiedDate DATETIME NOT NULL,
             ProcessedDate DATETIME NOT NULL,
-            FileHash VARCHAR(64)
+            FileHash VARCHAR(64),
+			[RowCount] INT NOT NULL,
+			ColumnHash VARCHAR(64) NOT NULL,
+			ProcessedDataHash VARCHAR(64) NULL
         );
         CREATE INDEX IX_ProcessedFiles_FileName ON Timesheet.ProcessedFiles(FileName);
         PRINT 'ProcessedFiles table created.';
