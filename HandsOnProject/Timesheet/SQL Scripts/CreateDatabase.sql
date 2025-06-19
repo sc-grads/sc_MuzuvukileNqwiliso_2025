@@ -387,6 +387,20 @@ BEGIN
 END;
 GO
 
+BEGIN TRY
+    BEGIN TRANSACTION;
+    EXEC Timesheet.CreateTimesheetTables;
+    -- View creation code here
+    COMMIT TRANSACTION;
+    PRINT 'Database setup completed successfully.';
+END TRY
+BEGIN CATCH
+    ROLLBACK TRANSACTION;
+    DECLARE @ErrorMessage NVARCHAR(4000) = ERROR_MESSAGE();
+    PRINT 'Error occurred: ' + @ErrorMessage;
+END CATCH;
+GO
+
 -- Create view for clean Timesheet display without IDs
 IF OBJECT_ID('Timesheet.vw_TimesheetDisplay', 'V') IS NOT NULL
     DROP VIEW Timesheet.vw_TimesheetDisplay;
@@ -412,10 +426,6 @@ LEFT JOIN Timesheet.Project p ON t.ProjectID = p.ProjectID
 INNER JOIN Timesheet.Description d ON t.DescriptionID = d.DescriptionID;
 GO
 PRINT 'View vw_TimesheetDisplay created.';
-GO
-
--- Execute table creation
-EXEC Timesheet.CreateTimesheetTables;
 GO
 
 -- Reset procedures
