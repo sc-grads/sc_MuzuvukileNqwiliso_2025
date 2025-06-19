@@ -34,4 +34,4 @@ jobs:
 
   call-job-creation:
     needs: call-ssis
-    uses: ./.github/workflows/run-master-package.yml
+    uses: ./.github/workflows/create-sql-agent-job.yml
