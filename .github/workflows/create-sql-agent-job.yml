@@ -1,0 +1,30 @@
+name: Create SQL Agent Job for MasterPackage
+
+on:
+  workflow_call:
+
+jobs:
+  create-agent-job:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Verify Agent Job SQL file exists
+        shell: powershell
+        run: |
+          if (-Not (Test-Path "HandsOnProject\Timesheet\SQL Scripts\CreateSqlAgentJob.sql")) {
+            Write-Error "CreateSqlAgentJob.sql NOT found"
+            exit 1
+          }
+          Write-Output "Agent job SQL file found."
+
+      - name: Execute CreateSqlAgentJob.sql with sqlcmd using Windows Auth
+        shell: powershell
+        run: |
+          $sqlServer = "LAPTOP-62JJ49T4"
+          $agentJobScript = "HandsOnProject\Timesheet\SQL Scripts\CreateSqlAgentJob.sql"
+          Write-Output "Running agent job script at $(Get-Date)"
+          & sqlcmd.exe -S $sqlServer -E -i $agentJobScript -b
+          Write-Output "Agent Job created successfully"
