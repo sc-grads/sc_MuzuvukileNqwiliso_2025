@@ -202,10 +202,11 @@ BEGIN
         ProjectID INT,
         DescriptionID INT NOT NULL,
         BillableStatus VARCHAR(20) NOT NULL CHECK (BillableStatus IN ('Billable', 'Non-Billable')),
-        Comments TEXT,
+        Comments  NVARCHAR(MAX),
         TotalHours DECIMAL(5,2) CHECK (TotalHours >= 0),
         StartTime TIME,
         EndTime TIME,
+	    [FileName] NVARCHAR(255) NULL,
         FOREIGN KEY (EmployeeID) REFERENCES Timesheet.Employee(EmployeeID),
         FOREIGN KEY (ClientID) REFERENCES Timesheet.Client(ClientID),
         FOREIGN KEY (ProjectID) REFERENCES Timesheet.Project(ProjectID),
@@ -233,29 +234,30 @@ BEGIN
     -- ProcessedFiles Table
     IF OBJECT_ID('Timesheet.ProcessedFiles', 'U') IS NOT NULL
         DROP TABLE Timesheet.ProcessedFiles;
-    CREATE TABLE Timesheet.ProcessedFiles (
-        FileID INT PRIMARY KEY IDENTITY(1,1),
-        FilePath VARCHAR(500) NOT NULL,
-        FileName VARCHAR(255) NOT NULL,
-        LastModifiedDate DATETIME NOT NULL,
-        ProcessedDate DATETIME NOT NULL,
-        FileHash VARCHAR(64),
-        [RowCount] INT NOT NULL,
-        ColumnHash VARCHAR(64) NOT NULL,
-        ProcessedDataHash VARCHAR(64) NULL
-    );
-    CREATE INDEX IX_ProcessedFiles_FileName ON Timesheet.ProcessedFiles(FileName);
-    PRINT 'ProcessedFiles table created.';
+   CREATE TABLE Timesheet.ProcessedFiles (
+    FileID INT PRIMARY KEY IDENTITY(1,1),
+    FilePath VARCHAR(500) NOT NULL,
+    FileName VARCHAR(255) NOT NULL,
+    EmployeeName NVARCHAR(255) NOT NULL,
+    [RowCount] INT NOT NULL,
+    LastModifiedDate DATETIME NOT NULL,
+    ProcessedDate DATETIME NOT NULL DEFAULT GETDATE()
+);
+
+CREATE INDEX IX_ProcessedFiles_FileName ON Timesheet.ProcessedFiles(FileName);
+
+PRINT 'ProcessedFiles table created with columns matching the script.';
 
     -- AuditLog Table
     IF OBJECT_ID('Timesheet.AuditLog', 'U') IS NOT NULL
         DROP TABLE Timesheet.AuditLog;
     CREATE TABLE Timesheet.AuditLog (
         AuditID INT PRIMARY KEY IDENTITY(1,1),
-        EmployeeName NVARCHAR(255),
-        FileName VARCHAR(255),
+        EmployeeName NVARCHAR(255) NOT NULL,
+        FileName VARCHAR(255) NOT NULL,
+		[Month] NVARCHAR(20) NOT NULL,
         TableName VARCHAR(50) NOT NULL,
-        Action VARCHAR(20) NOT NULL CHECK (Action IN ('Insert', 'Update', 'Delete')),
+        Action VARCHAR(20) NOT NULL CHECK (Action IN ('Insert', 'Update', 'Delete','NoChange')),
         Message NVARCHAR(1000),
         ProcessedDate DATETIME NOT NULL DEFAULT GETDATE()
     );
@@ -279,24 +281,28 @@ BEGIN
     END;
 
     -- TimesheetStaging Table
-    CREATE TABLE Timesheet.TimesheetStaging (
-        StagingID INT IDENTITY(1,1) PRIMARY KEY,
-        [Date] NVARCHAR(50),
-        [DayOfWeek] VARCHAR(10),
-        ClientName VARCHAR(100),
-        ProjectName VARCHAR(100),
-        ActivityName VARCHAR(50),
-        BillableStatus VARCHAR(20),
-        Comments NVARCHAR(MAX),
-        TotalHours NVARCHAR(50),
-        StartTime NVARCHAR(50),
-        EndTime NVARCHAR(50),
-        EmployeeName NVARCHAR(255),
-        FileName NVARCHAR(255),
-        ProcessedDate DATETIME DEFAULT GETDATE(),
-        IsValid BIT DEFAULT 0
-    );
-    PRINT 'TimesheetStaging table created.';
+	CREATE TABLE Timesheet.TimesheetStaging (
+		StagingID INT IDENTITY(1,1) PRIMARY KEY,
+		RunID NVARCHAR(40) NULL,
+		[Date] NVARCHAR(50),
+		[DayOfWeek] VARCHAR(10),
+		ClientName VARCHAR(100),
+		ProjectName VARCHAR(100),
+		ActivityName VARCHAR(50),
+		BillableStatus VARCHAR(20),
+		Comments NVARCHAR(MAX),
+		TotalHours NVARCHAR(50),
+		StartTime NVARCHAR(50),
+		EndTime NVARCHAR(50),
+		EmployeeName NVARCHAR(255),
+		FileName NVARCHAR(255),
+		ProcessedDate DATETIME DEFAULT GETDATE(),
+		IsValid BIT DEFAULT 0
+	);
+
+	-- Index for performance
+	CREATE INDEX IX_TimesheetStaging_RunID 
+	ON Timesheet.TimesheetStaging(RunID, FileName, EmployeeName);
 
     -- StagingLeaveRequest Table
     IF OBJECT_ID('Timesheet.StagingLeaveRequest', 'U') IS NULL
@@ -374,16 +380,6 @@ BEGIN
     );
     PRINT 'LeaveRequest table created.';
 
-    -- FileEmployeeMapping Table
-    IF OBJECT_ID('Timesheet.FileEmployeeMapping', 'U') IS NULL
-    BEGIN
-        CREATE TABLE Timesheet.FileEmployeeMapping (
-            FileNamePattern VARCHAR(255) PRIMARY KEY,
-            EmployeeID INT NOT NULL,
-            FOREIGN KEY (EmployeeID) REFERENCES Timesheet.Employee(EmployeeID)
-        );
-        PRINT 'FileEmployeeMapping table created.';
-    END;
 END;
 GO
 
@@ -428,6 +424,609 @@ GO
 PRINT 'View vw_TimesheetDisplay created.';
 GO
 
+-- Insert Activity and Leave
+CREATE OR ALTER PROCEDURE  Timesheet.usp_InsertActivityLeaveData
+    @TimesheetMonth NVARCHAR(20)  -- Passed from Script Task
+AS
+BEGIN
+    BEGIN TRY
+        DECLARE @ActivityRows INT = 0;
+        DECLARE @LeaveTypeRows INT = 0;
+        DECLARE @AuditMessage NVARCHAR(1000);
+
+        -- Create temp table for employee-file-activity/leave records
+        CREATE TABLE #EmployeeActivityFiles (
+            EmployeeName NVARCHAR(255),
+            FileName NVARCHAR(255),
+            ActivityOrLeaveType NVARCHAR(255),
+            IsLeaveType BIT
+        );
+
+        -- Extract employee names and classify as activity/leave
+        WITH MonthPositions AS (
+            SELECT 
+                als.FileName,
+                als.ActivityOrLeaveType,
+                NULLIF(
+                    (SELECT MIN(pos) 
+                     FROM (VALUES
+                         (NULLIF(CHARINDEX('January', als.FileName), 0)),
+                         (NULLIF(CHARINDEX('February', als.FileName), 0)),
+                         (NULLIF(CHARINDEX('March', als.FileName), 0)),
+                         (NULLIF(CHARINDEX('April', als.FileName), 0)),
+                         (NULLIF(CHARINDEX('May', als.FileName), 0)),
+                         (NULLIF(CHARINDEX('June', als.FileName), 0)),
+                         (NULLIF(CHARINDEX('July', als.FileName), 0)),
+                         (NULLIF(CHARINDEX('August', als.FileName), 0)),
+                         (NULLIF(CHARINDEX('September', als.FileName), 0)),
+                         (NULLIF(CHARINDEX('October', als.FileName), 0)),
+                         (NULLIF(CHARINDEX('November', als.FileName), 0)),
+                         (NULLIF(CHARINDEX('December', als.FileName), 0))
+                     ) AS positions(pos)
+                     WHERE pos IS NOT NULL)
+                , 0) AS MonthPosition
+            FROM Timesheet.ActivityLeaveStaging als
+        )
+        INSERT INTO #EmployeeActivityFiles (EmployeeName, FileName, ActivityOrLeaveType, IsLeaveType)
+        SELECT DISTINCT
+            CASE
+                WHEN MonthPosition = 0 THEN 'Unknown'
+                ELSE 
+                    LTRIM(RTRIM(
+                        REPLACE(
+                            CASE
+                                WHEN SUBSTRING(FileName, MonthPosition-1, 1) IN ('_', ' ') 
+                                THEN LEFT(FileName, MonthPosition-2)
+                                ELSE LEFT(FileName, MonthPosition-1)
+                            END,
+                            '_', ' '
+                        )
+                    ))
+            END AS EmployeeName,
+            FileName,
+            ActivityOrLeaveType,
+            CASE WHEN LOWER(ActivityOrLeaveType) LIKE '%leave%' THEN 1 ELSE 0 END AS IsLeaveType
+        FROM MonthPositions;
+
+        -- Step 1: Insert Activities
+        INSERT INTO Timesheet.Activity (ActivityName)
+        SELECT DISTINCT eaf.ActivityOrLeaveType
+        FROM #EmployeeActivityFiles eaf
+        WHERE eaf.IsLeaveType = 0
+          AND NOT EXISTS (
+              SELECT 1 FROM Timesheet.Activity a
+              WHERE a.ActivityName = eaf.ActivityOrLeaveType
+          );
+        
+        SET @ActivityRows = @@ROWCOUNT;
+
+        -- Step 2: Insert LeaveTypes (if the table exists)
+        IF OBJECT_ID('Timesheet.LeaveType', 'U') IS NOT NULL
+        BEGIN
+            INSERT INTO Timesheet.LeaveType (LeaveTypeName)
+            SELECT DISTINCT eaf.ActivityOrLeaveType
+            FROM #EmployeeActivityFiles eaf
+            WHERE eaf.IsLeaveType = 1
+              AND NOT EXISTS (
+                  SELECT 1 FROM Timesheet.LeaveType lt
+                  WHERE lt.LeaveTypeName = eaf.ActivityOrLeaveType
+              );
+            
+            SET @LeaveTypeRows = @@ROWCOUNT;
+        END;
+
+        -- Step 3: Insert AuditLog entries (if the table exists)
+        IF OBJECT_ID('Timesheet.AuditLog', 'U') IS NOT NULL
+        BEGIN
+            INSERT INTO Timesheet.AuditLog (
+                EmployeeName,
+                FileName,
+                [Month],
+                TableName,
+                Action,
+                Message,
+                ProcessedDate
+            )
+            SELECT 
+                eaf.EmployeeName,
+                eaf.FileName,
+                @TimesheetMonth,
+                CASE WHEN eaf.IsLeaveType = 1 THEN 'LeaveType' ELSE 'Activity' END AS TableName,
+                'Insert' AS Action,
+                CASE 
+                    WHEN eaf.IsLeaveType = 1 THEN 'New leave type inserted: ' + eaf.ActivityOrLeaveType
+                    ELSE 'New activity inserted: ' + eaf.ActivityOrLeaveType
+                END AS Message,
+                GETDATE()
+            FROM #EmployeeActivityFiles eaf
+            WHERE (eaf.IsLeaveType = 0 AND @ActivityRows > 0)
+               OR (eaf.IsLeaveType = 1 AND @LeaveTypeRows > 0);
+        END;
+
+        -- Clean up
+        DROP TABLE #EmployeeActivityFiles;
+
+        -- Audit summary message
+        SET @AuditMessage = CONCAT('Inserted ', @ActivityRows, ' new activity(ies)');
+        IF OBJECT_ID('Timesheet.LeaveType', 'U') IS NOT NULL
+        BEGIN
+            SET @AuditMessage = CONCAT(@AuditMessage, ' and ', @LeaveTypeRows, ' new leave type(s)');
+        END;
+
+        -- Output result summary
+        SELECT 
+            @ActivityRows AS ActivitiesInserted,
+            @LeaveTypeRows AS LeaveTypesInserted,
+            @AuditMessage AS AuditMessage;
+
+    END TRY
+    BEGIN CATCH
+        -- Clean up temp table on error
+        IF OBJECT_ID('tempdb..#EmployeeActivityFiles') IS NOT NULL
+            DROP TABLE #EmployeeActivityFiles;
+        
+        -- Error logging
+        INSERT INTO Timesheet.ErrorLog (
+            ErrorDate,
+            ErrorTask,
+            ErrorDescription,
+            SourceComponent,
+            UserName
+        )
+        VALUES (
+            GETDATE(),
+            'Activity/LeaveType Import Process',
+            ERROR_MESSAGE(),
+            'ActivityLeaveETL',
+            SYSTEM_USER
+        );
+
+        -- Rethrow the error
+        THROW;
+    END CATCH
+END
+GO
+
+-- ProcessFiles Stored Procedure
+CREATE OR ALTER PROCEDURE Timesheet.usp_ProcessTimesheetFile
+(
+    @IsNewFile BIT,
+    @EmployeeName NVARCHAR(255),
+    @FileName NVARCHAR(255),
+    @FilePath NVARCHAR(500),
+    @RowCount INT,
+    @TimesheetMonth NVARCHAR(50),
+    @LastModified NVARCHAR(10)
+)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @EmptyString NVARCHAR(MAX) = '';
+    DECLARE @ZeroTime TIME = '00:00:00';
+
+    IF @IsNewFile = 1
+    BEGIN
+        -- New File: Just log and record
+        INSERT INTO Timesheet.AuditLog (
+            EmployeeName, FileName, TableName, Action, Message, [Month], ProcessedDate
+        )
+        VALUES (
+            @EmployeeName, @FileName, 'TimesheetStaging', 'Insert', 
+            'New timesheet processed - ' + CAST(@RowCount AS NVARCHAR(10)) + ' rows',
+            @TimesheetMonth, GETDATE()
+        );
+
+        INSERT INTO Timesheet.ProcessedFiles (
+            FilePath, FileName, EmployeeName, [RowCount], LastModifiedDate, ProcessedDate
+        )
+        VALUES (
+            @FilePath, @FileName, @EmployeeName, @RowCount,
+            CAST(@LastModified AS DATETIME), GETDATE()
+        );
+    END
+    ELSE
+    BEGIN
+        -- Existing File: Perform comparison
+
+        DECLARE @CurrentRunID NVARCHAR(40) = (
+            SELECT MAX(RunID) 
+            FROM Timesheet.TimesheetStaging 
+            WHERE FileName = @FileName AND EmployeeName = @EmployeeName
+        );
+
+        ------------------------------
+        -- 1. Detect Deleted Rows
+        ------------------------------
+        INSERT INTO Timesheet.AuditLog (
+            EmployeeName, FileName, TableName, Action, Message, [Month], ProcessedDate
+        )
+        SELECT 
+            e.EmployeeName,
+            t.FileName,
+            'Timesheet',
+            'Delete',
+            'Deleted row: ' +
+                ISNULL(CONVERT(NVARCHAR(10), t.[Date], 120), '??') + ', ' +
+                ISNULL(FORMAT(t.StartTime, 'HH:mm'), '??') + ' - ' +
+                ISNULL(FORMAT(t.EndTime, 'HH:mm'), '??'),
+            @TimesheetMonth,
+            GETDATE()
+        FROM Timesheet.Timesheet t
+        JOIN Timesheet.Employee e ON t.EmployeeID = e.EmployeeID
+        WHERE e.EmployeeName = @EmployeeName
+          AND t.FileName = @FileName
+          AND NOT EXISTS (
+              SELECT 1
+              FROM Timesheet.TimesheetStaging s
+              WHERE s.RunID = @CurrentRunID
+                AND s.EmployeeName = e.EmployeeName
+                AND s.FileName = t.FileName
+                AND TRY_CONVERT(DATE, s.[Date]) = t.[Date]
+                AND ISNULL(TRY_CONVERT(TIME, LEFT(s.StartTime, 5)), @ZeroTime) = ISNULL(t.StartTime, @ZeroTime)
+                AND ISNULL(TRY_CONVERT(TIME, LEFT(s.EndTime, 5)), @ZeroTime) = ISNULL(t.EndTime, @ZeroTime)
+                AND ISNULL(TRY_CONVERT(DECIMAL(5,2), s.TotalHours), 0) = ISNULL(t.TotalHours, 0)
+                AND ISNULL(s.Comments, '') = ISNULL(t.Comments, '')
+          );
+
+        ------------------------------
+        -- 2. Detect Updated Rows
+        ------------------------------
+        INSERT INTO Timesheet.AuditLog (
+            EmployeeName, FileName, TableName, Action, Message, [Month], ProcessedDate
+        )
+        SELECT 
+            s.EmployeeName,
+            s.FileName,
+            'Timesheet',
+            'Update',
+            'Updated row: ' +
+                ISNULL(CONVERT(NVARCHAR(10), TRY_CONVERT(DATE, s.[Date]), 120), '??') + ', ' +
+                ISNULL(FORMAT(TRY_CONVERT(TIME, LEFT(s.StartTime, 5)), 'HH:mm'), '??') + ' - ' +
+                ISNULL(FORMAT(TRY_CONVERT(TIME, LEFT(s.EndTime, 5)), 'HH:mm'), '??') +
+                CASE 
+                    WHEN ISNULL(TRY_CONVERT(DECIMAL(5,2), s.TotalHours), 0) != ISNULL(t.TotalHours, 0) 
+                        THEN ' (Hours changed)'
+                    ELSE ' (Details changed)'
+                END,
+            @TimesheetMonth,
+            GETDATE()
+        FROM Timesheet.TimesheetStaging s
+        JOIN Timesheet.Employee e ON s.EmployeeName = e.EmployeeName
+        JOIN Timesheet.Timesheet t ON t.EmployeeID = e.EmployeeID
+        WHERE s.RunID = @CurrentRunID
+          AND s.EmployeeName = @EmployeeName
+          AND s.FileName = @FileName
+          AND t.FileName = s.FileName
+          AND t.[Date] = TRY_CONVERT(DATE, s.[Date], 120)
+          AND ISNULL(t.StartTime, @ZeroTime) = ISNULL(TRY_CONVERT(TIME, LEFT(s.StartTime, 5)), @ZeroTime)
+          AND ISNULL(t.EndTime, @ZeroTime) = ISNULL(TRY_CONVERT(TIME, LEFT(s.EndTime, 5)), @ZeroTime)
+          AND (
+              ISNULL(TRY_CONVERT(DECIMAL(5,2), s.TotalHours), 0) != ISNULL(t.TotalHours, 0) OR
+              ISNULL(s.Comments, '') != ISNULL(t.Comments, '')
+          );
+
+        ------------------------------
+        -- 3. Detect New Rows
+        ------------------------------
+        INSERT INTO Timesheet.AuditLog (
+            EmployeeName, FileName, TableName, Action, Message, [Month], ProcessedDate
+        )
+        SELECT 
+            s.EmployeeName,
+            s.FileName,
+            'Timesheet',
+            'Insert',
+            'New row: ' +
+                ISNULL(CONVERT(NVARCHAR(10), TRY_CONVERT(DATE, s.[Date]), 120), '??') + ', ' +
+                ISNULL(FORMAT(TRY_CONVERT(TIME, LEFT(s.StartTime, 5)), 'HH:mm'), '??') + ' - ' +
+                ISNULL(FORMAT(TRY_CONVERT(TIME, LEFT(s.EndTime, 5)), 'HH:mm'), '??'),
+            @TimesheetMonth,
+            GETDATE()
+        FROM Timesheet.TimesheetStaging s
+        WHERE s.RunID = @CurrentRunID
+          AND s.EmployeeName = @EmployeeName
+          AND s.FileName = @FileName
+          AND NOT EXISTS (
+              SELECT 1 
+              FROM Timesheet.Timesheet t
+              JOIN Timesheet.Employee e ON t.EmployeeID = e.EmployeeID
+              WHERE e.EmployeeName = s.EmployeeName
+                AND t.FileName = s.FileName
+                AND t.[Date] = TRY_CONVERT(DATE, s.[Date], 120)
+                AND ISNULL(t.StartTime, @ZeroTime) = ISNULL(TRY_CONVERT(TIME, LEFT(s.StartTime, 5)), @ZeroTime)
+                AND ISNULL(t.EndTime, @ZeroTime) = ISNULL(TRY_CONVERT(TIME, LEFT(s.EndTime, 5)), @ZeroTime)
+                AND ISNULL(TRY_CONVERT(DECIMAL(5,2), s.TotalHours), 0) = ISNULL(t.TotalHours, 0)
+                AND ISNULL(s.Comments, '') = ISNULL(t.Comments, '')
+          );
+
+        ------------------------------
+        -- 4. Update ProcessedFiles
+        ------------------------------
+        UPDATE Timesheet.ProcessedFiles
+        SET [RowCount] = @RowCount,
+            LastModifiedDate = CAST(@LastModified AS DATETIME),
+            ProcessedDate = GETDATE()
+        WHERE FilePath = @FilePath;
+    END
+END
+GO
+
+
+-- insert projects
+
+CREATE OR ALTER PROCEDURE  dbo.InsertProjects
+    @TimesheetMonth NVARCHAR(20)
+AS
+BEGIN
+    BEGIN TRY
+        DECLARE @RowsAffected INT = 0;
+        DECLARE @AuditMessage NVARCHAR(1000);
+
+        -- Step 1: Insert new projects from staging
+        INSERT INTO Timesheet.Project (ProjectName, ClientID)
+        SELECT DISTINCT ps.ProjectName, c.ClientID
+        FROM Timesheet.ProjectStaging ps
+        JOIN Timesheet.Client c ON ps.ClientName = c.ClientName
+        WHERE NOT EXISTS (
+            SELECT 1 FROM Timesheet.Project p
+            WHERE p.ProjectName = ps.ProjectName AND p.ClientID = c.ClientID
+        );
+
+        -- Step 2: Capture number of rows inserted
+        SET @RowsAffected = @@ROWCOUNT;
+        SET @AuditMessage = CONCAT('Inserted ', @RowsAffected, ' new project(s)');
+
+        -- Step 3: Create a temp table to store distinct employee-file combinations
+        CREATE TABLE #EmployeeFiles (
+            EmployeeName NVARCHAR(255),
+            FileName NVARCHAR(255)
+        );
+
+        -- Step 4: Extract and insert distinct employee-file combinations
+        WITH MonthPositions AS (
+            SELECT 
+                FileName,
+                -- Find the earliest month position in the filename
+                NULLIF(
+                    (SELECT MIN(pos) 
+                     FROM (VALUES
+                         (NULLIF(CHARINDEX('January', FileName), 0)),
+                         (NULLIF(CHARINDEX('February', FileName), 0)),
+                         (NULLIF(CHARINDEX('March', FileName), 0)),
+                         (NULLIF(CHARINDEX('April', FileName), 0)),
+                         (NULLIF(CHARINDEX('May', FileName), 0)),
+                         (NULLIF(CHARINDEX('June', FileName), 0)),
+                         (NULLIF(CHARINDEX('July', FileName), 0)),
+                         (NULLIF(CHARINDEX('August', FileName), 0)),
+                         (NULLIF(CHARINDEX('September', FileName), 0)),
+                         (NULLIF(CHARINDEX('October', FileName), 0)),
+                         (NULLIF(CHARINDEX('November', FileName), 0)),
+                         (NULLIF(CHARINDEX('December', FileName), 0))
+                     ) AS positions(pos)
+                     WHERE pos IS NOT NULL)
+                , 0) AS MonthPosition
+            FROM Timesheet.ProjectStaging
+            GROUP BY FileName
+        )
+        INSERT INTO #EmployeeFiles (EmployeeName, FileName)
+        SELECT DISTINCT
+            CASE
+                WHEN MonthPosition = 0 THEN 'Unknown'
+                ELSE 
+                    LTRIM(RTRIM(
+                        REPLACE(
+                            CASE
+                                WHEN SUBSTRING(FileName, MonthPosition-1, 1) IN ('_', ' ') 
+                                THEN LEFT(FileName, MonthPosition-2)
+                                ELSE LEFT(FileName, MonthPosition-1)
+                            END,
+                            '_', ' '
+                        )
+                    ))
+            END AS EmployeeName,
+            FileName
+        FROM MonthPositions;
+
+        -- Step 5: Insert single audit log entry per employee-file combination with Month parameter
+        INSERT INTO Timesheet.AuditLog (
+            EmployeeName,
+            FileName,
+            [Month],
+            TableName,
+            Action,
+            Message,
+            ProcessedDate
+        )
+        SELECT 
+            ef.EmployeeName,
+            ef.FileName,
+            @TimesheetMonth,
+            'Project' AS TableName,
+            'Insert' AS Action,
+            @AuditMessage AS Message,
+            GETDATE() AS ProcessedDate
+        FROM #EmployeeFiles ef;
+
+        -- Clean up
+        DROP TABLE #EmployeeFiles;
+
+        -- Step 6: Return rows affected
+        SELECT @RowsAffected AS RowsAffected;
+
+    END TRY
+    BEGIN CATCH
+        -- Log error
+        INSERT INTO Timesheet.ErrorLog (
+            ErrorDate,
+            ErrorTask,
+            ErrorDescription,
+            SourceComponent,
+            UserName
+        )
+        VALUES (
+            GETDATE(),
+            'Project Import Process',
+            ERROR_MESSAGE(),
+            'ProjectETL',
+            SYSTEM_USER
+        );
+
+        -- Clean up temp table if it exists
+        IF OBJECT_ID('tempdb..#EmployeeFiles') IS NOT NULL
+            DROP TABLE #EmployeeFiles;
+
+        -- Re-throw the error to notify calling process
+        THROW;
+    END CATCH
+END;
+GO
+
+-- Insert LeaveRequest
+CREATE OR ALTER PROCEDURE Timesheet.usp_UpsertLeaveRequests
+    @Month VARCHAR(50)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    BEGIN TRY
+        -- Step 1: MERGE existing records
+        MERGE INTO Timesheet.LeaveRequest AS target
+        USING (
+            SELECT 
+                e.EmployeeID,
+                lt.LeaveType,
+                MIN(TRY_CONVERT(DATE, slr.StartDate)) AS StartDate,
+                MAX(TRY_CONVERT(DATE, slr.EndDate)) AS EndDate,
+                CASE 
+                    WHEN MAX(slr.ApprovalObtained) = 1 THEN 'Approved'
+                    ELSE 'Pending'
+                END AS Status,
+                MAX(slr.ApprovalObtained) AS ApprovalObtained,
+                MAX(slr.SickNote) AS SickNote,
+                e.EmployeeName
+            FROM Timesheet.StagingLeaveRequest slr
+            JOIN Timesheet.Employee e ON slr.EmployeeName = e.EmployeeName
+            JOIN Timesheet.LeaveType lt ON slr.LeaveTypeName = lt.LeaveTypeName
+            WHERE slr.IsValid = 1
+              AND slr.ProcessedDate >= DATEADD(DAY, -1, GETDATE())
+            GROUP BY e.EmployeeID, lt.LeaveType, e.EmployeeName
+        ) AS source
+        ON target.EmployeeID = source.EmployeeID
+           AND target.LeaveTypeID = source.LeaveType
+           AND target.StartDate = source.StartDate
+           AND target.EndDate = source.EndDate
+        WHEN MATCHED THEN
+            UPDATE SET 
+                target.Status = source.Status,
+                target.ApprovalObtained = source.ApprovalObtained,
+                target.SickNoteSubmitted = source.SickNote;
+
+        -- Step 2: Audit log for updates
+        INSERT INTO Timesheet.AuditLog (
+            EmployeeName,
+            FileName,
+            Month,
+            TableName,
+            Action,
+            Message,
+            ProcessedDate
+        )
+        SELECT 
+            COALESCE(slr.EmployeeName, 'Unknown'),
+            COALESCE(slr.FileName, 'Unknown'),
+            @Month,
+            'LeaveRequest',
+            'Update',
+            'Leave request updated successfully',
+            GETDATE()
+        FROM Timesheet.StagingLeaveRequest slr
+        JOIN Timesheet.Employee e ON slr.EmployeeName = e.EmployeeName
+        WHERE slr.IsValid = 1
+          AND slr.ProcessedDate >= DATEADD(DAY, -1, GETDATE())
+        GROUP BY slr.EmployeeName, slr.FileName;
+
+        -- Step 3: Insert new leave requests
+        INSERT INTO Timesheet.LeaveRequest (
+            EmployeeID,
+            LeaveTypeID,
+            StartDate,
+            EndDate,
+            Status,
+            ApprovalObtained,
+            SickNoteSubmitted
+        )
+        SELECT 
+            e.EmployeeID,
+            lt.LeaveType,
+            MIN(TRY_CONVERT(DATE, slr.StartDate)),
+            MAX(TRY_CONVERT(DATE, slr.EndDate)),
+            CASE 
+                WHEN MAX(slr.ApprovalObtained) = 1 THEN 'Approved'
+                ELSE 'Pending'
+            END,
+            MAX(slr.ApprovalObtained),
+            MAX(slr.SickNote)
+        FROM Timesheet.StagingLeaveRequest slr
+        JOIN Timesheet.Employee e ON slr.EmployeeName = e.EmployeeName
+        JOIN Timesheet.LeaveType lt ON slr.LeaveTypeName = lt.LeaveTypeName
+        WHERE slr.IsValid = 1
+          AND slr.ProcessedDate >= DATEADD(DAY, -1, GETDATE())
+          AND NOT EXISTS (
+              SELECT 1
+              FROM Timesheet.LeaveRequest lr
+              WHERE lr.EmployeeID = e.EmployeeID
+                AND lr.LeaveTypeID = lt.LeaveType
+                AND lr.StartDate = TRY_CONVERT(DATE, slr.StartDate)
+                AND lr.EndDate = TRY_CONVERT(DATE, slr.EndDate)
+          )
+        GROUP BY e.EmployeeID, lt.LeaveType;
+
+        -- Step 4: Audit log for inserts
+        INSERT INTO Timesheet.AuditLog (
+            EmployeeName,
+            FileName,
+            Month,
+            TableName,
+            Action,
+            Message,
+            ProcessedDate
+        )
+        SELECT 
+            COALESCE(slr.EmployeeName, 'Unknown'),
+            COALESCE(slr.FileName, 'Unknown'),
+            @Month,
+            'LeaveRequest',
+            'Insert',
+            'Leave request inserted successfully',
+            GETDATE()
+        FROM Timesheet.StagingLeaveRequest slr
+        JOIN Timesheet.Employee e ON slr.EmployeeName = e.EmployeeName
+        WHERE slr.IsValid = 1
+          AND slr.ProcessedDate >= DATEADD(DAY, -1, GETDATE())
+        GROUP BY slr.EmployeeName, slr.FileName;
+
+    END TRY
+    BEGIN CATCH
+        INSERT INTO Timesheet.ErrorLog (
+            ErrorDate,
+            ErrorTask,
+            ErrorDescription,
+            SourceComponent,
+            UserName
+        )
+        VALUES (
+            GETDATE(),
+            'usp_UpsertLeaveRequests',
+            ERROR_MESSAGE(),
+            'LeaveRequest_Processing',
+            SYSTEM_USER
+        );
+    END CATCH
+END
+GO
+
+
 -- Reset procedures
 CREATE OR ALTER PROCEDURE Timesheet.ResetEmployee
 AS
@@ -435,15 +1034,6 @@ BEGIN
     SET NOCOUNT ON;
     DELETE FROM Timesheet.Employee;
     ALTER SEQUENCE Timesheet.EmployeeSeq RESTART WITH 1000;
-END;
-GO
-
-CREATE OR ALTER PROCEDURE Timesheet.ResetClient
-AS
-BEGIN
-    SET NOCOUNT ON;
-    DELETE FROM Timesheet.Client;
-    ALTER SEQUENCE Timesheet.ClientSeq RESTART WITH 2000;
 END;
 GO
 

@@ -11,8 +11,8 @@
   DTS:LocaleID="7177"
   DTS:ObjectName="MasterPackage"
   DTS:PackageType="5"
-  DTS:VersionBuild="28"
-  DTS:VersionGUID="{FD2B47DB-69D1-446C-9FD6-8D87F1F5E299}">
+  DTS:VersionBuild="31"
+  DTS:VersionGUID="{F55EDA40-9135-4AA2-B118-CAEAA9A56C5B}">
   <DTS:Property
     DTS:Name="PackageFormatVersion">8</DTS:Property>
   <DTS:ConnectionManagers>
@@ -113,6 +113,10 @@
       <DTS:Property
         DTS:Name="DataBytes">-1</DTS:Property>
     </DTS:Property>
+    <DTS:SelectedLogProviders>
+      <DTS:SelectedLogProvider
+        DTS:InstanceID="{D1E792FC-542C-4C74-8FB6-FEA250E91935}" />
+    </DTS:SelectedLogProviders>
   </DTS:LoggingOptions>
   <DTS:Executables>
     <DTS:Executable
@@ -395,21 +399,44 @@
       </DTS:Variables>
       <DTS:Executables>
         <DTS:Executable
-          DTS:refId="Package.EventHandlers[OnError]\Execute SQL Task"
+          DTS:refId="Package.EventHandlers[OnError]\Catch Errors"
           DTS:CreationName="Microsoft.ExecuteSQLTask"
           DTS:Description="Execute SQL Task"
-          DTS:DTSID="{D0532AA5-D4F2-4B36-892A-7CBB1BEF2578}"
+          DTS:DTSID="{55e11c37-e91d-42f8-a7c5-b6550b4df539}"
           DTS:ExecutableType="Microsoft.ExecuteSQLTask"
           DTS:LocaleID="-1"
-          DTS:ObjectName="Execute SQL Task"
+          DTS:ObjectName="Catch Errors"
           DTS:TaskContact="Execute SQL Task; Microsoft Corporation; SQL Server 2022; © 2022 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1">
           <DTS:Variables />
-          <DTS:PropertyExpression
-            DTS:Name="SqlStatementSource">"INSERT INTO Timesheet.ErrorLog( @[System::TaskName] , @[System::ErrorDescription], @[System::SourceName] , @[System::UserName] )"</DTS:PropertyExpression>
           <DTS:ObjectData>
             <SQLTask:SqlTaskData
               SQLTask:Connection="{32825DCD-7BEB-43DF-8491-C861D78E171F}"
-              SQLTask:SqlStatementSource="INSERT INTO Timesheet.ErrorLog( @[System::TaskName] , @[System::ErrorDescription], @[System::SourceName] , @[System::UserName] )" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
+              SQLTask:SqlStatementSource=" INSERT INTO Timesheet.ErrorLog VALUES (DEFAULT, ?, ?, ?, ?,DEFAULT);" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask">
+              <SQLTask:ParameterBinding
+                SQLTask:ParameterName="0"
+                SQLTask:DtsVariableName="System::TaskName"
+                SQLTask:ParameterDirection="Input"
+                SQLTask:DataType="130"
+                SQLTask:ParameterSize="255" />
+              <SQLTask:ParameterBinding
+                SQLTask:ParameterName="1"
+                SQLTask:DtsVariableName="System::ErrorDescription"
+                SQLTask:ParameterDirection="Input"
+                SQLTask:DataType="130"
+                SQLTask:ParameterSize="4000" />
+              <SQLTask:ParameterBinding
+                SQLTask:ParameterName="2"
+                SQLTask:DtsVariableName="System::SourceName"
+                SQLTask:ParameterDirection="Input"
+                SQLTask:DataType="130"
+                SQLTask:ParameterSize="255" />
+              <SQLTask:ParameterBinding
+                SQLTask:ParameterName="3"
+                SQLTask:DtsVariableName="System::UserName"
+                SQLTask:ParameterDirection="Input"
+                SQLTask:DataType="130"
+                SQLTask:ParameterSize="255" />
+            </SQLTask:SqlTaskData>
           </DTS:ObjectData>
         </DTS:Executable>
       </DTS:Executables>
@@ -577,9 +604,9 @@
       <GraphLayout
         Capacity="4" xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph">
         <NodeLayout
-          Size="164.8,41.6"
-          Id="Package.EventHandlers[OnError]\Execute SQL Task"
-          TopLeft="436.666642808253,89.2666660459174" />
+          Size="136.8,41.6"
+          Id="Package.EventHandlers[OnError]\Catch Errors"
+          TopLeft="482.499973637364,90.9999993671974" />
       </GraphLayout>
     </LayoutInfo>
   </DtsEventHandler>
