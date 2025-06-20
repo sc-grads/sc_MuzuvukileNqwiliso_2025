@@ -627,29 +627,27 @@ BEGIN
     END
     ELSE
     BEGIN
-        -- Existing File: Perform comparison
-
         DECLARE @CurrentRunID NVARCHAR(40) = (
             SELECT MAX(RunID) 
             FROM Timesheet.TimesheetStaging 
             WHERE FileName = @FileName AND EmployeeName = @EmployeeName
         );
 
-        ------------------------------
+        -----------------------------------
         -- 1. Detect Deleted Rows
-        ------------------------------
+        -----------------------------------
         INSERT INTO Timesheet.AuditLog (
             EmployeeName, FileName, TableName, Action, Message, [Month], ProcessedDate
         )
-        SELECT 
+        SELECT DISTINCT
             e.EmployeeName,
             t.FileName,
             'Timesheet',
             'Delete',
             'Deleted row: ' +
-                ISNULL(CONVERT(NVARCHAR(10), t.[Date], 120), '??') + ', ' +
-                ISNULL(FORMAT(t.StartTime, 'HH:mm'), '??') + ' - ' +
-                ISNULL(FORMAT(t.EndTime, 'HH:mm'), '??'),
+                ISNULL(CONVERT(NVARCHAR(10), t.[Date], 120), '<no-date>') + ', ' +
+                ISNULL(FORMAT(t.StartTime, 'HH:mm'), '<start-missing>') + ' - ' +
+                ISNULL(FORMAT(t.EndTime, 'HH:mm'), '<end-missing>'),
             @TimesheetMonth,
             GETDATE()
         FROM Timesheet.Timesheet t
@@ -667,23 +665,27 @@ BEGIN
                 AND ISNULL(TRY_CONVERT(TIME, LEFT(s.EndTime, 5)), @ZeroTime) = ISNULL(t.EndTime, @ZeroTime)
                 AND ISNULL(TRY_CONVERT(DECIMAL(5,2), s.TotalHours), 0) = ISNULL(t.TotalHours, 0)
                 AND ISNULL(s.Comments, '') = ISNULL(t.Comments, '')
+          )
+          AND NOT (
+              ISNULL(t.StartTime, @ZeroTime) = @ZeroTime AND
+              ISNULL(t.EndTime, @ZeroTime) = @ZeroTime
           );
 
-        ------------------------------
+        -----------------------------------
         -- 2. Detect Updated Rows
-        ------------------------------
+        -----------------------------------
         INSERT INTO Timesheet.AuditLog (
             EmployeeName, FileName, TableName, Action, Message, [Month], ProcessedDate
         )
-        SELECT 
+        SELECT DISTINCT
             s.EmployeeName,
             s.FileName,
             'Timesheet',
             'Update',
             'Updated row: ' +
-                ISNULL(CONVERT(NVARCHAR(10), TRY_CONVERT(DATE, s.[Date]), 120), '??') + ', ' +
-                ISNULL(FORMAT(TRY_CONVERT(TIME, LEFT(s.StartTime, 5)), 'HH:mm'), '??') + ' - ' +
-                ISNULL(FORMAT(TRY_CONVERT(TIME, LEFT(s.EndTime, 5)), 'HH:mm'), '??') +
+                ISNULL(CONVERT(NVARCHAR(10), TRY_CONVERT(DATE, s.[Date]), 120), '<no-date>') + ', ' +
+                ISNULL(FORMAT(TRY_CONVERT(TIME, LEFT(s.StartTime, 5)), 'HH:mm'), '<start-missing>') + ' - ' +
+                ISNULL(FORMAT(TRY_CONVERT(TIME, LEFT(s.EndTime, 5)), 'HH:mm'), '<end-missing>') +
                 CASE 
                     WHEN ISNULL(TRY_CONVERT(DECIMAL(5,2), s.TotalHours), 0) != ISNULL(t.TotalHours, 0) 
                         THEN ' (Hours changed)'
@@ -704,23 +706,27 @@ BEGIN
           AND (
               ISNULL(TRY_CONVERT(DECIMAL(5,2), s.TotalHours), 0) != ISNULL(t.TotalHours, 0) OR
               ISNULL(s.Comments, '') != ISNULL(t.Comments, '')
+          )
+          AND NOT (
+              ISNULL(TRY_CONVERT(TIME, LEFT(s.StartTime, 5)), @ZeroTime) = @ZeroTime AND
+              ISNULL(TRY_CONVERT(TIME, LEFT(s.EndTime, 5)), @ZeroTime) = @ZeroTime
           );
 
-        ------------------------------
+        -----------------------------------
         -- 3. Detect New Rows
-        ------------------------------
+        -----------------------------------
         INSERT INTO Timesheet.AuditLog (
             EmployeeName, FileName, TableName, Action, Message, [Month], ProcessedDate
         )
-        SELECT 
+        SELECT DISTINCT
             s.EmployeeName,
             s.FileName,
             'Timesheet',
             'Insert',
             'New row: ' +
-                ISNULL(CONVERT(NVARCHAR(10), TRY_CONVERT(DATE, s.[Date]), 120), '??') + ', ' +
-                ISNULL(FORMAT(TRY_CONVERT(TIME, LEFT(s.StartTime, 5)), 'HH:mm'), '??') + ' - ' +
-                ISNULL(FORMAT(TRY_CONVERT(TIME, LEFT(s.EndTime, 5)), 'HH:mm'), '??'),
+                ISNULL(CONVERT(NVARCHAR(10), TRY_CONVERT(DATE, s.[Date]), 120), '<no-date>') + ', ' +
+                ISNULL(FORMAT(TRY_CONVERT(TIME, LEFT(s.StartTime, 5)), 'HH:mm'), '<start-missing>') + ' - ' +
+                ISNULL(FORMAT(TRY_CONVERT(TIME, LEFT(s.EndTime, 5)), 'HH:mm'), '<end-missing>'),
             @TimesheetMonth,
             GETDATE()
         FROM Timesheet.TimesheetStaging s
@@ -738,20 +744,23 @@ BEGIN
                 AND ISNULL(t.EndTime, @ZeroTime) = ISNULL(TRY_CONVERT(TIME, LEFT(s.EndTime, 5)), @ZeroTime)
                 AND ISNULL(TRY_CONVERT(DECIMAL(5,2), s.TotalHours), 0) = ISNULL(t.TotalHours, 0)
                 AND ISNULL(s.Comments, '') = ISNULL(t.Comments, '')
+          )
+          AND NOT (
+              ISNULL(TRY_CONVERT(TIME, LEFT(s.StartTime, 5)), @ZeroTime) = @ZeroTime AND
+              ISNULL(TRY_CONVERT(TIME, LEFT(s.EndTime, 5)), @ZeroTime) = @ZeroTime
           );
 
-        ------------------------------
+        -----------------------------------
         -- 4. Update ProcessedFiles
-        ------------------------------
+        -----------------------------------
         UPDATE Timesheet.ProcessedFiles
         SET [RowCount] = @RowCount,
             LastModifiedDate = CAST(@LastModified AS DATETIME),
             ProcessedDate = GETDATE()
         WHERE FilePath = @FilePath;
     END
-END
+END;
 GO
-
 
 -- insert projects
 
