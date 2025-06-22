@@ -159,12 +159,12 @@ BEGIN
     -- LeaveTypeID Table
     IF OBJECT_ID('Timesheet.LeaveTypeID', 'U') IS NULL
     BEGIN
-        CREATE TABLE Timesheet.LeaveTypeID (
+        CREATE TABLE Timesheet.LeaveType (
             LeaveTypeID INT PRIMARY KEY DEFAULT NEXT VALUE FOR Timesheet.LeaveTypeSeq,
             LeaveTypeName VARCHAR(50) NOT NULL,
             CONSTRAINT CHK_LeaveType_Name CHECK (LeaveTypeName <> '')
         );
-        CREATE INDEX IX_LeaveType_LeaveType_ID ON Timesheet.LeaveTypeID(LeaveTypeID);
+        CREATE INDEX IX_LeaveType_LeaveType_ID ON Timesheet.LeaveType(LeaveTypeID);
         PRINT 'LeaveTypeID table created.';
     END;
 
@@ -377,7 +377,7 @@ PRINT 'ProcessedFiles table created with columns matching the script.';
         SickNoteSubmitted BIT NULL,
         CreatedDate DATETIME NOT NULL DEFAULT GETDATE(),
         CONSTRAINT FK_LeaveRequest_Employee FOREIGN KEY (EmployeeID) REFERENCES Timesheet.Employee(EmployeeID),
-        CONSTRAINT FK_LeaveRequest_LeaveType FOREIGN KEY (LeaveTypeID) REFERENCES Timesheet.LeaveTypeID(LeaveTypeID)
+        CONSTRAINT FK_LeaveRequest_LeaveType FOREIGN KEY (LeaveTypeID) REFERENCES Timesheet.LeaveType(LeaveTypeID)
     );
     PRINT 'LeaveRequest table created.';
 

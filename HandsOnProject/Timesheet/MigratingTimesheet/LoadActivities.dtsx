@@ -11,8 +11,8 @@
   DTS:LocaleID="7177"
   DTS:ObjectName="LoadActivities"
   DTS:PackageType="5"
-  DTS:VersionBuild="76"
-  DTS:VersionGUID="{C29AA31E-F785-4688-B605-4BCD4FBE1A90}">
+  DTS:VersionBuild="77"
+  DTS:VersionGUID="{7BA2F9E5-68F8-49AA-BBBF-59017FD85E1F}">
   <DTS:Property
     DTS:Name="PackageFormatVersion">8</DTS:Property>
   <DTS:ConnectionManagers>
@@ -262,7 +262,7 @@
       <DTS:ObjectData>
         <SQLTask:SqlTaskData
           SQLTask:Connection="{FAFBFD70-9B28-4D88-B61F-E690AB7A4F99}"
-          SQLTask:SqlStatementSource="-- Insert Activities&#xA;INSERT INTO Timesheet.Description (DescriptionType, SourceID, DescriptionName)&#xA;SELECT 'Activity', A.ActivityID, A.ActivityName&#xA;FROM Timesheet.Activity A&#xA;WHERE NOT EXISTS (&#xA;    SELECT 1 FROM Timesheet.Description D&#xA;    WHERE D.DescriptionType = 'Activity'&#xA;      AND D.SourceID = A.ActivityID&#xA;);&#xA;&#xA;-- Insert LeaveTypes&#xA;INSERT INTO Timesheet.Description (DescriptionType, SourceID, DescriptionName)&#xA;SELECT 'Leave', L.LeaveType, L.LeaveTypeName&#xA;FROM Timesheet.LeaveType L&#xA;WHERE NOT EXISTS (&#xA;    SELECT 1 FROM Timesheet.Description D&#xA;    WHERE D.DescriptionType = 'Leave'&#xA;      AND D.SourceID = L.LeaveType&#xA;);&#xA;" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
+          SQLTask:SqlStatementSource="-- Insert Activities&#xA;INSERT INTO Timesheet.Description (DescriptionType, SourceID, DescriptionName)&#xA;SELECT 'Activity', A.ActivityID, A.ActivityName&#xA;FROM Timesheet.Activity A&#xA;WHERE NOT EXISTS (&#xA;    SELECT 1 FROM Timesheet.Description D&#xA;    WHERE D.DescriptionType = 'Activity'&#xA;      AND D.SourceID = A.ActivityID&#xA;);&#xA;&#xA;-- Insert LeaveTypes&#xA;INSERT INTO Timesheet.Description (DescriptionType, SourceID, DescriptionName)&#xA;SELECT 'Leave', L.LeaveTypeID, L.LeaveTypeName&#xA;FROM Timesheet.LeaveType L&#xA;WHERE NOT EXISTS (&#xA;    SELECT 1 FROM Timesheet.Description D&#xA;    WHERE D.DescriptionType = 'Leave'&#xA;      AND D.SourceID = L.LeaveTypeID&#xA;);" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
       </DTS:ObjectData>
     </DTS:Executable>
     <DTS:Executable
@@ -312,14 +312,35 @@
           ReadOnlyVariables="User::ExcelFilePath,User::ExcelRange,User::SQLConnectionString,User::TableName"
           ReadWriteVariables="User::TimesheetMonth">
           <ProjectItem
-            Name="Properties\Settings.settings"
-            Encoding="UTF8"><![CDATA[<?xml version='1.0' encoding='iso-8859-1'?>
-<SettingsFile xmlns="uri:settings" CurrentProfile="(Default)">
-  <Profiles>
-    <Profile Name="(Default)" />
-  </Profiles>
-  <Settings />
-</SettingsFile>]]></ProjectItem>
+            Name="Properties\AssemblyInfo.cs"
+            Encoding="UTF8"><![CDATA[using System.Reflection;
+using System.Runtime.CompilerServices;
+
+//
+// General Information about an assembly is controlled through the following 
+// set of attributes. Change these attribute values to modify the information
+// associated with an assembly.
+//
+[assembly: AssemblyTitle("ST_02bc6161639641819f8532cb18c36ba5")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("HP")]
+[assembly: AssemblyProduct("ST_02bc6161639641819f8532cb18c36ba5")]
+[assembly: AssemblyCopyright("Copyright @ HP 2025")]
+[assembly: AssemblyTrademark("")]
+[assembly: AssemblyCulture("")]
+//
+// Version information for an assembly consists of the following four values:
+//
+//      Major Version
+//      Minor Version 
+//      Build Number
+//      Revision
+//
+// You can specify all the values or you can default the Revision and Build Numbers 
+// by using the '*' as shown below:
+
+[assembly: AssemblyVersion("1.0.*")]]]></ProjectItem>
           <ProjectItem
             Name="Properties\Resources.resx"
             Encoding="UTF8"><![CDATA[<?xml version="1.0" encoding="utf-8"?>
@@ -793,35 +814,14 @@ namespace ST_02bc6161639641819f8532cb18c36ba5.Properties {
     }
 }]]></ProjectItem>
           <ProjectItem
-            Name="Properties\AssemblyInfo.cs"
-            Encoding="UTF8"><![CDATA[using System.Reflection;
-using System.Runtime.CompilerServices;
-
-//
-// General Information about an assembly is controlled through the following 
-// set of attributes. Change these attribute values to modify the information
-// associated with an assembly.
-//
-[assembly: AssemblyTitle("ST_02bc6161639641819f8532cb18c36ba5")]
-[assembly: AssemblyDescription("")]
-[assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("HP")]
-[assembly: AssemblyProduct("ST_02bc6161639641819f8532cb18c36ba5")]
-[assembly: AssemblyCopyright("Copyright @ HP 2025")]
-[assembly: AssemblyTrademark("")]
-[assembly: AssemblyCulture("")]
-//
-// Version information for an assembly consists of the following four values:
-//
-//      Major Version
-//      Minor Version 
-//      Build Number
-//      Revision
-//
-// You can specify all the values or you can default the Revision and Build Numbers 
-// by using the '*' as shown below:
-
-[assembly: AssemblyVersion("1.0.*")]]]></ProjectItem>
+            Name="Properties\Settings.settings"
+            Encoding="UTF8"><![CDATA[<?xml version='1.0' encoding='iso-8859-1'?>
+<SettingsFile xmlns="uri:settings" CurrentProfile="(Default)">
+  <Profiles>
+    <Profile Name="(Default)" />
+  </Profiles>
+  <Settings />
+</SettingsFile>]]></ProjectItem>
           <ProjectItem
             Name="Properties\Resources.Designer.cs"
             Encoding="UTF8"><![CDATA[//------------------------------------------------------------------------------
