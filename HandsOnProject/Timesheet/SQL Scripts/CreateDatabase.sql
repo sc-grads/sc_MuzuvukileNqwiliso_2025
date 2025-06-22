@@ -103,8 +103,8 @@ BEGIN
         DROP TABLE Timesheet.Client;
     IF OBJECT_ID('Timesheet.Employee', 'U') IS NOT NULL
         DROP TABLE Timesheet.Employee;
-    IF OBJECT_ID('Timesheet.LeaveType', 'U') IS NOT NULL
-        DROP TABLE Timesheet.LeaveType;
+    IF OBJECT_ID('Timesheet.LeaveTypeID', 'U') IS NOT NULL
+        DROP TABLE Timesheet.LeaveTypeID;
     IF OBJECT_ID('Timesheet.Activity', 'U') IS NOT NULL
         DROP TABLE Timesheet.Activity;
     IF OBJECT_ID('Timesheet.TimesheetStaging', 'U') IS NOT NULL
@@ -156,16 +156,16 @@ BEGIN
         PRINT 'Project table created.';
     END;
 
-    -- LeaveType Table
-    IF OBJECT_ID('Timesheet.LeaveType', 'U') IS NULL
+    -- LeaveTypeID Table
+    IF OBJECT_ID('Timesheet.LeaveTypeID', 'U') IS NULL
     BEGIN
-        CREATE TABLE Timesheet.LeaveType (
-            LeaveType INT PRIMARY KEY DEFAULT NEXT VALUE FOR Timesheet.LeaveTypeSeq,
+        CREATE TABLE Timesheet.LeaveTypeID (
+            LeaveTypeID INT PRIMARY KEY DEFAULT NEXT VALUE FOR Timesheet.LeaveTypeSeq,
             LeaveTypeName VARCHAR(50) NOT NULL,
             CONSTRAINT CHK_LeaveType_Name CHECK (LeaveTypeName <> '')
         );
-        CREATE INDEX IX_LeaveType_LeaveType_ID ON Timesheet.LeaveType(LeaveType);
-        PRINT 'LeaveType table created.';
+        CREATE INDEX IX_LeaveType_LeaveType_ID ON Timesheet.LeaveTypeID(LeaveTypeID);
+        PRINT 'LeaveTypeID table created.';
     END;
 
     -- Activity Table
@@ -377,7 +377,7 @@ PRINT 'ProcessedFiles table created with columns matching the script.';
         SickNoteSubmitted BIT NULL,
         CreatedDate DATETIME NOT NULL DEFAULT GETDATE(),
         CONSTRAINT FK_LeaveRequest_Employee FOREIGN KEY (EmployeeID) REFERENCES Timesheet.Employee(EmployeeID),
-        CONSTRAINT FK_LeaveRequest_LeaveType FOREIGN KEY (LeaveTypeID) REFERENCES Timesheet.LeaveType(LeaveType)
+        CONSTRAINT FK_LeaveRequest_LeaveType FOREIGN KEY (LeaveTypeID) REFERENCES Timesheet.LeaveTypeID(LeaveTypeID)
     );
     PRINT 'LeaveRequest table created.';
 
@@ -574,14 +574,14 @@ BEGIN
         SET @ActivityRows = @@ROWCOUNT;
 
         -- Step 2: Insert LeaveTypes (if the table exists)
-        IF OBJECT_ID('Timesheet.LeaveType', 'U') IS NOT NULL
+        IF OBJECT_ID('Timesheet.LeaveTypeID', 'U') IS NOT NULL
         BEGIN
-            INSERT INTO Timesheet.LeaveType (LeaveTypeName)
+            INSERT INTO Timesheet.LeaveTypeID (LeaveTypeName)
             SELECT DISTINCT eaf.ActivityOrLeaveType
             FROM #EmployeeActivityFiles eaf
             WHERE eaf.IsLeaveType = 1
               AND NOT EXISTS (
-                  SELECT 1 FROM Timesheet.LeaveType lt
+                  SELECT 1 FROM Timesheet.LeaveTypeID lt
                   WHERE lt.LeaveTypeName = eaf.ActivityOrLeaveType
               );
             
@@ -604,7 +604,7 @@ BEGIN
                 eaf.EmployeeName,
                 eaf.FileName,
                 @TimesheetMonth,
-                CASE WHEN eaf.IsLeaveType = 1 THEN 'LeaveType' ELSE 'Activity' END AS TableName,
+                CASE WHEN eaf.IsLeaveType = 1 THEN 'LeaveTypeID' ELSE 'Activity' END AS TableName,
                 'Insert' AS Action,
                 CASE 
                     WHEN eaf.IsLeaveType = 1 THEN 'New leave type inserted: ' + eaf.ActivityOrLeaveType
@@ -621,7 +621,7 @@ BEGIN
 
         -- Audit summary message
         SET @AuditMessage = CONCAT('Inserted ', @ActivityRows, ' new activity(ies)');
-        IF OBJECT_ID('Timesheet.LeaveType', 'U') IS NOT NULL
+        IF OBJECT_ID('Timesheet.LeaveTypeID', 'U') IS NOT NULL
         BEGIN
             SET @AuditMessage = CONCAT(@AuditMessage, ' and ', @LeaveTypeRows, ' new leave type(s)');
         END;
@@ -648,7 +648,7 @@ BEGIN
         )
         VALUES (
             GETDATE(),
-            'Activity/LeaveType Import Process',
+            'Activity/LeaveTypeID Import Process',
             ERROR_MESSAGE(),
             'ActivityLeaveETL',
             SYSTEM_USER
@@ -775,23 +775,71 @@ BEGIN
     SET NOCOUNT ON;
 
     BEGIN TRY
-        -- Step 1: Create table variable to hold candidates
-        DECLARE @InsertCandidates TABLE (
-            EmployeeID INT,
-            LeaveTypeID INT,
-            StartDate DATE,
-            EndDate DATE,
-            Status NVARCHAR(20),
-            ApprovalObtained BIT,
-            SickNoteSubmitted BIT,
-            EmployeeName NVARCHAR(255),
-            FileName NVARCHAR(255)
-        );
+        -- Step 1: MERGE existing records
+        MERGE INTO Timesheet.LeaveRequest AS target
+        USING (
+            SELECT 
+                e.EmployeeID,
+                lt.LeaveType,
+                MIN(TRY_CONVERT(DATE, slr.StartDate)) AS StartDate,
+                MAX(TRY_CONVERT(DATE, slr.EndDate)) AS EndDate,
+                CASE 
+                    WHEN MAX(slr.ApprovalObtained) = 1 THEN 'Approved'
+                    ELSE 'Pending'
+                END AS Status,
+                MAX(slr.ApprovalObtained) AS ApprovalObtained,
+                COALESCE(MAX(slr.SickNote),0) AS SickNote,
+                e.EmployeeName
+            FROM Timesheet.StagingLeaveRequest slr
+            JOIN Timesheet.Employee e ON slr.EmployeeName = e.EmployeeName
+            JOIN Timesheet.LeaveType lt ON slr.LeaveTypeName = lt.LeaveTypeName
+            WHERE slr.IsValid = 1
+              AND slr.ProcessedDate >= DATEADD(DAY, -1, GETDATE())
+            GROUP BY e.EmployeeID, lt.LeaveType, e.EmployeeName
+        ) AS source
+        ON target.EmployeeID = source.EmployeeID
+           AND target.LeaveTypeID = source.LeaveType
+           AND target.StartDate = source.StartDate
+           AND target.EndDate = source.EndDate
+        WHEN MATCHED THEN
+            UPDATE SET 
+                target.Status = source.Status,
+                target.ApprovalObtained = source.ApprovalObtained,
+                target.SickNoteSubmitted = source.SickNote;
 
-        -- Step 2: Populate insert candidates
-        INSERT INTO @InsertCandidates (
-            EmployeeID, LeaveTypeID, StartDate, EndDate, Status, 
-            ApprovalObtained, SickNoteSubmitted, EmployeeName, FileName
+        -- Step 2: Audit log for updates
+        INSERT INTO Timesheet.AuditLog (
+            EmployeeName,
+            FileName,
+            [Month],
+            TableName,
+            Action,
+            Message,
+            ProcessedDate
+        )
+        SELECT 
+            COALESCE(slr.EmployeeName, 'Unknown'),
+            COALESCE(slr.FileName, 'Unknown'),
+            @Month,
+            'LeaveRequest',
+            'Update',
+            'Leave request updated successfully',
+            GETDATE()
+        FROM Timesheet.StagingLeaveRequest slr
+        JOIN Timesheet.Employee e ON slr.EmployeeName = e.EmployeeName
+        WHERE slr.IsValid = 1
+          AND slr.ProcessedDate >= DATEADD(DAY, -1, GETDATE())
+        GROUP BY slr.EmployeeName, slr.FileName;
+
+        -- Step 3: Insert new leave requests
+        INSERT INTO Timesheet.LeaveRequest (
+            EmployeeID,
+            LeaveTypeID,
+            StartDate,
+            EndDate,
+            Status,
+            ApprovalObtained,
+            SickNoteSubmitted
         )
         SELECT 
             e.EmployeeID,
@@ -803,9 +851,7 @@ BEGIN
                 ELSE 'Pending'
             END,
             MAX(slr.ApprovalObtained),
-            ISNULL(MAX(slr.SickNote), 0),
-            slr.EmployeeName,
-            slr.FileName
+            COALESCE(MAX(slr.SickNote),0)
         FROM Timesheet.StagingLeaveRequest slr
         JOIN Timesheet.Employee e ON slr.EmployeeName = e.EmployeeName
         JOIN Timesheet.LeaveType lt ON slr.LeaveTypeName = lt.LeaveTypeName
@@ -819,34 +865,31 @@ BEGIN
                 AND lr.StartDate = TRY_CONVERT(DATE, slr.StartDate)
                 AND lr.EndDate = TRY_CONVERT(DATE, slr.EndDate)
           )
-        GROUP BY e.EmployeeID, lt.LeaveType, slr.EmployeeName, slr.FileName;
+        GROUP BY e.EmployeeID, lt.LeaveType;
 
-        -- Step 3: Insert into LeaveRequest
-        INSERT INTO Timesheet.LeaveRequest (
-            EmployeeID, LeaveTypeID, StartDate, EndDate, Status, 
-            ApprovalObtained, SickNoteSubmitted
-        )
-        SELECT 
-            EmployeeID, LeaveTypeID, StartDate, EndDate, Status, 
-            ApprovalObtained, COALESCE(SickNoteSubmitted,0)
-        FROM @InsertCandidates;
-
-        -- Step 4: Audit log for inserted leave requests
+        -- Step 4: Audit log for inserts
         INSERT INTO Timesheet.AuditLog (
-            EmployeeName, FileName, [Month], TableName, Action, Message, ProcessedDate
+            EmployeeName,
+            FileName,
+            [Month],
+            TableName,
+            Action,
+            Message,
+            ProcessedDate
         )
         SELECT 
-            COALESCE(EmployeeName, 'Unknown'),
-            COALESCE(FileName, 'Unknown'),
+            COALESCE(slr.EmployeeName, 'Unknown'),
+            COALESCE(slr.FileName, 'Unknown'),
             @Month,
             'LeaveRequest',
             'Insert',
-            CASE 
-                WHEN ApprovalObtained = 1 THEN 'Leave request already approved'
-                ELSE 'New leave request captured – approval pending'
-            END,
+            'Leave request inserted successfully',
             GETDATE()
-        FROM @InsertCandidates;
+        FROM Timesheet.StagingLeaveRequest slr
+        JOIN Timesheet.Employee e ON slr.EmployeeName = e.EmployeeName
+        WHERE slr.IsValid = 1
+          AND slr.ProcessedDate >= DATEADD(DAY, -1, GETDATE())
+        GROUP BY slr.EmployeeName, slr.FileName;
 
     END TRY
     BEGIN CATCH
@@ -867,6 +910,7 @@ BEGIN
     END CATCH
 END;
 GO
+
 -- Insert Projects
 CREATE OR ALTER PROCEDURE Timesheet.usp_InsertProjects
     @TimesheetMonth NVARCHAR(20)
@@ -1110,7 +1154,7 @@ CREATE OR ALTER PROCEDURE Timesheet.ResetLeaveType
 AS
 BEGIN
     SET NOCOUNT ON;
-    DELETE FROM Timesheet.LeaveType;
+    DELETE FROM Timesheet.LeaveTypeID;
     ALTER SEQUENCE Timesheet.LeaveTypeSeq RESTART WITH 4000;
 END;
 GO
