@@ -425,6 +425,78 @@ GO
 PRINT 'View vw_TimesheetDisplay created.';
 GO
 
+CREATE OR ALTER PROCEDURE Timesheet.usp_UpsertEmployee
+    @EmployeeName NVARCHAR(255),
+    @FileName NVARCHAR(255)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    BEGIN TRY
+        DECLARE @IsNewEmployee BIT = 0;
+
+        -- Step 1: Insert employee if they don't exist
+        IF NOT EXISTS (SELECT 1 FROM Timesheet.Employee WHERE EmployeeName = @EmployeeName)
+        BEGIN
+            INSERT INTO Timesheet.Employee (EmployeeName)
+            VALUES (@EmployeeName);
+
+            SET @IsNewEmployee = 1;
+        END
+
+        -- Step 2: Always audit per file, only if it hasn’t been audited already for that file
+        IF NOT EXISTS (
+            SELECT 1 
+            FROM Timesheet.AuditLog 
+            WHERE EmployeeName = @EmployeeName 
+              AND FileName = @FileName 
+              AND TableName = 'Employee' 
+              AND Action = 'Insert'
+        )
+        BEGIN
+            INSERT INTO Timesheet.AuditLog (
+                EmployeeName,
+                FileName,
+                [Month],
+                TableName,
+                Action,
+                Message,
+                ProcessedDate
+            )
+            VALUES (
+                @EmployeeName,
+                @FileName,
+                'Not Applicable',
+                'Employee',
+                'Insert',
+                CASE 
+                    WHEN @IsNewEmployee = 1 THEN 'New employee added to the system'
+                    ELSE 'Employee already existed; associated with a new file'
+                END,
+                GETDATE()
+            );
+        END
+    END TRY
+    BEGIN CATCH
+        INSERT INTO Timesheet.ErrorLog (
+            ErrorDate,
+            ErrorTask,
+            ErrorDescription,
+            SourceComponent,
+            UserName
+        )
+        VALUES (
+            GETDATE(),
+            'usp_UpsertEmployee',
+            ERROR_MESSAGE(),
+            'Employee_Upsert',
+            SYSTEM_USER
+        );
+    END CATCH
+END;
+GO
+
+
 -- Insert Activity and Leave
 CREATE OR ALTER PROCEDURE  Timesheet.usp_InsertActivityLeaveData
     @TimesheetMonth NVARCHAR(20)  -- Passed from Script Task
@@ -703,71 +775,23 @@ BEGIN
     SET NOCOUNT ON;
 
     BEGIN TRY
-        -- Step 1: MERGE existing records
-        MERGE INTO Timesheet.LeaveRequest AS target
-        USING (
-            SELECT 
-                e.EmployeeID,
-                lt.LeaveType,
-                MIN(TRY_CONVERT(DATE, slr.StartDate)) AS StartDate,
-                MAX(TRY_CONVERT(DATE, slr.EndDate)) AS EndDate,
-                CASE 
-                    WHEN MAX(slr.ApprovalObtained) = 1 THEN 'Approved'
-                    ELSE 'Pending'
-                END AS Status,
-                MAX(slr.ApprovalObtained) AS ApprovalObtained,
-                MAX(slr.SickNote) AS SickNote,
-                e.EmployeeName
-            FROM Timesheet.StagingLeaveRequest slr
-            JOIN Timesheet.Employee e ON slr.EmployeeName = e.EmployeeName
-            JOIN Timesheet.LeaveType lt ON slr.LeaveTypeName = lt.LeaveTypeName
-            WHERE slr.IsValid = 1
-              AND slr.ProcessedDate >= DATEADD(DAY, -1, GETDATE())
-            GROUP BY e.EmployeeID, lt.LeaveType, e.EmployeeName
-        ) AS source
-        ON target.EmployeeID = source.EmployeeID
-           AND target.LeaveTypeID = source.LeaveType
-           AND target.StartDate = source.StartDate
-           AND target.EndDate = source.EndDate
-        WHEN MATCHED THEN
-            UPDATE SET 
-                target.Status = source.Status,
-                target.ApprovalObtained = source.ApprovalObtained,
-                target.SickNoteSubmitted = source.SickNote;
+        -- Step 1: Create table variable to hold candidates
+        DECLARE @InsertCandidates TABLE (
+            EmployeeID INT,
+            LeaveTypeID INT,
+            StartDate DATE,
+            EndDate DATE,
+            Status NVARCHAR(20),
+            ApprovalObtained BIT,
+            SickNoteSubmitted BIT,
+            EmployeeName NVARCHAR(255),
+            FileName NVARCHAR(255)
+        );
 
-        -- Step 2: Audit log for updates
-        INSERT INTO Timesheet.AuditLog (
-            EmployeeName,
-            FileName,
-            [Month],
-            TableName,
-            Action,
-            Message,
-            ProcessedDate
-        )
-        SELECT 
-            COALESCE(slr.EmployeeName, 'Unknown'),
-            COALESCE(slr.FileName, 'Unknown'),
-            @Month,
-            'LeaveRequest',
-            'Update',
-            'Leave request updated successfully',
-            GETDATE()
-        FROM Timesheet.StagingLeaveRequest slr
-        JOIN Timesheet.Employee e ON slr.EmployeeName = e.EmployeeName
-        WHERE slr.IsValid = 1
-          AND slr.ProcessedDate >= DATEADD(DAY, -1, GETDATE())
-        GROUP BY slr.EmployeeName, slr.FileName;
-
-        -- Step 3: Insert new leave requests
-        INSERT INTO Timesheet.LeaveRequest (
-            EmployeeID,
-            LeaveTypeID,
-            StartDate,
-            EndDate,
-            Status,
-            ApprovalObtained,
-            SickNoteSubmitted
+        -- Step 2: Populate insert candidates
+        INSERT INTO @InsertCandidates (
+            EmployeeID, LeaveTypeID, StartDate, EndDate, Status, 
+            ApprovalObtained, SickNoteSubmitted, EmployeeName, FileName
         )
         SELECT 
             e.EmployeeID,
@@ -779,7 +803,9 @@ BEGIN
                 ELSE 'Pending'
             END,
             MAX(slr.ApprovalObtained),
-            MAX(slr.SickNote)
+            ISNULL(MAX(slr.SickNote), 0),
+            slr.EmployeeName,
+            slr.FileName
         FROM Timesheet.StagingLeaveRequest slr
         JOIN Timesheet.Employee e ON slr.EmployeeName = e.EmployeeName
         JOIN Timesheet.LeaveType lt ON slr.LeaveTypeName = lt.LeaveTypeName
@@ -793,31 +819,34 @@ BEGIN
                 AND lr.StartDate = TRY_CONVERT(DATE, slr.StartDate)
                 AND lr.EndDate = TRY_CONVERT(DATE, slr.EndDate)
           )
-        GROUP BY e.EmployeeID, lt.LeaveType;
+        GROUP BY e.EmployeeID, lt.LeaveType, slr.EmployeeName, slr.FileName;
 
-        -- Step 4: Audit log for inserts
-        INSERT INTO Timesheet.AuditLog (
-            EmployeeName,
-            FileName,
-            [Month],
-            TableName,
-            Action,
-            Message,
-            ProcessedDate
+        -- Step 3: Insert into LeaveRequest
+        INSERT INTO Timesheet.LeaveRequest (
+            EmployeeID, LeaveTypeID, StartDate, EndDate, Status, 
+            ApprovalObtained, SickNoteSubmitted
         )
         SELECT 
-            COALESCE(slr.EmployeeName, 'Unknown'),
-            COALESCE(slr.FileName, 'Unknown'),
+            EmployeeID, LeaveTypeID, StartDate, EndDate, Status, 
+            ApprovalObtained, COALESCE(SickNoteSubmitted,0)
+        FROM @InsertCandidates;
+
+        -- Step 4: Audit log for inserted leave requests
+        INSERT INTO Timesheet.AuditLog (
+            EmployeeName, FileName, [Month], TableName, Action, Message, ProcessedDate
+        )
+        SELECT 
+            COALESCE(EmployeeName, 'Unknown'),
+            COALESCE(FileName, 'Unknown'),
             @Month,
             'LeaveRequest',
             'Insert',
-            'Leave request inserted successfully',
+            CASE 
+                WHEN ApprovalObtained = 1 THEN 'Leave request already approved'
+                ELSE 'New leave request captured – approval pending'
+            END,
             GETDATE()
-        FROM Timesheet.StagingLeaveRequest slr
-        JOIN Timesheet.Employee e ON slr.EmployeeName = e.EmployeeName
-        WHERE slr.IsValid = 1
-          AND slr.ProcessedDate >= DATEADD(DAY, -1, GETDATE())
-        GROUP BY slr.EmployeeName, slr.FileName;
+        FROM @InsertCandidates;
 
     END TRY
     BEGIN CATCH
@@ -838,7 +867,6 @@ BEGIN
     END CATCH
 END;
 GO
-
 -- Insert Projects
 CREATE OR ALTER PROCEDURE Timesheet.usp_InsertProjects
     @TimesheetMonth NVARCHAR(20)
@@ -974,6 +1002,82 @@ BEGIN
 END;
 GO
 
+CREATE OR ALTER PROCEDURE Timesheet.usp_SkippedRecords 
+    @ThisMonth VARCHAR(20)
+AS
+BEGIN 
+    BEGIN TRY
+        -- Step 1: Insert valid, non-holiday records from staging
+        INSERT INTO Timesheet.Timesheet (
+            EmployeeID, [Date], [DayOfWeek], ClientID, ProjectID, DescriptionID,
+            BillableStatus, Comments, TotalHours, StartTime, EndTime, FileName
+        )
+        SELECT 
+            e.EmployeeID,
+            TRY_CONVERT(DATE, s.[Date]),
+            s.[DayOfWeek],
+            c.ClientID,
+            p.ProjectID,
+            d.DescriptionID,
+            s.BillableStatus,
+            s.Comments,
+            TRY_CONVERT(DECIMAL(5,2), s.TotalHours),
+            TRY_CONVERT(TIME, s.StartTime),
+            TRY_CONVERT(TIME, s.EndTime),
+            s.FileName
+        FROM Timesheet.TimesheetStaging s
+        JOIN Timesheet.Employee e ON s.EmployeeName = e.EmployeeName
+        LEFT JOIN Timesheet.Client c ON s.ClientName = c.ClientName
+        LEFT JOIN Timesheet.Project p ON s.ProjectName = p.ProjectName AND p.ClientID = c.ClientID
+        JOIN Timesheet.Description d ON s.ActivityName = d.DescriptionName
+        WHERE s.IsValid = 1
+          AND d.DescriptionID <> 8020 -- Skip public holidays
+          AND NOT EXISTS (
+              SELECT 1
+              FROM Timesheet.Timesheet t
+              WHERE t.EmployeeID = e.EmployeeID
+                AND t.[Date] = TRY_CONVERT(DATE, s.[Date])
+                AND t.StartTime = TRY_CONVERT(TIME, s.StartTime)
+                AND t.EndTime = TRY_CONVERT(TIME, s.EndTime)
+                AND COALESCE(t.ClientID, -1) = COALESCE(c.ClientID, -1)
+                AND COALESCE(t.ProjectID, -1) = COALESCE(p.ProjectID, -1)
+          );
+
+        -- Step 2: Clean up hours that are -1 (but not holidays)
+        DELETE t
+        FROM Timesheet.Timesheet t
+        JOIN Timesheet.Employee e ON e.EmployeeID = t.EmployeeID
+        JOIN Timesheet.TimesheetStaging s ON s.EmployeeName = e.EmployeeName
+            AND t.[Date] = TRY_CONVERT(DATE, s.[Date])
+            AND t.StartTime = TRY_CONVERT(TIME, s.StartTime)
+            AND t.EndTime = TRY_CONVERT(TIME, s.EndTime)
+        JOIN Timesheet.Description d ON s.ActivityName = d.DescriptionName
+        WHERE s.IsValid = 1
+          AND TRY_CONVERT(DECIMAL(5,2), s.TotalHours) = -1
+          AND d.DescriptionID <> 8020;
+
+        -- No logging for skipped holidays (NoChange)
+        -- Clean and quiet run
+    END TRY
+    BEGIN CATCH
+        INSERT INTO Timesheet.ErrorLog (
+            ErrorDate,
+            ErrorTask,
+            ErrorDescription,
+            SourceComponent,
+            UserName
+        )
+        VALUES (
+            GETDATE(),
+            'Timesheet Validation',
+            ERROR_MESSAGE(),
+            'ValidationTask',
+            SYSTEM_USER
+        );
+    END CATCH;
+END;
+GO
+
 -- Reset procedures
 CREATE OR ALTER PROCEDURE Timesheet.ResetEmployee
 AS
@@ -981,6 +1085,15 @@ BEGIN
     SET NOCOUNT ON;
     DELETE FROM Timesheet.Employee;
     ALTER SEQUENCE Timesheet.EmployeeSeq RESTART WITH 1000;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE Timesheet.ResetClient
+AS 
+BEGIN 
+   SET NOCOUNT ON;
+    DELETE FROM Timesheet.Employee;
+    ALTER SEQUENCE Timesheet.ClientSeq RESTART WITH 2000;
 END;
 GO
 
