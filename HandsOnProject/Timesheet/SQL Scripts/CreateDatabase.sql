@@ -226,8 +226,8 @@ BEGIN
         BillableHours DECIMAL(10,2) NOT NULL,
         TotalHours DECIMAL(10,2) NOT NULL,
         FOREIGN KEY (EmployeeID) REFERENCES Timesheet.Employee(EmployeeID),
-        CONSTRAINT UQ_Forecast_Employee_Month UNIQUE (EmployeeID, ForecastMonth),
-        CONSTRAINT CK_Forecast_Total_vs_Planned CHECK (TotalHours >= ForecastedHours)
+        CONSTRAINT UQ_Forecast_Employee_Month UNIQUE (EmployeeID, ForecastMonth)
+       -- CONSTRAINT CK_Forecast_Total_vs_Planned CHECK (TotalHours >= ForecastedHours)
     );
     PRINT 'Forecast table created.';
 
@@ -658,7 +658,7 @@ END
 GO
 
 -- ProcessFiles Stored Procedure
-CREATE OR ALTER PROCEDURE Timesheet.usp_ProcessTimesheetFile
+ALTER PROCEDURE Timesheet.usp_ProcessTimesheetFile
 (
     @IsNewFile BIT,
     @EmployeeName NVARCHAR(255),
@@ -680,10 +680,9 @@ BEGIN
 
     IF @IsNewFile = 1
     BEGIN
-        -- New file (Insert)
-        SET @Message = 'New timesheet processed - ' + CAST(@RowCount AS NVARCHAR(10)) + 
-                      CASE WHEN @RowCount = 1 THEN ' row' ELSE ' rows' END;
-        
+        SET @Message = 'New timesheet uploaded with ' + CAST(@RowCount AS NVARCHAR(10)) + 
+                      CASE WHEN @RowCount = 1 THEN ' row.' ELSE ' rows.' END;
+
         INSERT INTO Timesheet.AuditLog (
             EmployeeName, FileName, [Month], TableName, Action, Message, ProcessedDate
         )
@@ -702,13 +701,12 @@ BEGIN
     END
     ELSE
     BEGIN
-        -- Check for deleted rows first
-        IF @PreviousRowCount > @RowCount AND @PreviousRowCount > 0
+        IF @PreviousRowCount > @RowCount
         BEGIN
             SET @CountDifference = @PreviousRowCount - @RowCount;
-            SET @Message = CAST(@CountDifference AS NVARCHAR(10)) + 
-                           CASE WHEN @CountDifference = 1 THEN ' row removed' ELSE ' rows removed' END;
-            
+            SET @Message = 'Timesheet reduced by ' + CAST(@CountDifference AS NVARCHAR(10)) + 
+                           CASE WHEN @CountDifference = 1 THEN ' row removed.' ELSE ' rows removed.' END;
+
             INSERT INTO Timesheet.AuditLog (
                 EmployeeName, FileName, [Month], TableName, Action, Message, ProcessedDate
             )
@@ -717,13 +715,12 @@ BEGIN
                 'Delete', @Message, GETDATE()
             );
         END
-        -- Check for inserted rows
         ELSE IF @PreviousRowCount < @RowCount
         BEGIN
             SET @CountDifference = @RowCount - @PreviousRowCount;
-            SET @Message = CAST(@CountDifference AS NVARCHAR(10)) + 
-                           CASE WHEN @CountDifference = 1 THEN ' new row added' ELSE ' new rows added' END;
-            
+            SET @Message = 'Timesheet increased by ' + CAST(@CountDifference AS NVARCHAR(10)) + 
+                           CASE WHEN @CountDifference = 1 THEN ' new row added.' ELSE ' new rows added.' END;
+
             INSERT INTO Timesheet.AuditLog (
                 EmployeeName, FileName, [Month], TableName, Action, Message, ProcessedDate
             )
@@ -732,17 +729,13 @@ BEGIN
                 'Insert', @Message, GETDATE()
             );
         END
-        -- Check for updates when row count is same but content changed
         ELSE IF @RowCount = @PreviousRowCount 
-                AND (@CurrentDataHash != @PreviousDataHash 
-                     OR (@PreviousDataHash IS NULL AND @CurrentDataHash IS NOT NULL)
-                     OR (@PreviousDataHash IS NOT NULL AND @CurrentDataHash IS NULL))
+            AND (@CurrentDataHash != @PreviousDataHash 
+                 OR (@PreviousDataHash IS NULL AND @CurrentDataHash IS NOT NULL)
+                 OR (@PreviousDataHash IS NOT NULL AND @CurrentDataHash IS NULL))
         BEGIN
-            SET @Message = CASE WHEN @RowCount = 1 
-                              THEN '1 row updated - content changed' 
-                              ELSE CAST(@RowCount AS NVARCHAR(10)) + ' rows updated - content changed' 
-                          END;
-            
+            SET @Message = 'Timesheet file was modified (content changed, row count remains the same).';
+
             INSERT INTO Timesheet.AuditLog (
                 EmployeeName, FileName, [Month], TableName, Action, Message, ProcessedDate
             )
@@ -751,8 +744,9 @@ BEGIN
                 'Update', @Message, GETDATE()
             );
         END
+        -- NO "NoChange" block anymore — nothing is logged if truly unchanged
 
-        -- Always update ProcessedFiles with latest details
+        -- Update latest snapshot
         UPDATE Timesheet.ProcessedFiles
         SET 
             [RowCount] = @RowCount,
