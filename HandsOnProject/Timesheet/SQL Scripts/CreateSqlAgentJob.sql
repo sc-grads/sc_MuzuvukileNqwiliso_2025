@@ -8,17 +8,15 @@ BEGIN
 END
 GO
 
--- Optional: Create a Mail Operator (only once)
 IF NOT EXISTS (SELECT 1 FROM msdb.dbo.sysoperators WHERE name = 'TimesheetOperator')
 BEGIN
     EXEC msdb.dbo.sp_add_operator  
         @name = N'TimesheetOperator',  
         @enabled = 1,  
-        @email_address = N'mzu.nqwiliso@gmail.com';  -- replace with yours
+        @email_address = N'mzu.nqwiliso@gmail.com';  
 END
 GO
 
--- Add the job
 EXEC msdb.dbo.sp_add_job
     @job_name = 'Run_MasterPackage',
     @enabled = 1,
@@ -29,7 +27,6 @@ EXEC msdb.dbo.sp_add_job
     @notify_email_operator_name = 'TimesheetOperator',
     @owner_login_name = 'LAPTOP-62JJ49T4\MuzuvukileNqwiliso';
 
--- Step 1: Run MasterPackage
 EXEC msdb.dbo.sp_add_jobstep
     @job_name = 'Run_MasterPackage',
     @step_name = 'Run MasterPackage from SSISDB',
@@ -51,7 +48,6 @@ EXEC SSISDB.catalog.start_execution @execution_id;
     @on_success_action = 3,
     @on_fail_action = 2;
 
--- Step 2: Clean Audit + Error Logs
 EXEC msdb.dbo.sp_add_jobstep
     @job_name = 'Run_MasterPackage',
     @step_name = 'Clean Audit and Error Tables',
@@ -67,7 +63,6 @@ WHERE [ProcessedDate] < DATEADD(MINUTE, -20, GETDATE());
     @on_success_action = 1,
     @on_fail_action = 2;
 
--- Schedule: every 1 minute
 EXEC msdb.dbo.sp_add_schedule
     @schedule_name = 'Timesheet_Schedule',
     @freq_type = 4, -- daily
@@ -76,11 +71,9 @@ EXEC msdb.dbo.sp_add_schedule
     @freq_subday_interval = 1,
     @active_start_time = 0000;
 
--- Attach schedule
 EXEC msdb.dbo.sp_attach_schedule
     @job_name = 'Run_MasterPackage',
     @schedule_name = 'Timesheet_Schedule';
 
--- Attach job to server
 EXEC msdb.dbo.sp_add_jobserver
     @job_name = 'Run_MasterPackage';
