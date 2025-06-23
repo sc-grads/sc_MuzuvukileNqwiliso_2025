@@ -1,4 +1,4 @@
-name: Deploy SQL Database and Trigger SSIS Deploy
+name: Deploy SQL Database
 
 on:
   workflow_dispatch:

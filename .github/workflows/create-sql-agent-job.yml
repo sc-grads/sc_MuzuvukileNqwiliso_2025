@@ -1,4 +1,4 @@
-name: Create SQL Agent Job for MasterPackage
+name: Create SQL Agent Job
 
 on:
   workflow_call:
