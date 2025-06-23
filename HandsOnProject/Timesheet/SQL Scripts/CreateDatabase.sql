@@ -407,7 +407,7 @@ SELECT
     t.[DayOfWeek],
     c.ClientName,
     p.ProjectName,
-    d.DescriptionName AS ActivityOrLeave,
+    d.DescriptionName AS [Description],
     t.BillableStatus,
     t.Comments,
     t.TotalHours,
