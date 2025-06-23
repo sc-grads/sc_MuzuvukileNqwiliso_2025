@@ -103,8 +103,8 @@ BEGIN
         DROP TABLE Timesheet.Client;
     IF OBJECT_ID('Timesheet.Employee', 'U') IS NOT NULL
         DROP TABLE Timesheet.Employee;
-    IF OBJECT_ID('Timesheet.LeaveTypeID', 'U') IS NOT NULL
-        DROP TABLE Timesheet.LeaveTypeID;
+    IF OBJECT_ID('Timesheet.LeaveType', 'U') IS NOT NULL
+        DROP TABLE Timesheet.LeaveType;
     IF OBJECT_ID('Timesheet.Activity', 'U') IS NOT NULL
         DROP TABLE Timesheet.Activity;
     IF OBJECT_ID('Timesheet.TimesheetStaging', 'U') IS NOT NULL
@@ -156,16 +156,16 @@ BEGIN
         PRINT 'Project table created.';
     END;
 
-    -- LeaveTypeID Table
-    IF OBJECT_ID('Timesheet.LeaveTypeID', 'U') IS NULL
+    -- LeaveType Table
+    IF OBJECT_ID('Timesheet.LeaveType', 'U') IS NULL
     BEGIN
-        CREATE TABLE Timesheet.LeaveTypeID (
+        CREATE TABLE Timesheet.LeaveType (
             LeaveTypeID INT PRIMARY KEY DEFAULT NEXT VALUE FOR Timesheet.LeaveTypeSeq,
             LeaveTypeName VARCHAR(50) NOT NULL,
             CONSTRAINT CHK_LeaveType_Name CHECK (LeaveTypeName <> '')
         );
-        CREATE INDEX IX_LeaveType_LeaveType_ID ON Timesheet.LeaveTypeID(LeaveTypeID);
-        PRINT 'LeaveTypeID table created.';
+        CREATE INDEX IX_LeaveType_LeaveType_ID ON Timesheet.LeaveType(LeaveTypeID);
+        PRINT 'LeaveType table created.';
     END;
 
     -- Activity Table
@@ -213,7 +213,7 @@ BEGIN
         FOREIGN KEY (DescriptionID) REFERENCES Timesheet.Description(DescriptionID)
     );
     CREATE INDEX IX_Timesheet_Employee_Date ON Timesheet.Timesheet(EmployeeID, [Date]);
-    PRINT 'Timesheet table created successfully with unified DescriptionID.';
+    PRINT 'Timesheet table created successfully.';
 
     -- Forecast Table
     CREATE TABLE Timesheet.Forecast (
@@ -377,7 +377,7 @@ PRINT 'ProcessedFiles table created with columns matching the script.';
         SickNoteSubmitted BIT NULL,
         CreatedDate DATETIME NOT NULL DEFAULT GETDATE(),
         CONSTRAINT FK_LeaveRequest_Employee FOREIGN KEY (EmployeeID) REFERENCES Timesheet.Employee(EmployeeID),
-        CONSTRAINT FK_LeaveRequest_LeaveType FOREIGN KEY (LeaveTypeID) REFERENCES Timesheet.LeaveTypeID(LeaveTypeID)
+        CONSTRAINT FK_LeaveRequest_LeaveType FOREIGN KEY (LeaveTypeID) REFERENCES Timesheet.LeaveType(LeaveTypeID)
     );
     PRINT 'LeaveRequest table created.';
 
@@ -574,14 +574,14 @@ BEGIN
         SET @ActivityRows = @@ROWCOUNT;
 
         -- Step 2: Insert LeaveTypes (if the table exists)
-        IF OBJECT_ID('Timesheet.LeaveTypeID', 'U') IS NOT NULL
+        IF OBJECT_ID('Timesheet.LeaveType', 'U') IS NOT NULL
         BEGIN
-            INSERT INTO Timesheet.LeaveTypeID (LeaveTypeName)
+            INSERT INTO Timesheet.LeaveType (LeaveTypeName)
             SELECT DISTINCT eaf.ActivityOrLeaveType
             FROM #EmployeeActivityFiles eaf
             WHERE eaf.IsLeaveType = 1
               AND NOT EXISTS (
-                  SELECT 1 FROM Timesheet.LeaveTypeID lt
+                  SELECT 1 FROM Timesheet.LeaveType lt
                   WHERE lt.LeaveTypeName = eaf.ActivityOrLeaveType
               );
             
@@ -604,7 +604,7 @@ BEGIN
                 eaf.EmployeeName,
                 eaf.FileName,
                 @TimesheetMonth,
-                CASE WHEN eaf.IsLeaveType = 1 THEN 'LeaveTypeID' ELSE 'Activity' END AS TableName,
+                CASE WHEN eaf.IsLeaveType = 1 THEN 'LeaveType' ELSE 'Activity' END AS TableName,
                 'Insert' AS Action,
                 CASE 
                     WHEN eaf.IsLeaveType = 1 THEN 'New leave type inserted: ' + eaf.ActivityOrLeaveType
@@ -621,7 +621,7 @@ BEGIN
 
         -- Audit summary message
         SET @AuditMessage = CONCAT('Inserted ', @ActivityRows, ' new activity(ies)');
-        IF OBJECT_ID('Timesheet.LeaveTypeID', 'U') IS NOT NULL
+        IF OBJECT_ID('Timesheet.LeaveType', 'U') IS NOT NULL
         BEGIN
             SET @AuditMessage = CONCAT(@AuditMessage, ' and ', @LeaveTypeRows, ' new leave type(s)');
         END;
@@ -648,7 +648,7 @@ BEGIN
         )
         VALUES (
             GETDATE(),
-            'Activity/LeaveTypeID Import Process',
+            'Activity/LeaveType Import Process',
             ERROR_MESSAGE(),
             'ActivityLeaveETL',
             SYSTEM_USER
@@ -780,7 +780,7 @@ BEGIN
         USING (
             SELECT 
                 e.EmployeeID,
-                lt.LeaveType,
+                lt.LeaveTypeID,
                 MIN(TRY_CONVERT(DATE, slr.StartDate)) AS StartDate,
                 MAX(TRY_CONVERT(DATE, slr.EndDate)) AS EndDate,
                 CASE 
@@ -795,10 +795,10 @@ BEGIN
             JOIN Timesheet.LeaveType lt ON slr.LeaveTypeName = lt.LeaveTypeName
             WHERE slr.IsValid = 1
               AND slr.ProcessedDate >= DATEADD(DAY, -1, GETDATE())
-            GROUP BY e.EmployeeID, lt.LeaveType, e.EmployeeName
+            GROUP BY e.EmployeeID, lt.LeaveTypeID, e.EmployeeName
         ) AS source
         ON target.EmployeeID = source.EmployeeID
-           AND target.LeaveTypeID = source.LeaveType
+           AND target.LeaveTypeID = source.LeaveTypeID
            AND target.StartDate = source.StartDate
            AND target.EndDate = source.EndDate
         WHEN MATCHED THEN
@@ -843,7 +843,7 @@ BEGIN
         )
         SELECT 
             e.EmployeeID,
-            lt.LeaveType,
+            lt.LeaveTypeID,
             MIN(TRY_CONVERT(DATE, slr.StartDate)),
             MAX(TRY_CONVERT(DATE, slr.EndDate)),
             CASE 
@@ -861,11 +861,11 @@ BEGIN
               SELECT 1
               FROM Timesheet.LeaveRequest lr
               WHERE lr.EmployeeID = e.EmployeeID
-                AND lr.LeaveTypeID = lt.LeaveType
+                AND lr.LeaveTypeID = lt.LeaveTypeID
                 AND lr.StartDate = TRY_CONVERT(DATE, slr.StartDate)
                 AND lr.EndDate = TRY_CONVERT(DATE, slr.EndDate)
           )
-        GROUP BY e.EmployeeID, lt.LeaveType;
+        GROUP BY e.EmployeeID, lt.LeaveTypeID;
 
         -- Step 4: Audit log for inserts
         INSERT INTO Timesheet.AuditLog (
@@ -1154,7 +1154,7 @@ CREATE OR ALTER PROCEDURE Timesheet.ResetLeaveType
 AS
 BEGIN
     SET NOCOUNT ON;
-    DELETE FROM Timesheet.LeaveTypeID;
+    DELETE FROM Timesheet.LeaveType;
     ALTER SEQUENCE Timesheet.LeaveTypeSeq RESTART WITH 4000;
 END;
 GO
