@@ -247,7 +247,7 @@ BEGIN
 
 CREATE INDEX IX_ProcessedFiles_FileName ON Timesheet.ProcessedFiles(FileName);
 
-PRINT 'ProcessedFiles table created with columns matching the script.';
+PRINT 'ProcessedFiles table created.';
 
     -- AuditLog Table
     IF OBJECT_ID('Timesheet.AuditLog', 'U') IS NOT NULL
@@ -1135,8 +1135,8 @@ GO
 CREATE OR ALTER PROCEDURE Timesheet.ResetClient
 AS 
 BEGIN 
-   SET NOCOUNT ON;
-    DELETE FROM Timesheet.Employee;
+    SET NOCOUNT ON;
+    DELETE FROM Timesheet.Client; 
     ALTER SEQUENCE Timesheet.ClientSeq RESTART WITH 2000;
 END;
 GO
