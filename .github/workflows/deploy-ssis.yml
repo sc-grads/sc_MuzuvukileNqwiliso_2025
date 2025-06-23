@@ -1,4 +1,4 @@
-name: Deploy SSIS Packages to SQL Server
+name: Deploy SSIS Packages
 
 on:
   workflow_call:
