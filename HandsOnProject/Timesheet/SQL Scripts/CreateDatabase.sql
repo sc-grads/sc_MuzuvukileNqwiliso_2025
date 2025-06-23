@@ -658,7 +658,7 @@ END
 GO
 
 -- ProcessFiles Stored Procedure
-ALTER PROCEDURE Timesheet.usp_ProcessTimesheetFile
+CREATE OR ALTER PROCEDURE Timesheet.usp_ProcessTimesheetFile
 (
     @IsNewFile BIT,
     @EmployeeName NVARCHAR(255),
@@ -744,7 +744,6 @@ BEGIN
                 'Update', @Message, GETDATE()
             );
         END
-        -- NO "NoChange" block anymore — nothing is logged if truly unchanged
 
         -- Update latest snapshot
         UPDATE Timesheet.ProcessedFiles
