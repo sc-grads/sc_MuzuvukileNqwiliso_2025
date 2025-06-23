@@ -399,10 +399,7 @@ END CATCH;
 GO
 
 -- Create view for clean Timesheet display without IDs
-IF OBJECT_ID('Timesheet.vw_TimesheetDisplay', 'V') IS NOT NULL
-    DROP VIEW Timesheet.vw_TimesheetDisplay;
-GO
-CREATE VIEW Timesheet.vw_TimesheetDisplay
+CREATE OR ALTER VIEW Timesheet.vw_TimesheetDisplay
 AS
 SELECT 
     e.EmployeeName,
@@ -414,15 +411,15 @@ SELECT
     t.BillableStatus,
     t.Comments,
     t.TotalHours,
-    t.StartTime,
-    t.EndTime
+    COALESCE(LEFT(CONVERT(VARCHAR(5), t.StartTime, 108), 5), 'N/A') AS StartTime,
+    COALESCE(LEFT(CONVERT(VARCHAR(5), t.EndTime, 108), 5), 'N/A') AS EndTime
 FROM Timesheet.Timesheet t
 INNER JOIN Timesheet.Employee e ON t.EmployeeID = e.EmployeeID
 LEFT JOIN Timesheet.Client c ON t.ClientID = c.ClientID
 LEFT JOIN Timesheet.Project p ON t.ProjectID = p.ProjectID
 INNER JOIN Timesheet.Description d ON t.DescriptionID = d.DescriptionID;
 GO
-PRINT 'View vw_TimesheetDisplay created.';
+PRINT 'View vw_TimesheetDisplay created or altered to format StartTime and EndTime as HH:mm.';
 GO
 
 CREATE OR ALTER PROCEDURE Timesheet.usp_UpsertEmployee
