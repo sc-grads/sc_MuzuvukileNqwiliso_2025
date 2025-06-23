@@ -220,11 +220,11 @@ BEGIN
         ForecastID INT PRIMARY KEY DEFAULT NEXT VALUE FOR Timesheet.ForecastSeq,
         EmployeeID INT NOT NULL,
         ForecastMonth DATE NOT NULL,
-        ForecastedHours DECIMAL(5,2) NOT NULL DEFAULT (168.00),
+        ForecastedHours DECIMAL(10,2) NOT NULL DEFAULT (168.00),
         ForecastedWorkDays INT NOT NULL DEFAULT (21),
-        NonBillableHours DECIMAL(5,2) NOT NULL,
-        BillableHours DECIMAL(5,2) NOT NULL,
-        TotalHours DECIMAL(5,2) NOT NULL,
+        NonBillableHours DECIMAL(10,2) NOT NULL,
+        BillableHours DECIMAL(10,2) NOT NULL,
+        TotalHours DECIMAL(10,2) NOT NULL,
         FOREIGN KEY (EmployeeID) REFERENCES Timesheet.Employee(EmployeeID),
         CONSTRAINT UQ_Forecast_Employee_Month UNIQUE (EmployeeID, ForecastMonth),
         CONSTRAINT CK_Forecast_Total_vs_Planned CHECK (TotalHours >= ForecastedHours)
@@ -1116,6 +1116,88 @@ BEGIN
             SYSTEM_USER
         );
     END CATCH;
+END;
+GO
+
+-- Sync Data
+CREATE OR ALTER PROCEDURE [Timesheet].[usp_SyncTimesheetDataFromStaging]
+    @RunID NVARCHAR(40)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    MERGE Timesheet.Timesheet AS Target
+    USING (
+        SELECT 
+            e.EmployeeID,
+            TRY_CAST(s.[Date] AS DATE) AS WorkDate,
+            s.DayOfWeek,
+            c.ClientID,
+            p.ProjectID,
+            d.DescriptionID,
+            s.BillableStatus,
+            s.Comments,
+            TRY_CAST(s.TotalHours AS DECIMAL(5,2)) AS TotalHours,
+            TRY_CAST(s.StartTime AS TIME) AS StartTime,
+            TRY_CAST(s.EndTime AS TIME) AS EndTime,
+            s.FileName
+        FROM Timesheet.TimesheetStaging s
+        LEFT JOIN Timesheet.Employee e ON e.EmployeeName = s.EmployeeName
+        LEFT JOIN Timesheet.Client c ON c.ClientName = s.ClientName
+        LEFT JOIN Timesheet.Project p ON p.ProjectName = s.ProjectName
+        LEFT JOIN Timesheet.Description d ON d.DescriptionName = TRIM(s.ActivityName)
+        WHERE 
+            s.RunID = @RunID
+            AND d.DescriptionID IS NOT NULL
+            AND TRY_CAST(s.TotalHours AS DECIMAL(5,2)) IS NOT NULL
+            AND TRY_CAST(s.StartTime AS TIME) IS NOT NULL
+            AND TRY_CAST(s.EndTime AS TIME) IS NOT NULL
+            AND TRY_CAST(s.[Date] AS DATE) IS NOT NULL
+    ) AS Source
+    ON Target.EmployeeID = Source.EmployeeID
+       AND Target.[Date] = Source.WorkDate
+       AND Target.FileName = Source.FileName
+
+    -- UPDATE existing records where content changed
+    WHEN MATCHED AND (
+        ISNULL(Target.TotalHours, 0) <> ISNULL(Source.TotalHours, 0)
+        OR ISNULL(Target.ProjectID, 0) <> ISNULL(Source.ProjectID, 0)
+        OR ISNULL(Target.ClientID, 0) <> ISNULL(Source.ClientID, 0)
+        OR ISNULL(Target.DescriptionID, 0) <> ISNULL(Source.DescriptionID, 0)
+        OR ISNULL(Target.Comments, '') <> ISNULL(Source.Comments, '')
+        OR ISNULL(Target.BillableStatus, '') <> ISNULL(Source.BillableStatus, '')
+        OR ISNULL(Target.StartTime, '') <> ISNULL(Source.StartTime, '')
+        OR ISNULL(Target.EndTime, '') <> ISNULL(Source.EndTime, '')
+    ) THEN
+        UPDATE SET
+            Target.TotalHours = Source.TotalHours,
+            Target.ProjectID = Source.ProjectID,
+            Target.ClientID = Source.ClientID,
+            Target.DescriptionID = Source.DescriptionID,
+            Target.Comments = Source.Comments,
+            Target.BillableStatus = Source.BillableStatus,
+            Target.StartTime = Source.StartTime,
+            Target.EndTime = Source.EndTime
+
+    -- INSERT new rows
+    WHEN NOT MATCHED BY TARGET THEN
+        INSERT (
+            EmployeeID, [Date], DayOfWeek, ClientID, ProjectID,
+            DescriptionID, BillableStatus, Comments,
+            TotalHours, StartTime, EndTime, FileName
+        )
+        VALUES (
+            Source.EmployeeID, Source.WorkDate, Source.DayOfWeek, Source.ClientID,
+            Source.ProjectID, Source.DescriptionID, Source.BillableStatus,
+            Source.Comments, Source.TotalHours, Source.StartTime, Source.EndTime, Source.FileName
+        )
+
+    -- DELETE rows from Timesheet if they are not in the current RunID (same file)
+    WHEN NOT MATCHED BY SOURCE
+    AND Target.FileName = (
+        SELECT TOP 1 FileName FROM Timesheet.TimesheetStaging WHERE RunID = @RunID
+    ) THEN
+        DELETE;
 END;
 GO
 
