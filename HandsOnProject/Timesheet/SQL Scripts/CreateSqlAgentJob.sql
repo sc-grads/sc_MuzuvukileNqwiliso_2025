@@ -1,9 +1,19 @@
 USE msdb;
 GO
 
+-- Delete the job if it exists
 IF EXISTS (SELECT 1 FROM msdb.dbo.sysjobs WHERE name = 'Run_MasterPackage')
 BEGIN
     EXEC msdb.dbo.sp_delete_job @job_name = 'Run_MasterPackage';
+END
+GO
+
+IF NOT EXISTS (SELECT 1 FROM msdb.dbo.sysoperators WHERE name = 'TimesheetOperator')
+BEGIN
+    EXEC msdb.dbo.sp_add_operator  
+        @name = N'TimesheetOperator',  
+        @enabled = 1,  
+        @email_address = N'mzu.nqwiliso@gmail.com';  
 END
 GO
 
@@ -12,6 +22,9 @@ EXEC msdb.dbo.sp_add_job
     @enabled = 1,
     @description = 'Executes the SSIS MasterPackage every 1 minute from SSISDB',
     @start_step_id = 1,
+    @notify_level_eventlog = 2,  -- log failures
+    @notify_level_email = 2,     -- 1 = success, 2 = failure, 3 = both
+    @notify_email_operator_name = 'TimesheetOperator',
     @owner_login_name = 'LAPTOP-62JJ49T4\MuzuvukileNqwiliso';
 
 EXEC msdb.dbo.sp_add_jobstep
@@ -41,10 +54,10 @@ EXEC msdb.dbo.sp_add_jobstep
     @subsystem = 'TSQL',
     @command = N'
 DELETE FROM [TimesheetDB].[Timesheet].[AuditLog]
-WHERE [ProcessedDate] < DATEADD(MINUTE, -4, GETDATE());
+WHERE [ProcessedDate] < DATEADD(MINUTE, -20, GETDATE());
 
 DELETE FROM [TimesheetDB].[Timesheet].[ErrorLog]
-WHERE [ProcessedDate] < DATEADD(MINUTE, -4, GETDATE());
+WHERE [ProcessedDate] < DATEADD(MINUTE, -20, GETDATE());
 ',
     @database_name = 'TimesheetDB',
     @on_success_action = 1,
@@ -52,9 +65,9 @@ WHERE [ProcessedDate] < DATEADD(MINUTE, -4, GETDATE());
 
 EXEC msdb.dbo.sp_add_schedule
     @schedule_name = 'Timesheet_Schedule',
-    @freq_type = 4,
+    @freq_type = 4, -- daily
     @freq_interval = 1,
-    @freq_subday_type = 4,
+    @freq_subday_type = 4, -- minutes
     @freq_subday_interval = 1,
     @active_start_time = 0000;
 

@@ -213,21 +213,21 @@ BEGIN
         FOREIGN KEY (DescriptionID) REFERENCES Timesheet.Description(DescriptionID)
     );
     CREATE INDEX IX_Timesheet_Employee_Date ON Timesheet.Timesheet(EmployeeID, [Date]);
-    PRINT 'Timesheet table created successfully with unified DescriptionID.';
+    PRINT 'Timesheet table created successfully.';
 
     -- Forecast Table
     CREATE TABLE Timesheet.Forecast (
         ForecastID INT PRIMARY KEY DEFAULT NEXT VALUE FOR Timesheet.ForecastSeq,
         EmployeeID INT NOT NULL,
         ForecastMonth DATE NOT NULL,
-        ForecastedHours DECIMAL(5,2) NOT NULL DEFAULT (168.00),
+        ForecastedHours DECIMAL(10,2) NOT NULL DEFAULT (168.00),
         ForecastedWorkDays INT NOT NULL DEFAULT (21),
-        NonBillableHours DECIMAL(5,2) NOT NULL,
-        BillableHours DECIMAL(5,2) NOT NULL,
-        TotalHours DECIMAL(5,2) NOT NULL,
+        NonBillableHours DECIMAL(10,2) NOT NULL,
+        BillableHours DECIMAL(10,2) NOT NULL,
+        TotalHours DECIMAL(10,2) NOT NULL,
         FOREIGN KEY (EmployeeID) REFERENCES Timesheet.Employee(EmployeeID),
-        CONSTRAINT UQ_Forecast_Employee_Month UNIQUE (EmployeeID, ForecastMonth),
-        CONSTRAINT CK_Forecast_Total_vs_Planned CHECK (TotalHours >= ForecastedHours)
+        CONSTRAINT UQ_Forecast_Employee_Month UNIQUE (EmployeeID, ForecastMonth)
+       -- CONSTRAINT CK_Forecast_Total_vs_Planned CHECK (TotalHours >= ForecastedHours)
     );
     PRINT 'Forecast table created.';
 
@@ -247,7 +247,7 @@ BEGIN
 
 CREATE INDEX IX_ProcessedFiles_FileName ON Timesheet.ProcessedFiles(FileName);
 
-PRINT 'ProcessedFiles table created with columns matching the script.';
+PRINT 'ProcessedFiles table created.';
 
     -- AuditLog Table
     IF OBJECT_ID('Timesheet.AuditLog', 'U') IS NOT NULL
@@ -399,10 +399,7 @@ END CATCH;
 GO
 
 -- Create view for clean Timesheet display without IDs
-IF OBJECT_ID('Timesheet.vw_TimesheetDisplay', 'V') IS NOT NULL
-    DROP VIEW Timesheet.vw_TimesheetDisplay;
-GO
-CREATE VIEW Timesheet.vw_TimesheetDisplay
+CREATE OR ALTER VIEW Timesheet.vw_TimesheetDisplay
 AS
 SELECT 
     e.EmployeeName,
@@ -410,19 +407,19 @@ SELECT
     t.[DayOfWeek],
     c.ClientName,
     p.ProjectName,
-    d.DescriptionName AS ActivityOrLeave,
+    d.DescriptionName AS [Description],
     t.BillableStatus,
     t.Comments,
     t.TotalHours,
-    t.StartTime,
-    t.EndTime
+    COALESCE(LEFT(CONVERT(VARCHAR(5), t.StartTime, 108), 5), 'N/A') AS StartTime,
+    COALESCE(LEFT(CONVERT(VARCHAR(5), t.EndTime, 108), 5), 'N/A') AS EndTime
 FROM Timesheet.Timesheet t
 INNER JOIN Timesheet.Employee e ON t.EmployeeID = e.EmployeeID
 LEFT JOIN Timesheet.Client c ON t.ClientID = c.ClientID
 LEFT JOIN Timesheet.Project p ON t.ProjectID = p.ProjectID
 INNER JOIN Timesheet.Description d ON t.DescriptionID = d.DescriptionID;
 GO
-PRINT 'View vw_TimesheetDisplay created.';
+PRINT 'View vw_TimesheetDisplay created or altered to format StartTime and EndTime as HH:mm.';
 GO
 
 CREATE OR ALTER PROCEDURE Timesheet.usp_UpsertEmployee
@@ -683,10 +680,9 @@ BEGIN
 
     IF @IsNewFile = 1
     BEGIN
-        -- New file (Insert)
-        SET @Message = 'New timesheet processed - ' + CAST(@RowCount AS NVARCHAR(10)) + 
-                      CASE WHEN @RowCount = 1 THEN ' row' ELSE ' rows' END;
-        
+        SET @Message = 'New timesheet uploaded with ' + CAST(@RowCount AS NVARCHAR(10)) + 
+                      CASE WHEN @RowCount = 1 THEN ' row.' ELSE ' rows.' END;
+
         INSERT INTO Timesheet.AuditLog (
             EmployeeName, FileName, [Month], TableName, Action, Message, ProcessedDate
         )
@@ -705,13 +701,12 @@ BEGIN
     END
     ELSE
     BEGIN
-        -- Check for deleted rows first
-        IF @PreviousRowCount > @RowCount AND @PreviousRowCount > 0
+        IF @PreviousRowCount > @RowCount
         BEGIN
             SET @CountDifference = @PreviousRowCount - @RowCount;
-            SET @Message = CAST(@CountDifference AS NVARCHAR(10)) + 
-                           CASE WHEN @CountDifference = 1 THEN ' row removed' ELSE ' rows removed' END;
-            
+            SET @Message = 'Timesheet reduced by ' + CAST(@CountDifference AS NVARCHAR(10)) + 
+                           CASE WHEN @CountDifference = 1 THEN ' row removed.' ELSE ' rows removed.' END;
+
             INSERT INTO Timesheet.AuditLog (
                 EmployeeName, FileName, [Month], TableName, Action, Message, ProcessedDate
             )
@@ -720,13 +715,12 @@ BEGIN
                 'Delete', @Message, GETDATE()
             );
         END
-        -- Check for inserted rows
         ELSE IF @PreviousRowCount < @RowCount
         BEGIN
             SET @CountDifference = @RowCount - @PreviousRowCount;
-            SET @Message = CAST(@CountDifference AS NVARCHAR(10)) + 
-                           CASE WHEN @CountDifference = 1 THEN ' new row added' ELSE ' new rows added' END;
-            
+            SET @Message = 'Timesheet increased by ' + CAST(@CountDifference AS NVARCHAR(10)) + 
+                           CASE WHEN @CountDifference = 1 THEN ' new row added.' ELSE ' new rows added.' END;
+
             INSERT INTO Timesheet.AuditLog (
                 EmployeeName, FileName, [Month], TableName, Action, Message, ProcessedDate
             )
@@ -735,17 +729,13 @@ BEGIN
                 'Insert', @Message, GETDATE()
             );
         END
-        -- Check for updates when row count is same but content changed
         ELSE IF @RowCount = @PreviousRowCount 
-                AND (@CurrentDataHash != @PreviousDataHash 
-                     OR (@PreviousDataHash IS NULL AND @CurrentDataHash IS NOT NULL)
-                     OR (@PreviousDataHash IS NOT NULL AND @CurrentDataHash IS NULL))
+            AND (@CurrentDataHash != @PreviousDataHash 
+                 OR (@PreviousDataHash IS NULL AND @CurrentDataHash IS NOT NULL)
+                 OR (@PreviousDataHash IS NOT NULL AND @CurrentDataHash IS NULL))
         BEGIN
-            SET @Message = CASE WHEN @RowCount = 1 
-                              THEN '1 row updated - content changed' 
-                              ELSE CAST(@RowCount AS NVARCHAR(10)) + ' rows updated - content changed' 
-                          END;
-            
+            SET @Message = 'Timesheet file was modified (content changed, row count remains the same).';
+
             INSERT INTO Timesheet.AuditLog (
                 EmployeeName, FileName, [Month], TableName, Action, Message, ProcessedDate
             )
@@ -755,7 +745,7 @@ BEGIN
             );
         END
 
-        -- Always update ProcessedFiles with latest details
+        -- Update latest snapshot
         UPDATE Timesheet.ProcessedFiles
         SET 
             [RowCount] = @RowCount,
@@ -1122,6 +1112,91 @@ BEGIN
 END;
 GO
 
+<<<<<<< HEAD
+=======
+-- Sync Data
+CREATE OR ALTER PROCEDURE [Timesheet].[usp_SyncTimesheetDataFromStaging]
+    @RunID NVARCHAR(40)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    MERGE Timesheet.Timesheet AS Target
+    USING (
+        SELECT 
+            e.EmployeeID,
+            TRY_CAST(s.[Date] AS DATE) AS WorkDate,
+            s.DayOfWeek,
+            c.ClientID,
+            p.ProjectID,
+            d.DescriptionID,
+            s.BillableStatus,
+            s.Comments,
+            TRY_CAST(s.TotalHours AS DECIMAL(5,2)) AS TotalHours,
+            TRY_CAST(s.StartTime AS TIME) AS StartTime,
+            TRY_CAST(s.EndTime AS TIME) AS EndTime,
+            s.FileName
+        FROM Timesheet.TimesheetStaging s
+        LEFT JOIN Timesheet.Employee e ON e.EmployeeName = s.EmployeeName
+        LEFT JOIN Timesheet.Client c ON c.ClientName = s.ClientName
+        LEFT JOIN Timesheet.Project p ON p.ProjectName = s.ProjectName
+        LEFT JOIN Timesheet.Description d ON d.DescriptionName = TRIM(s.ActivityName)
+        WHERE 
+            s.RunID = @RunID
+            AND d.DescriptionID IS NOT NULL
+            AND TRY_CAST(s.TotalHours AS DECIMAL(5,2)) IS NOT NULL
+            AND TRY_CAST(s.StartTime AS TIME) IS NOT NULL
+            AND TRY_CAST(s.EndTime AS TIME) IS NOT NULL
+            AND TRY_CAST(s.[Date] AS DATE) IS NOT NULL
+    ) AS Source
+    ON Target.EmployeeID = Source.EmployeeID
+       AND Target.[Date] = Source.WorkDate
+       AND Target.FileName = Source.FileName
+
+    -- UPDATE existing records where content changed
+    WHEN MATCHED AND (
+        ISNULL(Target.TotalHours, 0) <> ISNULL(Source.TotalHours, 0)
+        OR ISNULL(Target.ProjectID, 0) <> ISNULL(Source.ProjectID, 0)
+        OR ISNULL(Target.ClientID, 0) <> ISNULL(Source.ClientID, 0)
+        OR ISNULL(Target.DescriptionID, 0) <> ISNULL(Source.DescriptionID, 0)
+        OR ISNULL(Target.Comments, '') <> ISNULL(Source.Comments, '')
+        OR ISNULL(Target.BillableStatus, '') <> ISNULL(Source.BillableStatus, '')
+        OR ISNULL(Target.StartTime, '') <> ISNULL(Source.StartTime, '')
+        OR ISNULL(Target.EndTime, '') <> ISNULL(Source.EndTime, '')
+    ) THEN
+        UPDATE SET
+            Target.TotalHours = Source.TotalHours,
+            Target.ProjectID = Source.ProjectID,
+            Target.ClientID = Source.ClientID,
+            Target.DescriptionID = Source.DescriptionID,
+            Target.Comments = Source.Comments,
+            Target.BillableStatus = Source.BillableStatus,
+            Target.StartTime = Source.StartTime,
+            Target.EndTime = Source.EndTime
+
+    -- INSERT new rows
+    WHEN NOT MATCHED BY TARGET THEN
+        INSERT (
+            EmployeeID, [Date], DayOfWeek, ClientID, ProjectID,
+            DescriptionID, BillableStatus, Comments,
+            TotalHours, StartTime, EndTime, FileName
+        )
+        VALUES (
+            Source.EmployeeID, Source.WorkDate, Source.DayOfWeek, Source.ClientID,
+            Source.ProjectID, Source.DescriptionID, Source.BillableStatus,
+            Source.Comments, Source.TotalHours, Source.StartTime, Source.EndTime, Source.FileName
+        )
+
+    -- DELETE rows from Timesheet if they are not in the current RunID (same file)
+    WHEN NOT MATCHED BY SOURCE
+    AND Target.FileName = (
+        SELECT TOP 1 FileName FROM Timesheet.TimesheetStaging WHERE RunID = @RunID
+    ) THEN
+        DELETE;
+END;
+GO
+
+>>>>>>> 92621b978d5ed0ad30f18467693e25680d04e4d6
 -- Reset procedures
 CREATE OR ALTER PROCEDURE Timesheet.ResetEmployee
 AS
@@ -1135,8 +1210,13 @@ GO
 CREATE OR ALTER PROCEDURE Timesheet.ResetClient
 AS 
 BEGIN 
+<<<<<<< HEAD
    SET NOCOUNT ON;
     DELETE FROM Timesheet.Employee;
+=======
+    SET NOCOUNT ON;
+    DELETE FROM Timesheet.Client; 
+>>>>>>> 92621b978d5ed0ad30f18467693e25680d04e4d6
     ALTER SEQUENCE Timesheet.ClientSeq RESTART WITH 2000;
 END;
 GO
