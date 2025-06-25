@@ -1112,6 +1112,8 @@ BEGIN
 END;
 GO
 
+<<<<<<< HEAD
+=======
 -- Sync Data
 CREATE OR ALTER PROCEDURE [Timesheet].[usp_SyncTimesheetDataFromStaging]
     @RunID NVARCHAR(40)
@@ -1194,6 +1196,7 @@ BEGIN
 END;
 GO
 
+>>>>>>> 92621b978d5ed0ad30f18467693e25680d04e4d6
 -- Reset procedures
 CREATE OR ALTER PROCEDURE Timesheet.ResetEmployee
 AS
@@ -1207,8 +1210,13 @@ GO
 CREATE OR ALTER PROCEDURE Timesheet.ResetClient
 AS 
 BEGIN 
+<<<<<<< HEAD
+   SET NOCOUNT ON;
+    DELETE FROM Timesheet.Employee;
+=======
     SET NOCOUNT ON;
     DELETE FROM Timesheet.Client; 
+>>>>>>> 92621b978d5ed0ad30f18467693e25680d04e4d6
     ALTER SEQUENCE Timesheet.ClientSeq RESTART WITH 2000;
 END;
 GO
