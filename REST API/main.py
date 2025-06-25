@@ -292,3 +292,14 @@ results = calculator(2,4,6,8,10,oparator= '+')
 print(results)
 
 
+# kwargs => keyword arguments
+def print_info(**kwargs):
+    for key, value in kwargs.items():
+        print(f"{key}: {value}")
+
+print_info(name="Jose", age=23, school="Computing")
+# Output:
+# name: Jose
+# age: 23
+# school: Computing
+# this act exectly like a dictionary 
