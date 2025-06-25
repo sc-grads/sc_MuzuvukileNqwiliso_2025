@@ -148,3 +148,147 @@ print(five)
 my_friends = [("Anele",23),("Fezile",30)]
 for name, age in my_friends:
     print(f"My name is {name} "+" I am {age} year old." )
+
+# function
+def user_func() :
+    print("Hello I am a function...")
+
+user_func()
+
+def user_func(name, age) : # parameters 
+    user_name = name
+    user_age = age
+    print(f'Hello 😊, My name is {user_name}, I am {user_age} year old.')
+
+user_func('Malinda',23) # arguments
+user_func(name= 'Lindo',age =29) # arguments
+
+
+def user_func(name ='Uknown', age = 0) : # parameters 
+    user_name = name
+    user_age = age
+    if user_name ==  'Uknown' or age == 0:
+        print('Please provide user details.')
+    else: 
+        print(f'Hello 😊, My name is {user_name}, I am {user_age} year old.')
+
+user_func(name= 'Siya', age = 23)
+
+def user_func(name ='Uknown', age = 0) -> str : # parameters 
+    user_name = name
+    user_age = age
+    if user_name ==  'Uknown' or age == 0:
+       return 'Please provide user details 😁.'
+    else: 
+        return f'Hello 😊, My name is {user_name}, I am {user_age} year old.'
+    
+message = user_func(name= 'Siya', age = 0)
+print(message)
+
+#lambda arguments : expression
+add = lambda a : a + 4 # This is a function
+print(add(14))
+multiply = lambda a : a * 20
+print(multiply(20))
+devide = lambda a, b : b / a
+print(devide(6,0))
+devide = lambda a, b : b // a
+print(devide(6,0))
+power = lambda a, b : b ** a
+print(power(6,4))
+print_me = lambda a : print(a)
+print_me(1)
+
+# dictionary comprehensive 
+users [
+    (0, "Malinda", "malindapass"),
+    (1,"Siza","sizapass")
+]
+
+
+# exercise
+students = [
+    {
+        "name": "Jose",
+        "school": "Computing",
+        "grades": (66, 77, 88)
+    },
+    {
+        "name": "Malinda",
+        "school": "Engineering",
+        "grades": (75, 80, 90)
+    },
+    {
+        "name": "Siza",
+        "school": "Mathematics",
+        "grades": (60, 65, 70)
+    },
+    {
+        "name": "Anele",
+        "school": "Science",
+        "grades": (85, 87, 90)
+    },
+    {
+        "name": "Fezile",
+        "school": "Arts",
+         "grades": (72, 78, 80)
+
+    }
+]
+# Assume the argument, data, is a dictionary.
+# Modify the grades variable so it accesses the 'grades' key of the data dictionary.
+def average_grade(data):
+    grades =  [grade for grade in data["grades"]]
+    return sum(grades) / len(grades)
+ 
+
+def average_grade_all_students(student_list):
+    total = 0
+    count = 0
+    for student in student_list:
+        grades = student["grades"]
+        total += sum(grades)
+        count += len(grades)
+    return total / count if count != 0 else 0
+
+print(average_grade_all_students(students))
+
+
+# unpacking parameters 
+def multiply(*args): # arguments
+    print(*args)
+    results = 1
+    for arg in args:
+        results *= arg
+    return results
+
+def add(*args): # arguments
+    print(*args)
+    results = 0
+    for arg in args:
+        results += arg
+    return results
+
+def minus(*args): # arguments
+    print(*args)
+    results = 100
+    for arg in args:
+        results -= arg
+    return results
+
+
+def calculator(*args, oparator):
+    match oparator :
+        case '*':
+            return f'Multiply results : { multiply(*args)}'
+        case '+':
+            return f'Add results : {add(*args)}'
+        case '-':
+            return f'Minus results : {minus(*args)}'
+        case _:
+            return "Enter a valid operator😥."
+        
+results = calculator(2,4,6,8,10,oparator= '+')
+print(results)
+
+
