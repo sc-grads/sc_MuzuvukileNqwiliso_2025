@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  flask-app:
+    build: .
+    ports:
+      - "5005:5000"  # Maps localhost:5005 to container's 5000
+    environment:
+      - FLASK_APP=app.py
+      - FLASK_ENV=development
+    volumes:
+      - .:/app
