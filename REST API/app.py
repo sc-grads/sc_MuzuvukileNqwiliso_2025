@@ -1,77 +1,66 @@
 from flask import Flask, jsonify, request
+from flask_smorest import abort
+from db import stores, items
+import uuid
 
 app = Flask(__name__)
 
-# data
-stores = [
-    {
-        "name": "Shesha",
-        "items": [
-            {"name": "Relay", "price": 500},
-            {"name": "Cable", "price": 200}
-        ]
-    },
-    {
-        "name": "Amazon",
-        "items": [
-            {"name": "Keyboard", "price": 160},
-            {"name": "Mouse", "price": 80}
-        ]
-    },
-    {
-        "name": "Clicks",
-        "items": [
-            {"name": "Shampoo", "price": 60},
-            {"name": "Toothpaste", "price": 30}
-        ]
-    },
-    {
-        "name": "Pick n Pay",
-        "items": [
-            {"name": "Bread", "price": 20},
-            {"name": "Milk", "price": 18}
-        ]
-    }
-]
-
-@app.route("/stores", methods=['GET'])  # GET request
+# GET all stores
+@app.route("/stores", methods=['GET'])
 def get_stores():
-    return jsonify(stores=stores)
+    return jsonify(stores=list(stores.values()))
 
-@app.route("/stores", methods=["POST"])  # POST request
+
+@app.get("/stores/<string:store_id>")
+def get_store(store_id):
+    store = stores.get(store_id)
+    if store:
+        return jsonify(store)
+    abort(404,message="Store Not Found!")
+
+
+# POST: Add a store
+@app.route("/stores", methods=["POST"])
 def add_store():
-    request_results = request.get_json()
-    new_store = {
-        "name": request_results["name"],
+    request_data = request.get_json()
+    store_id = uuid.uuid4().hex
+    store = {
+        **request_data,
+        "id": store_id,
         "items": []
     }
-    stores.append(new_store)
-    return jsonify(new_store), 201  # 201 Created
+    stores[store_id] = store
+    return jsonify(store), 201
 
-@app.route("/stores/<string:name>/item", methods=["POST"])
-def add_items(name):
-    data = request.get_json()  
-    items_to_add = data.get("items", [])
 
-    if not isinstance(items_to_add, list):
-        return jsonify(message="Expected 'items' to be a list."), 400
+# POST: Add an item to a store
+@app.post('/item')
+def add_items():
+    item_data = request.get_json()
+    print(item_data)
+    store_id = item_data.get("store_id")
 
-    for store in stores:
-        if store["name"].lower() == name.lower():
-            for item in items_to_add:
-                store["items"].append({
-                    "name": item["name"],
-                    "price": item["price"]
-                })
-            return jsonify(store), 201
+    if store_id not in stores:
+        abort(404, message="Store Not Found!")
 
-    return jsonify(message="Store Not Found!"), 404
+    item_id = uuid.uuid4().hex
+    item = {
+        **item_data,
+        "id": item_id
+    }
 
-@app.get('/stores/<string:name>/item')
-def get_item(name):
-    for store in stores:
-        if store["name"].lower() == name.lower():
-            return jsonify(items=store['items'])
+    items[item_id] = item
+    stores[store_id]["items"].append(item)  # Add to store's item list
+
+    return jsonify(item), 201
+
+
+
+# GET: Items for a specific store
+@app.get('/stores/<string:store_id>/item')
+def get_item(store_id):
+    if store_id in stores:
+        return jsonify(items=stores[store_id]["items"])
     return jsonify(message="Store Not Found!"), 404
 
 

@@ -1,0 +1,4 @@
+flask
+flask-smorest
+marshmallow
+python-dotenv
