@@ -3,6 +3,7 @@ from flask_smorest import Blueprint, abort
 from flask.views import MethodView
 from flask import request, jsonify
 from db import items, stores
+from Schema.schema import ItemSchema, ItemUpdateSchema
 
 blp = Blueprint('items', __name__, description='Operations on items')
 
@@ -10,6 +11,7 @@ blp = Blueprint('items', __name__, description='Operations on items')
 @blp.route('/items/<string:store_id>')
 class ItemsListResource(MethodView):
     # POST: Add items to a specific store
+    @blp.arguments(ItemSchema)
     def post(self, store_id):
         data = request.get_json()
 
@@ -74,6 +76,7 @@ class StoreItemsResource(MethodView):
 @blp.route('/item/<string:item_id>')
 class ItemUpdateResource(MethodView):
     # PUT: Update a single item
+    @blp.arguments(ItemUpdateSchema)
     def put(self, item_id):
         try:
             uuid.UUID(item_id)

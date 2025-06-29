@@ -1,14 +1,16 @@
 import uuid
 from flask_smorest import Blueprint, abort
 from flask.views import MethodView
-from flask import request, jsonify
+from flask import jsonify
 from db import stores, items
+from Schema.schema import StoreSchema
 
 blp = Blueprint('stores', __name__, description='Operations on stores')
 
 @blp.route('/store/<string:store_id>')
 class StoreResource(MethodView):
 
+    @blp.response(200, StoreSchema)
     def get(self, store_id):
         try:
             uuid.UUID(store_id)
@@ -19,12 +21,11 @@ class StoreResource(MethodView):
         if not store:
             abort(404, message="Store not found")
 
-        return jsonify({
-            "data": store,
-            "message": "Store retrieved successfully"
-        })
+        return store
 
-    def put(self, store_id):
+    @blp.arguments(StoreSchema)
+    @blp.response(200, StoreSchema)
+    def put(self, store_data, store_id):
         try:
             uuid.UUID(store_id)
         except ValueError:
@@ -33,17 +34,11 @@ class StoreResource(MethodView):
         if store_id not in stores:
             abort(404, message="Store not found")
 
-        data = request.get_json()
-        if not data or "name" not in data:
-            abort(400, message="Store name is required")
+        stores[store_id]["name"] = store_data["name"]
 
-        stores[store_id]["name"] = data["name"]
+        return stores[store_id]
 
-        return jsonify({
-            "data": stores[store_id],
-            "message": "Store updated successfully"
-        })
-
+    @blp.response(200)
     def delete(self, store_id):
         try:
             uuid.UUID(store_id)
@@ -55,46 +50,39 @@ class StoreResource(MethodView):
 
         deleted = stores.pop(store_id)
 
-        # Also delete related items
+        # Remove associated items
         to_remove = [iid for iid, item in items.items() if item["store_id"] == store_id]
         for iid in to_remove:
             items.pop(iid)
 
-        return jsonify({
+        return {
             "data": deleted,
             "message": "Store and its items deleted successfully"
-        })
+        }
 
 @blp.route('/store')
 class StoreListResource(MethodView):
 
+    @blp.response(200, StoreSchema(many=True))
     def get(self):
-        return jsonify({
-            "data": list(stores.values()),
-            "message": "Stores retrieved successfully"
-        })
+        return list(stores.values())
 
-    def post(self):
-        data = request.get_json()
-        if not data or "name" not in data:
-            abort(400, message="Store name is required")
-
+    @blp.arguments(StoreSchema)
+    @blp.response(201, StoreSchema)
+    def post(self, store_data):
         store_id = uuid.uuid4().hex
         store = {
             "id": store_id,
-            "name": data["name"],
+            "name": store_data["name"],
             "items": []
         }
         stores[store_id] = store
-
-        return jsonify({
-            "data": store,
-            "message": "Store created successfully"
-        }), 201
+        return store
 
 @blp.route('/store/<string:store_id>/item')
 class StoreItemResource(MethodView):
 
+    @blp.response(200)
     def get(self, store_id):
         try:
             uuid.UUID(store_id)
@@ -106,7 +94,7 @@ class StoreItemResource(MethodView):
 
         store_items = [item for item in items.values() if item['store_id'] == store_id]
 
-        return jsonify({
+        return {
             "data": store_items,
             "message": "Items retrieved successfully"
-        })
+        }
