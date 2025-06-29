@@ -1,68 +1,28 @@
-from flask import Flask, jsonify, request
-from flask_smorest import abort
-from db import stores, items
-import uuid
+from flask import Flask
+from flask_smorest import Api
+from Resources.Store import blp as StoreBlueprint
+from Resources.Item import blp as ItemsBlueprint
 
 app = Flask(__name__)
 
-# GET all stores
-@app.route("/stores", methods=['GET'])
-def get_stores():
-    return jsonify(stores=list(stores.values()))
+app.config["PROPAGATE_EXCEPTIONS"] = True
+app.config["API_TITLE"] = "Store API"
+app.config["API_VERSION"] = "v1"
+app.config["OPENAPI_VERSION"] = "3.0.3"
+app.config["OPENAPI_URL_PREFIX"] = "/"
+app.config["OPENAPI_SWAGGER_UI_PATH"] = "/swagger-ui"
+app.config["OPENAPI_SWAGGER_UI_URL"] = "https://cdn.jsdelivr.net/npm/swagger-ui-dist/"
 
+api = Api(app)
 
-@app.get("/stores/<string:store_id>")
-def get_store(store_id):
-    store = stores.get(store_id)
-    if store:
-        return jsonify(store)
-    abort(404,message="Store Not Found!")
+api.register_blueprint(StoreBlueprint)
+api.register_blueprint(ItemsBlueprint)
 
-
-# POST: Add a store
-@app.route("/stores", methods=["POST"])
-def add_store():
-    request_data = request.get_json()
-    store_id = uuid.uuid4().hex
-    store = {
-        **request_data,
-        "id": store_id,
-        "items": []
-    }
-    stores[store_id] = store
-    return jsonify(store), 201
-
-
-# POST: Add an item to a store
-@app.post('/item')
-def add_items():
-    item_data = request.get_json()
-    print(item_data)
-    store_id = item_data.get("store_id")
-
-    if store_id not in stores:
-        abort(404, message="Store Not Found!")
-
-    item_id = uuid.uuid4().hex
-    item = {
-        **item_data,
-        "id": item_id
-    }
-
-    items[item_id] = item
-    stores[store_id]["items"].append(item)  # Add to store's item list
-
-    return jsonify(item), 201
-
-
-
-# GET: Items for a specific store
-@app.get('/stores/<string:store_id>/item')
-def get_item(store_id):
-    if store_id in stores:
-        return jsonify(items=stores[store_id]["items"])
-    return jsonify(message="Store Not Found!"), 404
-
+with app.app_context():
+    print("\nRegistered Routes:")
+    for rule in app.url_map.iter_rules():
+        print(rule)
 
 if __name__ == "__main__":
     app.run(debug=True)
+
