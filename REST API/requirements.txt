@@ -2,3 +2,5 @@ flask
 flask-smorest
 marshmallow
 python-dotenv
+sqlAlchemy
+Flask-SQLAlchemy

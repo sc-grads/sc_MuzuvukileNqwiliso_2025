@@ -1,112 +1,83 @@
 import uuid
 from flask_smorest import Blueprint, abort
 from flask.views import MethodView
-from flask import request, jsonify
-from db import stores, items
+from sqlalchemy.exc import SQLAlchemyError
+from Schema.schema import StoreSchema, PlainItemSchema
+from Model.store import StoreModel
+from db import db
 
 blp = Blueprint('stores', __name__, description='Operations on stores')
 
-@blp.route('/store/<string:store_id>')
+
+@blp.route('/store/<int:store_id>')
 class StoreResource(MethodView):
 
+    @blp.response(200, StoreSchema)
     def get(self, store_id):
-        try:
-            uuid.UUID(store_id)
-        except ValueError:
-            abort(400, message="Invalid store ID format")
+        store = StoreModel.query.get_or_404(store_id, description="Store not found")
+        return store
 
-        store = stores.get(store_id)
+    @blp.arguments(StoreSchema)
+    @blp.response(200, StoreSchema)
+    def put(self, store_data, store_id):
+        store = StoreModel.query.get(store_id)
         if not store:
             abort(404, message="Store not found")
 
-        return jsonify({
-            "data": store,
-            "message": "Store retrieved successfully"
-        })
+        store.name = store_data["name"]
 
-    def put(self, store_id):
         try:
-            uuid.UUID(store_id)
-        except ValueError:
-            abort(400, message="Invalid store ID format")
+            db.session.commit()
+        except SQLAlchemyError:
+            abort(500, message="Failed to update store")
 
-        if store_id not in stores:
-            abort(404, message="Store not found")
+        return store
 
-        data = request.get_json()
-        if not data or "name" not in data:
-            abort(400, message="Store name is required")
-
-        stores[store_id]["name"] = data["name"]
-
-        return jsonify({
-            "data": stores[store_id],
-            "message": "Store updated successfully"
-        })
-
+    @blp.response(200)
     def delete(self, store_id):
-        try:
-            uuid.UUID(store_id)
-        except ValueError:
-            abort(400, message="Invalid store ID format")
-
-        if store_id not in stores:
+        store = StoreModel.query.get(store_id)
+        if not store:
             abort(404, message="Store not found")
 
-        deleted = stores.pop(store_id)
+        try:
+            db.session.delete(store)
+            db.session.commit()
+        except SQLAlchemyError:
+            abort(500, message="Failed to delete store")
 
-        # Also delete related items
-        to_remove = [iid for iid, item in items.items() if item["store_id"] == store_id]
-        for iid in to_remove:
-            items.pop(iid)
-
-        return jsonify({
-            "data": deleted,
+        return {
             "message": "Store and its items deleted successfully"
-        })
+        }
+
 
 @blp.route('/store')
 class StoreListResource(MethodView):
 
+    @blp.response(200, StoreSchema(many=True))
     def get(self):
-        return jsonify({
-            "data": list(stores.values()),
-            "message": "Stores retrieved successfully"
-        })
+        return StoreModel.query.all()
 
-    def post(self):
-        data = request.get_json()
-        if not data or "name" not in data:
-            abort(400, message="Store name is required")
+    @blp.arguments(StoreSchema)
+    @blp.response(201, StoreSchema)
+    def post(self, store_data):
+        new_store = StoreModel(name=store_data["name"])
 
-        store_id = uuid.uuid4().hex
-        store = {
-            "id": store_id,
-            "name": data["name"],
-            "items": []
-        }
-        stores[store_id] = store
+        try:
+            db.session.add(new_store)
+            db.session.commit()
+        except SQLAlchemyError:
+            abort(500, message="Failed to create store")
 
-        return jsonify({
-            "data": store,
-            "message": "Store created successfully"
-        }), 201
+        return new_store
 
-@blp.route('/store/<string:store_id>/item')
+
+@blp.route('/store/<int:store_id>/item')
 class StoreItemResource(MethodView):
 
+    @blp.response(200, PlainItemSchema(many=True))
     def get(self, store_id):
-        try:
-            uuid.UUID(store_id)
-        except ValueError:
-            abort(400, message="Invalid store ID format")
-
-        if store_id not in stores:
+        store = StoreModel.query.get(store_id)
+        if not store:
             abort(404, message="Store not found")
 
-        store_items = [item for item in items.values() if item['store_id'] == store_id]
-
-        return jsonify({
-            "data": store_items,
-            "message": "Items retrieved successfully"
-        })
+        return store.items

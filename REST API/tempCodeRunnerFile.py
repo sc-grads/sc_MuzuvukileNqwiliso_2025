@@ -1,1 +1,2 @@
-add_items('Makro')
+
+    app.run(debug=True)
