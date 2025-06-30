@@ -3,9 +3,10 @@ from flask_smorest import Api
 import os
 from Resources.Store import blp as StoreBlueprint
 from Resources.Item import blp as ItemsBlueprint
+from Resources.Tag import blp as TagBlueprint
 
 from db import db
-import Model  # This ensures your models are registered with SQLAlchemy
+import Model  
 
 def create_app(db_url=None):
     app = Flask(__name__)
@@ -28,11 +29,13 @@ def create_app(db_url=None):
     api = Api(app)
     api.register_blueprint(StoreBlueprint)
     api.register_blueprint(ItemsBlueprint)
+    api.register_blueprint(TagBlueprint)
 
     # Create database tables
     with app.app_context():
-        import Model.store  # or from Model import StoreModel
-        import Model.item   # make sure models are imported
+        import Model.store  
+        import Model.item 
+        import Model.tag
         db.create_all()
         
     return app
