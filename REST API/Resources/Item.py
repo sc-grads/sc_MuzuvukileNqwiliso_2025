@@ -9,24 +9,20 @@ from Schema.schema import ItemSchema, ItemUpdateSchema
 blp = Blueprint('items', __name__, description='Operations on items')
 
 
-@blp.route('/items/<int:store_id>')
-class ItemsListResource(MethodView):
+@blp.route("/item")
+class ItemResource(MethodView):
+    
     @blp.arguments(ItemSchema)
     @blp.response(201, ItemSchema)
-    def post(self, item_data, store_id):
-        store = StoreModel.query.get(store_id)
-        if not store:
-            abort(404, message="Store not found")
-
-        item = ItemModel(**item_data, store_id=store_id)
-
+    def post(self, item_data):
+        item = ItemModel(**item_data)
         try:
             db.session.add(item)
             db.session.commit()
         except SQLAlchemyError as e:
-            abort(500, message=f"Error saving item: {str(e)}")
-
+            abort(500, message=str(e))
         return item
+
 
 
 @blp.route('/store/<int:store_id>/items')

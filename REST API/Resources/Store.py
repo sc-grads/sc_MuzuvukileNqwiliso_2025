@@ -1,8 +1,7 @@
-import uuid
 from flask_smorest import Blueprint, abort
 from flask.views import MethodView
-from sqlalchemy.exc import SQLAlchemyError
-from Schema.schema import StoreSchema, PlainItemSchema
+from sqlalchemy.exc import SQLAlchemyError, IntegrityError
+from Schema.schema import StoreSchema
 from Model.store import StoreModel
 from db import db
 
@@ -20,30 +19,26 @@ class StoreResource(MethodView):
     @blp.arguments(StoreSchema)
     @blp.response(200, StoreSchema)
     def put(self, store_data, store_id):
-        store = StoreModel.query.get(store_id)
-        if not store:
-            abort(404, message="Store not found")
+        store = StoreModel.query.get_or_404(store_id, description="Store not found")
 
         store.name = store_data["name"]
 
         try:
             db.session.commit()
-        except SQLAlchemyError:
-            abort(500, message="Failed to update store")
+        except SQLAlchemyError as e:
+            abort(500, message=f"Failed to update store: {str(e)}")
 
         return store
 
     @blp.response(200)
     def delete(self, store_id):
-        store = StoreModel.query.get(store_id)
-        if not store:
-            abort(404, message="Store not found")
+        store = StoreModel.query.get_or_404(store_id, description="Store not found")
 
         try:
             db.session.delete(store)
             db.session.commit()
-        except SQLAlchemyError:
-            abort(500, message="Failed to delete store")
+        except SQLAlchemyError as e:
+            abort(500, message=f"Failed to delete store: {str(e)}")
 
         return {
             "message": "Store and its items deleted successfully"
@@ -65,19 +60,9 @@ class StoreListResource(MethodView):
         try:
             db.session.add(new_store)
             db.session.commit()
-        except SQLAlchemyError:
-            abort(500, message="Failed to create store")
+        except IntegrityError:
+            abort(400, message="A store with that name already exists.")
+        except SQLAlchemyError as e:
+            abort(500, message=f"Failed to create store: {str(e)}")
 
         return new_store
-
-
-@blp.route('/store/<int:store_id>/item')
-class StoreItemResource(MethodView):
-
-    @blp.response(200, PlainItemSchema(many=True))
-    def get(self, store_id):
-        store = StoreModel.query.get(store_id)
-        if not store:
-            abort(404, message="Store not found")
-
-        return store.items
