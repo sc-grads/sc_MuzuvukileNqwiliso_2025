@@ -18,7 +18,7 @@ class TagResources(MethodView):
     @blp.arguments(TagsSchema)
     @blp.response(201, TagsSchema)
     def post(self, tag_data, store_id):
-        tag = TagsModel(**tag_data, store_id=store_id)
+        tag = TagsModel(**tag_data, store_id = store_id)
         try:
             db.session.add(tag)
             db.session.commit()

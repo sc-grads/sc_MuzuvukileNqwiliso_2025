@@ -37,3 +37,16 @@ class TagsSchema(PlainTagsSchema):
 class ItemUpdateSchema(Schema):
     name = fields.Str(required=True)
     price = fields.Float(required=True)
+
+class UserSchema(Schema):
+    id = fields.Int(dump_only=True)
+    username = fields.Str(required=True)
+    password = fields.Str(required=True, load_only=True)
+
+class UserRegisterSchema(Schema):
+    username = fields.Str(required=True, load_only=True)
+    password = fields.Str(required=True, load_only=True)
+
+class UserLoginSchema(Schema):
+    username = fields.Str(required=True, load_only=True)
+    password = fields.Str(required=True, load_only=True)
