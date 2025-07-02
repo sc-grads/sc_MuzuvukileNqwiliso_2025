@@ -7,3 +7,4 @@ Flask-SQLAlchemy
 Flask-JWT-Extended
 passlib
 gunicorn
+psycopg2-binary
