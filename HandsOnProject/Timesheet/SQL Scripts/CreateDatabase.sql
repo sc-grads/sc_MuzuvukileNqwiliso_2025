@@ -367,18 +367,21 @@ PRINT 'ProcessedFiles table created.';
 
     -- LeaveRequest Table
     CREATE TABLE Timesheet.LeaveRequest (
-        LeaveRequestID INT IDENTITY(1,1) PRIMARY KEY,
-        EmployeeID INT NOT NULL,
-        LeaveTypeID INT NOT NULL,
-        StartDate DATE NOT NULL,
-        EndDate DATE NOT NULL,
-        Status NVARCHAR(20) NOT NULL CHECK (Status IN ('Pending', 'Approved', 'Rejected')),
-        ApprovalObtained BIT NOT NULL DEFAULT 0,
-        SickNoteSubmitted BIT NULL,
-        CreatedDate DATETIME NOT NULL DEFAULT GETDATE(),
-        CONSTRAINT FK_LeaveRequest_Employee FOREIGN KEY (EmployeeID) REFERENCES Timesheet.Employee(EmployeeID),
-        CONSTRAINT FK_LeaveRequest_LeaveType FOREIGN KEY (LeaveTypeID) REFERENCES Timesheet.LeaveType(LeaveTypeID)
-    );
+    LeaveRequestID INT IDENTITY(1,1) PRIMARY KEY,
+    EmployeeID INT NOT NULL,
+    LeaveTypeID INT NOT NULL,
+    StartDate DATE NOT NULL,
+    EndDate DATE NOT NULL,
+    NumberOfDays AS DATEDIFF(DAY, StartDate, EndDate) PERSISTED,
+    Status NVARCHAR(20) NOT NULL CHECK (Status IN ('Pending', 'Approved', 'Rejected')),
+    ApprovalObtained BIT NOT NULL DEFAULT 0,
+    SickNoteSubmitted BIT NULL,
+    CreatedDate DATETIME NOT NULL DEFAULT GETDATE(),
+    CONSTRAINT CK_LeaveRequest_MaxDays CHECK (DATEDIFF(DAY, StartDate, EndDate) BETWEEN 1 AND 10),
+    CONSTRAINT FK_LeaveRequest_Employee FOREIGN KEY (EmployeeID) REFERENCES Timesheet.Employee(EmployeeID),
+    CONSTRAINT FK_LeaveRequest_LeaveType FOREIGN KEY (LeaveTypeID) REFERENCES Timesheet.LeaveType(LeaveTypeID)
+	);
+
     PRINT 'LeaveRequest table created.';
 
 END;
@@ -419,7 +422,7 @@ LEFT JOIN Timesheet.Client c ON t.ClientID = c.ClientID
 LEFT JOIN Timesheet.Project p ON t.ProjectID = p.ProjectID
 INNER JOIN Timesheet.Description d ON t.DescriptionID = d.DescriptionID;
 GO
-PRINT 'View vw_TimesheetDisplay created or altered to format StartTime and EndTime as HH:mm.';
+PRINT 'View vw_TimesheetDisplay created or altered.';
 GO
 
 CREATE OR ALTER PROCEDURE Timesheet.usp_UpsertEmployee
