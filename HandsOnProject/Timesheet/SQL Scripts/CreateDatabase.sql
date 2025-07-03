@@ -386,7 +386,9 @@ PRINT 'ProcessedFiles table created.';
 
 END;
 GO
-
+	SET ANSI_NULLS ON;
+    SET QUOTED_IDENTIFIER ON;
+GO
 
 CREATE OR ALTER PROCEDURE Timesheet.CreateView
 AS
@@ -398,8 +400,7 @@ BEGIN
 
     DECLARE @sql NVARCHAR(MAX);
     SET @sql = '
-        SET ANSI_NULLS ON;
-        SET QUOTED_IDENTIFIER ON;
+        
         CREATE VIEW Timesheet.vw_TimesheetDisplay AS
         SELECT 
             e.EmployeeName,
@@ -444,8 +445,6 @@ BEGIN CATCH
     PRINT 'Error occurred: ' + @ErrorMessage;
 END CATCH;
 GO
-
-
 
 
 CREATE OR ALTER PROCEDURE Timesheet.usp_UpsertEmployee
