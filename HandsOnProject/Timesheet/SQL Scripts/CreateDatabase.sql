@@ -1,4 +1,8 @@
-﻿USE master;
+﻿SET ANSI_NULLS ON;
+GO
+SET QUOTED_IDENTIFIER ON;
+GO
+USE master;
 GO
 
 -- Drop and recreate TimesheetDB
@@ -385,9 +389,6 @@ PRINT 'ProcessedFiles table created.';
     PRINT 'LeaveRequest table created.';
 
 END;
-GO
-	SET ANSI_NULLS ON;
-    SET QUOTED_IDENTIFIER ON;
 GO
 
 CREATE OR ALTER PROCEDURE Timesheet.CreateView
