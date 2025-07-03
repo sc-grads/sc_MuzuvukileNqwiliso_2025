@@ -387,10 +387,52 @@ PRINT 'ProcessedFiles table created.';
 END;
 GO
 
+
+CREATE OR ALTER PROCEDURE Timesheet.CreateView
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF OBJECT_ID('Timesheet.vw_TimesheetDisplay', 'V') IS NOT NULL
+        DROP VIEW Timesheet.vw_TimesheetDisplay;
+
+    DECLARE @sql NVARCHAR(MAX);
+    SET @sql = '
+        CREATE VIEW Timesheet.vw_TimesheetDisplay AS
+        SELECT 
+            e.EmployeeName,
+            t.[Date],
+            t.[DayOfWeek],
+            c.ClientName,
+            p.ProjectName,
+            d.DescriptionName AS [Description],
+            t.BillableStatus,
+            t.Comments,
+            t.TotalHours,
+            COALESCE(LEFT(CONVERT(VARCHAR(5), t.StartTime, 108), 5), ''N/A'') AS StartTime,
+            COALESCE(LEFT(CONVERT(VARCHAR(5), t.EndTime, 108), 5), ''N/A'') AS EndTime
+        FROM Timesheet.Timesheet t
+        INNER JOIN Timesheet.Employee e ON t.EmployeeID = e.EmployeeID
+        LEFT JOIN Timesheet.Client c ON t.ClientID = c.ClientID
+        LEFT JOIN Timesheet.Project p ON t.ProjectID = p.ProjectID
+        INNER JOIN Timesheet.Description d ON t.DescriptionID = d.DescriptionID;
+    ';
+
+    EXEC sp_executesql @sql;
+
+    PRINT 'View vw_TimesheetDisplay created.';
+END;
+GO
+
 BEGIN TRY
     BEGIN TRANSACTION;
+
+    -- Step 3: Run the table creation procedure
     EXEC Timesheet.CreateTimesheetTables;
-    -- View creation code here
+
+    -- Step 4: Now the view procedure can be safely executed
+    EXEC Timesheet.CreateView;
+
     COMMIT TRANSACTION;
     PRINT 'Database setup completed successfully.';
 END TRY
@@ -401,29 +443,8 @@ BEGIN CATCH
 END CATCH;
 GO
 
--- Create view for clean Timesheet display without IDs
-CREATE OR ALTER VIEW Timesheet.vw_TimesheetDisplay
-AS
-SELECT 
-    e.EmployeeName,
-    t.[Date],
-    t.[DayOfWeek],
-    c.ClientName,
-    p.ProjectName,
-    d.DescriptionName AS [Description],
-    t.BillableStatus,
-    t.Comments,
-    t.TotalHours,
-    COALESCE(LEFT(CONVERT(VARCHAR(5), t.StartTime, 108), 5), 'N/A') AS StartTime,
-    COALESCE(LEFT(CONVERT(VARCHAR(5), t.EndTime, 108), 5), 'N/A') AS EndTime
-FROM Timesheet.Timesheet t
-INNER JOIN Timesheet.Employee e ON t.EmployeeID = e.EmployeeID
-LEFT JOIN Timesheet.Client c ON t.ClientID = c.ClientID
-LEFT JOIN Timesheet.Project p ON t.ProjectID = p.ProjectID
-INNER JOIN Timesheet.Description d ON t.DescriptionID = d.DescriptionID;
-GO
-PRINT 'View vw_TimesheetDisplay created or altered.';
-GO
+
+
 
 CREATE OR ALTER PROCEDURE Timesheet.usp_UpsertEmployee
     @EmployeeName NVARCHAR(255),
