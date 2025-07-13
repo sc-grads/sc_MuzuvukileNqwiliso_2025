@@ -20,7 +20,7 @@ def initialize_app():
     """Initialize schema and vector store."""
     global schema_metadata, vector_store
     print("Initializing schema and vector store...")
-    schema_metadata, vector_store = get_schema_metadata()
+    schema_metadata, column_map, vector_store = get_schema_metadata()
     if not schema_metadata:
         print("Warning: Schema metadata could not be loaded.")
     else:

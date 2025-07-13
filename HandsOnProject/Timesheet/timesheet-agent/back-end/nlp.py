@@ -1,37 +1,108 @@
 import spacy
 from fuzzywuzzy import process
+from datetime import datetime, timedelta
 import re
+from typing import List, Dict, Tuple, Optional
 
-nlp = spacy.load("en_core_web_sm")
+try:
+    nlp = spacy.load("en_core_web_md")  
+except OSError:
+    print("Warning: spaCy model 'en_core_web_lg' not found. Install with: python -m spacy download en_core_web_lg")
+    nlp = None
 
-def extract_entities(query):
-    doc = nlp(query)
+def normalize_date(date_str: str) -> Optional[Tuple[str, str]]:
+    """Normalize date strings to SQL-compatible range (start_date, end_date)."""
+    date_str = date_str.strip()
+    try:
+        if re.match(r"^\d{4}$", date_str):
+            return f"{date_str}-01-01", f"{date_str}-12-31"
+        if re.match(r"^Q[1-4]\s+\d{4}$", date_str, re.IGNORECASE):
+            year = int(date_str.split()[1])
+            quarter = int(date_str[1])
+            start_month = (quarter - 1) * 3 + 1
+            end_month = start_month + 2
+            start_date = f"{year}-{start_month:02d}-01"
+            end_date = (datetime(year, end_month, 1) + timedelta(days=31)).replace(day=1).strftime("%Y-%m-%d")
+            return start_date, end_date
+        if re.match(r"^\w+\s+\d{4}$", date_str, re.IGNORECASE):
+            parsed = datetime.strptime(date_str, "%B %Y")
+            start_date = parsed.replace(day=1).strftime("%Y-%m-%d")
+            end_date = (parsed.replace(day=28) + timedelta(days=4)).replace(day=1).strftime("%Y-%m-%d")
+            return start_date, end_date
+        parsed = datetime.strptime(date_str, "%B %d, %Y")
+        date_str = parsed.strftime("%Y-%m-%d")
+        return date_str, date_str
+    except ValueError:
+        return None
+
+def get_name_columns(schema_metadata: List[Dict]) -> List[str]:
+    """Identify potential name columns (VARCHAR/NVARCHAR containing 'name')."""
+    name_columns = []
+    for meta in schema_metadata:
+        for col in meta["columns"]:
+            if col["type"].lower().startswith(("varchar", "nvarchar")) and "name" in col["name"].lower():
+                name_columns.append(f"{meta['schema']}.{meta['table']}.{col['name']}")
+    return name_columns
+
+def extract_entities(query: str, schema_metadata: List[Dict], execute_query_fn) -> Dict:
+    """Extract entities and intent from a natural language query."""
     entities = {
         "names": [],
         "dates": [],
-        "keywords": []
+        "keywords": [],
+        "intent": None,
+        "target_table": None
     }
+
+    if nlp is None:
+        return entities
+
+    doc = nlp(query)
+    
     for ent in doc.ents:
         if ent.label_ == "PERSON":
             entities["names"].append(ent.text)
         elif ent.label_ == "DATE":
-            entities["dates"].append(ent.text)
-    
-    # Expanded keywords for better context
-    keywords = [
-        "timesheet", "employee", "client", "project", "leave", 
-        "total hours", "billable", "non-billable", "hour", "day", "week", "month", "year",
-        "request", "status", "type"
-    ]
-    for keyword in keywords:
-        if keyword in query.lower():
-            entities["keywords"].append(keyword)
-            
-    return entities
+            normalized = normalize_date(ent.text)
+            if normalized:
+                entities["dates"].append(normalized)
 
-def process_query(query, schema_metadata):
-    """
-    Processes the natural language query to extract key entities.
-    This function no longer modifies the query itself.
-    """
-    return extract_entities(query)
+    name_columns = get_name_columns(schema_metadata)
+    if name_columns and not entities["names"]:
+        for col in name_columns:
+            schema, table, col_name = col.split(".")
+            try:
+                rows, _ = execute_query_fn(f"SELECT DISTINCT [{col_name}] FROM [{schema}].[{table}]")
+                possible_names = [row[0] for row in rows if row[0]]
+                for word in query.split():
+                    match = process.extractOne(word, possible_names, score_cutoff=85)
+                    if match and match[0] not in entities["names"]:
+                        entities["names"].append(match[0])
+            except Exception as e:
+                print(f"Failed to query {col}: {e}")
+
+    intent_keywords = {
+        "list": ["show", "display", "list", "get", "find"],
+        "count": ["how many", "count"],
+        "sum": ["total", "sum", "how many hours", "average", "avg"],
+        "filter": ["where", "for", "in", "by"]
+    }
+    
+    query_lower = query.lower()
+    for intent, keywords in intent_keywords.items():
+        if any(keyword in query_lower for keyword in keywords):
+            entities["intent"] = intent
+            entities["keywords"].extend([k for k in keywords if k in query_lower])
+            break
+
+    table_names = {meta["table"].lower() for meta in schema_metadata}
+    table_aliases = {t: t for t in table_names}  # Base mapping
+    for meta in schema_metadata:
+        table_aliases[meta["table"].lower()] = meta["table"]
+        table_aliases[meta["table"].lower() + "s"] = meta["table"]
+    for token in doc:
+        token_text = token.text.lower()
+        if token_text in table_aliases:
+            entities["target_table"] = table_aliases[token_text]
+
+    return entities
