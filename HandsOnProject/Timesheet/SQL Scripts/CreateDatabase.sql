@@ -198,7 +198,7 @@ BEGIN
 
     -- Timesheet Table
     CREATE TABLE Timesheet.Timesheet (
-        Timesheet_ID INT PRIMARY KEY DEFAULT NEXT VALUE FOR Timesheet.TimesheetSeq,
+        TimesheetID INT PRIMARY KEY DEFAULT NEXT VALUE FOR Timesheet.TimesheetSeq,
         EmployeeID INT NOT NULL,
         [Date] DATE NOT NULL,
         [DayOfWeek] VARCHAR(10) NOT NULL CHECK ([DayOfWeek] IN ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday')),
