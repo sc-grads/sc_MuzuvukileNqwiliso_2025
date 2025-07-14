@@ -6,6 +6,7 @@ import time
 import argparse
 import os
 from datetime import datetime
+from config import USE_LIVE_DB
 
 def main(refresh_schema=False, schemas=None):
     try:
@@ -18,7 +19,7 @@ def main(refresh_schema=False, schemas=None):
             print("Schema cache invalidated.")
 
         schema_metadata, column_map, vector_store = get_schema_metadata(schemas=schemas)
-        
+
         if not schema_metadata:
             print("No schema metadata available. Exiting.")
             return
@@ -29,11 +30,12 @@ def main(refresh_schema=False, schemas=None):
         print(f"Failed to initialize application: {e}")
         return
 
-    print("\nWelcome to the SQL AI Agent!")
-    print("Enter a natural language query about your database (or 'exit' to quit).")
+    query_fn = execute_query if USE_LIVE_DB else lambda sql: (None, None)
 
-    def no_exec_query(sql):
-        return None, None
+    print(f"\nLive DB fuzzy name matching is {'ENABLED' if USE_LIVE_DB else 'DISABLED'}.")
+
+    print("\nWelcome to the SQL AI Agent 🤖!")
+    print("Enter a natural language query about your database (or 'exit' to quit).")
 
     while True:
         nl_query = input("\nYour query: ")
@@ -42,15 +44,15 @@ def main(refresh_schema=False, schemas=None):
 
         start_time = time.time()
         timestamp = datetime.now().isoformat()
-        
+
         try:
-            entities = extract_entities(nl_query, schema_metadata, no_exec_query)
+            entities = extract_entities(nl_query, schema_metadata, query_fn)
             print(f"Extracted Entities: {entities}")
 
             sql_query = generate_sql_query(nl_query, schema_metadata, column_map, entities, vector_store)
             generation_time = time.time() - start_time
             print(f"SQL generation took {generation_time:.2f} seconds")
-            
+
             success = not sql_query.startswith(("Failed", "Error"))
             error_message = sql_query if not success else None
             save_query(nl_query, sql_query if success else None, timestamp, success, error_message)
@@ -85,6 +87,6 @@ if __name__ == "__main__":
         help="Comma-separated list of schemas to use (e.g., Timesheet,Sales). If not provided, all schemas are loaded."
     )
     args = parser.parse_args()
-    
+
     schemas = args.schemas.split(",") if args.schemas else None
     main(refresh_schema=args.refresh_schema, schemas=schemas)

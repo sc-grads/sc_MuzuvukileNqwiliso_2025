@@ -139,6 +139,19 @@ def get_schema_metadata(schemas=None):
         return [], {}, vector_store
 
 def execute_query(query):
+    try:
+        engine = get_engine()
+        with engine.connect().execution_options(stream_results=True) as conn:
+            result = conn.execute(text(query))
+            if query.strip().upper().startswith("SELECT"):
+                rows = result.fetchall()
+                columns = result.keys()
+                return rows, columns
+            return None, None
+    except Exception as e:
+        print(f"Query execution failed: {e}")
+        return None, None
+
     engine = get_engine()
     try:
         with engine.connect() as conn:

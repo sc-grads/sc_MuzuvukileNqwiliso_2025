@@ -7,11 +7,10 @@ from typing import List, Dict, Tuple, Optional
 try:
     nlp = spacy.load("en_core_web_md")  
 except OSError:
-    print("Warning: spaCy model 'en_core_web_lg' not found. Install with: python -m spacy download en_core_web_lg")
+    print("Warning: spaCy model 'en_core_web_md' not found.")
     nlp = None
 
 def normalize_date(date_str: str) -> Optional[Tuple[str, str]]:
-    """Normalize date strings to SQL-compatible range (start_date, end_date)."""
     date_str = date_str.strip()
     try:
         if re.match(r"^\d{4}$", date_str):
@@ -30,13 +29,11 @@ def normalize_date(date_str: str) -> Optional[Tuple[str, str]]:
             end_date = (parsed.replace(day=28) + timedelta(days=4)).replace(day=1).strftime("%Y-%m-%d")
             return start_date, end_date
         parsed = datetime.strptime(date_str, "%B %d, %Y")
-        date_str = parsed.strftime("%Y-%m-%d")
-        return date_str, date_str
+        return parsed.strftime("%Y-%m-%d"), parsed.strftime("%Y-%m-%d")
     except ValueError:
         return None
 
 def get_name_columns(schema_metadata: List[Dict]) -> List[str]:
-    """Identify potential name columns (VARCHAR/NVARCHAR containing 'name')."""
     name_columns = []
     for meta in schema_metadata:
         for col in meta["columns"]:
@@ -45,7 +42,6 @@ def get_name_columns(schema_metadata: List[Dict]) -> List[str]:
     return name_columns
 
 def extract_entities(query: str, schema_metadata: List[Dict], execute_query_fn) -> Dict:
-    """Extract entities and intent from a natural language query."""
     entities = {
         "names": [],
         "dates": [],
@@ -58,7 +54,7 @@ def extract_entities(query: str, schema_metadata: List[Dict], execute_query_fn) 
         return entities
 
     doc = nlp(query)
-    
+
     for ent in doc.ents:
         if ent.label_ == "PERSON":
             entities["names"].append(ent.text)
@@ -73,13 +69,16 @@ def extract_entities(query: str, schema_metadata: List[Dict], execute_query_fn) 
             schema, table, col_name = col.split(".")
             try:
                 rows, _ = execute_query_fn(f"SELECT DISTINCT [{col_name}] FROM [{schema}].[{table}]")
-                possible_names = [row[0] for row in rows if row[0]]
-                for word in query.split():
-                    match = process.extractOne(word, possible_names, score_cutoff=85)
-                    if match and match[0] not in entities["names"]:
-                        entities["names"].append(match[0])
+                if rows:
+                    possible_names = [row[0] for row in rows if row and row[0]]
+                    for word in query.split():
+                        match = process.extractOne(word, possible_names, score_cutoff=85)
+                        if match and match[0] not in entities["names"]:
+                            entities["names"].append(match[0])
+                # else:
+                #     print(f"Skipping fuzzy match for {col} - no data")
             except Exception as e:
-                print(f"Failed to query {col}: {e}")
+                print(f"Failed to query {schema}.{table}.{col_name}: {e}")
 
     intent_keywords = {
         "list": ["show", "display", "list", "get", "find"],
@@ -87,7 +86,7 @@ def extract_entities(query: str, schema_metadata: List[Dict], execute_query_fn) 
         "sum": ["total", "sum", "how many hours", "average", "avg"],
         "filter": ["where", "for", "in", "by"]
     }
-    
+
     query_lower = query.lower()
     for intent, keywords in intent_keywords.items():
         if any(keyword in query_lower for keyword in keywords):
@@ -96,10 +95,11 @@ def extract_entities(query: str, schema_metadata: List[Dict], execute_query_fn) 
             break
 
     table_names = {meta["table"].lower() for meta in schema_metadata}
-    table_aliases = {t: t for t in table_names}  # Base mapping
+    table_aliases = {t: t for t in table_names}
     for meta in schema_metadata:
         table_aliases[meta["table"].lower()] = meta["table"]
         table_aliases[meta["table"].lower() + "s"] = meta["table"]
+
     for token in doc:
         token_text = token.text.lower()
         if token_text in table_aliases:

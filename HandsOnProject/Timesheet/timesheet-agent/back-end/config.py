@@ -14,7 +14,7 @@ LLM_MODEL = os.getenv("LLM_MODEL", "mistral:7b")
 CHROMADB_DIR = os.getenv("CHROMADB_DIR", "./chroma_db")
 CHROMADB_COLLECTION = os.getenv("CHROMADB_COLLECTION", "timesheet_schema")
 FLASK_PORT = int(os.getenv("FLASK_PORT", "5000"))
-
+USE_LIVE_DB = os.getenv("USE_LIVE_DB", "False").lower() == "true"
 EXCLUDE_TABLE_PATTERNS = [
     r"staging",
     r"audit",

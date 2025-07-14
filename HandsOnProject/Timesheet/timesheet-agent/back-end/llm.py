@@ -8,40 +8,53 @@ def validate_sql(sql_query, schema_metadata, column_map):
     try:
         parsed = sqlparse.parse(sql_query)
         if not parsed:
-            return False, "Invalid SQL: Unable to parse query."
+            return False, "Invalid SQL: Could not parse."
 
         statement = parsed[0]
-        if statement.get_type() != 'SELECT':
+        if statement.get_type() != "SELECT":
             return False, "Only SELECT queries are allowed."
 
-        mentioned_tables = set()
-        from_seen = False
-        for token in statement.tokens:
-            if token.is_keyword and token.value.upper() == 'FROM':
-                from_seen = True
-                continue
-            if from_seen and not token.is_keyword:
-                table_matches = re.finditer(r'\[?(\w+)\]?\.\[?(\w+)\]?', str(token))
-                for match in table_matches:
-                    schema, table = match.groups()
-                    mentioned_tables.add(f"{schema}.{table}")
-
-        valid_tables = set(column_map.keys())
-        if mentioned_tables - valid_tables:
-            return False, f"Invalid table(s): {', '.join(mentioned_tables - valid_tables)}"
+        all_table_keys = set(column_map.keys())  
+        used_tables = set()
+        alias_to_table = {}
 
         for token in statement.tokens:
             if isinstance(token, sqlparse.sql.Identifier):
-                parts = [p.value for p in token.tokens if not p.is_whitespace]
-                if len(parts) >= 2:
-                    table_part, column_part = parts[0], parts[-1]
-                    table_key = next((t for t in mentioned_tables if t.endswith(f".{table_part}")), None)
-                    if table_key and column_part.lower() not in [c.lower() for c in column_map.get(table_key, [])]:
-                        return False, f"Column '{column_part}' not found in table '{table_key}'"
+                raw = str(token)
+                match = re.search(r'\[?(\w+)\]?\.\[?(\w+)\]?(?:\s+AS\s+(\w+))?', raw, re.IGNORECASE)
+                if match:
+                    schema, table, alias = match.groups()
+                    table_key = f"{schema}.{table}"
+                    used_tables.add(table_key)
+                    if alias:
+                        alias_to_table[alias.strip()] = table_key
+                    else:
+                        alias_to_table[table] = table_key
+
+        for token in statement.flatten():
+            if token.ttype is None:
+                identifier = token.value.strip("[]")
+                if "." in identifier:
+                    left, right = identifier.split(".", 1)
+                    table_key = alias_to_table.get(left) or next((k for k in all_table_keys if k.endswith(f".{left}")), None)
+                    if not table_key:
+                        return False, f"Invalid alias or table '{left}' used in column reference '{identifier}'"
+                    if right not in column_map.get(table_key, []):
+                        return False, f"Column '{right}' not found in table '{table_key}'"
+                else:
+                    found = False
+                    for t in used_tables:
+                        if identifier in column_map.get(t, []):
+                            found = True
+                            break
+                    if not found:
+                        return False, f"Unqualified column '{identifier}' not found in any used table"
 
         return True, sql_query
+
     except Exception as e:
-        return False, f"SQL validation error: {str(e)}"
+        return False, f"Validator error: {str(e)}"
+
 
 def col_text(col):
     return f"{col['name']} ({col['type']})"
