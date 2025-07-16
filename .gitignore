@@ -84,3 +84,10 @@ packages/
 
 # Node.js (if applicable)
 node_modules/
+
+
+column_map.json
+query_history.json
+schema_cache.json
+chromadb_data
+test_file.py
