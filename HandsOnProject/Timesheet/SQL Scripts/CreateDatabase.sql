@@ -235,19 +235,23 @@ BEGIN
     );
     PRINT 'Forecast table created.';
 
-    -- ProcessedFiles Table
-    IF OBJECT_ID('Timesheet.ProcessedFiles', 'U') IS NOT NULL
-        DROP TABLE Timesheet.ProcessedFiles;
-   CREATE TABLE Timesheet.ProcessedFiles (
-    FileID INT PRIMARY KEY IDENTITY(1,1),
-    FilePath VARCHAR(500) NOT NULL,
-    FileName VARCHAR(255) NOT NULL,
-    EmployeeName NVARCHAR(255) NOT NULL,
-    [RowCount] INT NOT NULL,
-	DataHash VARCHAR(64),
-    LastModifiedDate DATETIME NOT NULL,
-    ProcessedDate DATETIME NOT NULL DEFAULT GETDATE()
-);
+	 -- ProcessedFiles Table
+	IF OBJECT_ID('Timesheet.ProcessedFiles', 'U') IS NOT NULL
+		DROP TABLE Timesheet.ProcessedFiles;
+
+	CREATE TABLE Timesheet.ProcessedFiles (
+		FileID INT PRIMARY KEY IDENTITY(1,1),
+		FilePath VARCHAR(500) NOT NULL,
+		FileName VARCHAR(255) NOT NULL,
+		EmployeeID INT NOT NULL,  
+		[RowCount] INT NOT NULL,
+		DataHash VARCHAR(64),
+		LastModifiedDate DATETIME NOT NULL,
+		ProcessedDate DATETIME NOT NULL DEFAULT GETDATE(),
+		CONSTRAINT FK_ProcessedFiles_Employee
+		FOREIGN KEY (EmployeeID) REFERENCES Timesheet.Employee(EmployeeID)
+	);
+
 
 CREATE INDEX IX_ProcessedFiles_FileName ON Timesheet.ProcessedFiles(FileName);
 
@@ -689,7 +693,7 @@ GO
 CREATE OR ALTER PROCEDURE Timesheet.usp_ProcessTimesheetFile
 (
     @IsNewFile BIT,
-    @EmployeeName NVARCHAR(255),
+    @EmployeeID INT,
     @FileName NVARCHAR(255),
     @FilePath NVARCHAR(500),
     @RowCount INT,
@@ -706,6 +710,12 @@ BEGIN
     DECLARE @CountDifference INT;
     DECLARE @Message NVARCHAR(1000);
 
+	 DECLARE @EmployeeName NVARCHAR(255);
+
+    SELECT @EmployeeName = EmployeeName
+    FROM Timesheet.Employee
+    WHERE EmployeeID = @EmployeeID;
+
     IF @IsNewFile = 1
     BEGIN
         SET @Message = 'New timesheet uploaded with ' + CAST(@RowCount AS NVARCHAR(10)) + 
@@ -719,13 +729,14 @@ BEGIN
             'Insert', @Message, GETDATE()
         );
 
-        INSERT INTO Timesheet.ProcessedFiles (
-            FilePath, FileName, EmployeeName, [RowCount], LastModifiedDate, ProcessedDate, DataHash
-        )
-        VALUES (
-            @FilePath, @FileName, @EmployeeName, @RowCount,
-            CAST(@LastModified AS DATETIME), GETDATE(), @CurrentDataHash
-        );
+       INSERT INTO Timesheet.ProcessedFiles (
+		FilePath, FileName, EmployeeID, [RowCount], LastModifiedDate, ProcessedDate, DataHash
+		)
+		VALUES (
+			@FilePath, @FileName, @EmployeeID, @RowCount,
+			CAST(@LastModified AS DATETIME), GETDATE(), @CurrentDataHash
+		);
+
     END
     ELSE
     BEGIN
