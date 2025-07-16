@@ -1,26 +1,43 @@
-from database import get_schema_metadata, execute_query
+from database import get_schema_metadata, execute_query, refresh_schema_cache
 from llm import generate_sql_query
-from nlp import process_query
+from nlp import extract_entities
 from history import save_query, get_query_history
 import time
 import argparse
 import os
+from datetime import datetime
+from config import USE_LIVE_DB, update_mssql_connection
 
-def main(refresh_schema=False):
-    if refresh_schema:
-        # Invalidate the cache by deleting the cache file
-        cache_file = "schema_cache.json"
-        if os.path.exists(cache_file):
-            os.remove(cache_file)
-            print("Schema cache has been invalidated.")
+def main(refresh_schema=False, database=None):
+    update_mssql_connection(database)
 
-    schema_metadata, vector_store = get_schema_metadata()
-    if not schema_metadata:
-        print("No schema metadata available. Exiting.")
+    try:
+        if refresh_schema:
+            cache_files = ["schema_cache.json", "column_map.json"]
+            for cache_file in cache_files:
+                if os.path.exists(cache_file):
+                    os.remove(cache_file)
+                    print(f"Cleared cache: {cache_file}")
+            print("Schema cache invalidated.")
+
+        schema_metadata, column_map, vector_store = get_schema_metadata()
+
+        if not schema_metadata:
+            print("No schema metadata available. Exiting.")
+            return
+        else:
+            print(f"Loaded schema metadata for {len(schema_metadata)} tables in schemas: {', '.join(set(m['schema'] for m in schema_metadata))}")
+
+    except Exception as e:
+        print(f"Failed to initialize application: {e}")
         return
 
-    print("\nWelcome to the Timesheet AI Agent!")
-    print("Enter a natural language query about Timesheets (or 'exit' to quit).")
+    query_fn = execute_query if USE_LIVE_DB else lambda sql: (None, None)
+
+    print(f"\nLive DB fuzzy name matching is {'ENABLED' if USE_LIVE_DB else 'DISABLED'}.")
+
+    print("\nWelcome to the Data Agent 🤖!")
+    print("Enter a natural language query about your database (or 'exit' to quit).")
 
     while True:
         nl_query = input("\nYour query: ")
@@ -28,42 +45,49 @@ def main(refresh_schema=False):
             break
 
         start_time = time.time()
-        
-        entities = process_query(nl_query, schema_metadata)
-        print(f"Extracted Entities: {entities}")
+        timestamp = datetime.now().isoformat()
 
-        sql_query = generate_sql_query(nl_query, schema_metadata, entities, vector_store)
-        print(f"SQL generation took {time.time() - start_time:.2f} seconds")
-        
-        if sql_query:
-            print("\nGenerated SQL Query:")
-            print(sql_query)
-            save_query(nl_query, sql_query)
-            
-            print("\nWould you like to execute this query? (y/n)")
-            if input().lower() == "y":
-                rows, columns = execute_query(sql_query)
-                if rows and columns:
-                    print("\nQuery Results:")
-                    for row in rows:
-                        print(dict(zip(columns, row)))
-                else:
-                    print("No results or query did not return data.")
-        else:
-            print("Could not generate a valid SQL query. Please clarify or try a different query.")
+        try:
+            entities = extract_entities(nl_query, schema_metadata, query_fn, vector_store)
+            print(f"Extracted Entities: {entities}")
+
+            sql_query = generate_sql_query(nl_query, schema_metadata, column_map, entities, vector_store)
+            generation_time = time.time() - start_time
+            print(f"SQL generation took {generation_time:.2f} seconds")
+
+            success = not sql_query.startswith(("Failed", "Error", "This query is not related"))
+            error_message = sql_query if not success else None
+            save_query(nl_query, sql_query if success else None, timestamp, success, error_message)
+
+            if success:
+                print("\nGenerated SQL Query:")
+                print(sql_query)
+            else:
+                print(f"\n{sql_query}")
+
+        except Exception as e:
+            print(f"Error processing query: {e}")
+            save_query(nl_query, None, timestamp, False, str(e))
 
         history = get_query_history()
         if history:
             print("\nRecent Queries:")
             for entry in history[-3:]:
-                print(f"- {entry['timestamp']}: {entry['natural_language_query']} -> {entry['sql_query']}")
+                status = "Success" if entry["success"] else f"Failed: {entry['error']}"
+                print(f"- {entry['timestamp']}: {entry['natural_language_query']} ({status})")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="TimesheetDB AI Agent")
+    parser = argparse.ArgumentParser(description="SQL AI Agent for any database")
     parser.add_argument(
         "--refresh-schema",
         action="store_true",
         help="Force a refresh of the database schema cache."
     )
+    parser.add_argument(
+        "--database",
+        type=str,
+        help="Specify the database to connect to. Overrides the default database in MSSQL_CONNECTION."
+    )
     args = parser.parse_args()
-    main(refresh_schema=args.refresh_schema)
+
+    main(refresh_schema=args.refresh_schema, database=args.database)
