@@ -4,10 +4,37 @@ from datetime import datetime, timedelta
 import re
 from typing import List, Dict, Tuple, Optional
 
-try:
-    nlp = spacy.load("en_core_web_md")  
-except OSError:
-    print("Warning: spaCy model 'en_core_web_md' not found.")
+def initialize_nlp():
+    global nlp
+    try:
+        print("Attempting to load spaCy model 'en_core_web_md'...")
+        nlp = spacy.load("en_core_web_md")
+        print("spaCy model loaded successfully. Checking capabilities...")
+        # Test the model with a sample text
+        test_doc = nlp("John Smith works at Google")
+        if hasattr(test_doc, 'ents') and test_doc.ents:
+            print("Model supports entity recognition.")
+        else:
+            print("Warning: Model does not support entity recognition. Falling back to keyword-based extraction.")
+        return True
+    except OSError as e:
+        print(f"Warning: spaCy model 'en_core_web_md' not found or corrupted: {e}")
+        print("Attempting to download the model...")
+        import subprocess
+        try:
+            subprocess.run(["python", "-m", "spacy", "download", "en_core_web_md"], check=True)
+            nlp = spacy.load("en_core_web_md")
+            print("Model downloaded and loaded successfully.")
+            return True
+        except subprocess.CalledProcessError as e:
+            print(f"Failed to download spaCy model: {e}")
+            return False
+    except Exception as e:
+        print(f"Unexpected error loading spaCy model: {e}")
+        return False
+
+# Initialize nlp at module load
+if not initialize_nlp():
     nlp = None
 
 def normalize_date(date_str: str) -> Optional[Tuple[str, str]]:
@@ -41,28 +68,51 @@ def get_name_columns(schema_metadata: List[Dict]) -> List[str]:
                 name_columns.append(f"{meta['schema']}.{meta['table']}.{col['name']}")
     return name_columns
 
-def extract_entities(query: str, schema_metadata: List[Dict], execute_query_fn) -> Dict:
+def extract_entities(query: str, schema_metadata: List[Dict], execute_query_fn, vector_store=None) -> Dict:
     entities = {
         "names": [],
         "dates": [],
         "keywords": [],
         "intent": None,
-        "target_table": None
+        "suggested_tables": [],
+        "is_database_related": False
     }
 
-    if nlp is None:
-        return entities
+    if nlp is None or not schema_metadata:
+        print("Warning: NLP model not available or no schema metadata. Using keyword-based extraction.")
+    else:
+        try:
+            doc = nlp(query)
+            print(f"Processed query: '{query}' into Doc object with {len(doc)} tokens. Entities found: {len(doc.ents)}")
+            if doc.ents:
+                for ent in doc.ents:
+                    if ent.label_ == "PERSON":
+                        entities["names"].append(ent.text)
+                    elif ent.label_ == "DATE":
+                        normalized = normalize_date(ent.text)
+                        if normalized:
+                            entities["dates"].append(normalized)
+            else:
+                print("No entities detected by NER. Relying on keyword and database-based extraction.")
+        except Exception as e:
+            print(f"Error processing query with spaCy: {e}. Falling back to keyword-based extraction.")
 
-    doc = nlp(query)
+    # Keyword-based intent detection (primary method)
+    query_lower = query.lower()
+    intent_keywords = {
+        "list": ["show", "display", "list", "get", "find"],
+        "count": ["how many", "count"],
+        "sum": ["total", "sum", "how many hours", "average", "avg"],
+        "filter": ["where", "for", "in", "by"]
+    }
+    for intent, keywords in intent_keywords.items():
+        if any(keyword in query_lower for keyword in keywords):
+            entities["intent"] = intent
+            entities["keywords"].extend([k for k in keywords if k in query_lower])
+            entities["is_database_related"] = True
+            break
 
-    for ent in doc.ents:
-        if ent.label_ == "PERSON":
-            entities["names"].append(ent.text)
-        elif ent.label_ == "DATE":
-            normalized = normalize_date(ent.text)
-            if normalized:
-                entities["dates"].append(normalized)
-
+    # Database-based name extraction
     name_columns = get_name_columns(schema_metadata)
     if name_columns and not entities["names"]:
         for col in name_columns:
@@ -75,34 +125,16 @@ def extract_entities(query: str, schema_metadata: List[Dict], execute_query_fn) 
                         match = process.extractOne(word, possible_names, score_cutoff=85)
                         if match and match[0] not in entities["names"]:
                             entities["names"].append(match[0])
-                # else:
-                #     print(f"Skipping fuzzy match for {col} - no data")
             except Exception as e:
                 print(f"Failed to query {schema}.{table}.{col_name}: {e}")
 
-    intent_keywords = {
-        "list": ["show", "display", "list", "get", "find"],
-        "count": ["how many", "count"],
-        "sum": ["total", "sum", "how many hours", "average", "avg"],
-        "filter": ["where", "for", "in", "by"]
-    }
-
-    query_lower = query.lower()
-    for intent, keywords in intent_keywords.items():
-        if any(keyword in query_lower for keyword in keywords):
-            entities["intent"] = intent
-            entities["keywords"].extend([k for k in keywords if k in query_lower])
-            break
-
-    table_names = {meta["table"].lower() for meta in schema_metadata}
-    table_aliases = {t: t for t in table_names}
-    for meta in schema_metadata:
-        table_aliases[meta["table"].lower()] = meta["table"]
-        table_aliases[meta["table"].lower() + "s"] = meta["table"]
-
-    for token in doc:
-        token_text = token.text.lower()
-        if token_text in table_aliases:
-            entities["target_table"] = table_aliases[token_text]
+    # Vector store suggestions
+    if vector_store:
+        schema_docs = vector_store.similarity_search(query, k=3)
+        for doc in schema_docs:
+            table_info = doc.metadata
+            if table_info.get("type") == "schema":
+                entities["suggested_tables"].append(f"{table_info['schema']}.{table_info['table']}")
+                entities["is_database_related"] = True
 
     return entities

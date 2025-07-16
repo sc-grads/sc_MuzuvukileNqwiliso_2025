@@ -6,9 +6,11 @@ import time
 import argparse
 import os
 from datetime import datetime
-from config import USE_LIVE_DB
+from config import USE_LIVE_DB, update_mssql_connection
 
-def main(refresh_schema=False, schemas=None):
+def main(refresh_schema=False, database=None):
+    update_mssql_connection(database)
+
     try:
         if refresh_schema:
             cache_files = ["schema_cache.json", "column_map.json"]
@@ -18,7 +20,7 @@ def main(refresh_schema=False, schemas=None):
                     print(f"Cleared cache: {cache_file}")
             print("Schema cache invalidated.")
 
-        schema_metadata, column_map, vector_store = get_schema_metadata(schemas=schemas)
+        schema_metadata, column_map, vector_store = get_schema_metadata()
 
         if not schema_metadata:
             print("No schema metadata available. Exiting.")
@@ -34,7 +36,7 @@ def main(refresh_schema=False, schemas=None):
 
     print(f"\nLive DB fuzzy name matching is {'ENABLED' if USE_LIVE_DB else 'DISABLED'}.")
 
-    print("\nWelcome to the SQL AI Agent 🤖!")
+    print("\nWelcome to the Data Agent 🤖!")
     print("Enter a natural language query about your database (or 'exit' to quit).")
 
     while True:
@@ -46,14 +48,14 @@ def main(refresh_schema=False, schemas=None):
         timestamp = datetime.now().isoformat()
 
         try:
-            entities = extract_entities(nl_query, schema_metadata, query_fn)
+            entities = extract_entities(nl_query, schema_metadata, query_fn, vector_store)
             print(f"Extracted Entities: {entities}")
 
             sql_query = generate_sql_query(nl_query, schema_metadata, column_map, entities, vector_store)
             generation_time = time.time() - start_time
             print(f"SQL generation took {generation_time:.2f} seconds")
 
-            success = not sql_query.startswith(("Failed", "Error"))
+            success = not sql_query.startswith(("Failed", "Error", "This query is not related"))
             error_message = sql_query if not success else None
             save_query(nl_query, sql_query if success else None, timestamp, success, error_message)
 
@@ -61,7 +63,7 @@ def main(refresh_schema=False, schemas=None):
                 print("\nGenerated SQL Query:")
                 print(sql_query)
             else:
-                print(f"Could not generate a valid SQL query: {sql_query}")
+                print(f"\n{sql_query}")
 
         except Exception as e:
             print(f"Error processing query: {e}")
@@ -82,11 +84,10 @@ if __name__ == "__main__":
         help="Force a refresh of the database schema cache."
     )
     parser.add_argument(
-        "--schemas",
+        "--database",
         type=str,
-        help="Comma-separated list of schemas to use (e.g., Timesheet,Sales). If not provided, all schemas are loaded."
+        help="Specify the database to connect to. Overrides the default database in MSSQL_CONNECTION."
     )
     args = parser.parse_args()
 
-    schemas = args.schemas.split(",") if args.schemas else None
-    main(refresh_schema=args.refresh_schema, schemas=schemas)
+    main(refresh_schema=args.refresh_schema, database=args.database)

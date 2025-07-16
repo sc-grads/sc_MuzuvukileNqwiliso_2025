@@ -1,27 +1,40 @@
 from sqlalchemy import create_engine, inspect, text
 from config import MSSQL_CONNECTION, CHROMADB_DIR, CHROMADB_COLLECTION, OLLAMA_BASE_URL, LLM_MODEL, EXCLUDE_TABLE_PATTERNS
 from langchain_chroma import Chroma
-from langchain_ollama import OllamaEmbeddings
+from langchain_ollama import OllamaEmbeddings, ChatOllama
 import os
 import chromadb
 import json
 import re
 
+os.environ["CHROMA_TELEMETRY_ENABLED"] = "false"
+
+import urllib.parse
+
+def convert_odbc_to_sqlalchemy_url(odbc_string):
+    """Convert ODBC connection string to SQLAlchemy-compatible format using URL encoding."""
+    encoded = urllib.parse.quote_plus(odbc_string)
+    return f"mssql+pyodbc:///?odbc_connect={encoded}"
+
+
 def get_engine():
     try:
-        return create_engine(MSSQL_CONNECTION, echo=False)
+        sqlalchemy_url = convert_odbc_to_sqlalchemy_url(MSSQL_CONNECTION)
+        return create_engine(sqlalchemy_url, echo=False)
     except Exception as e:
         print(f"Failed to create database engine: {e}")
         raise
 
 def initialize_vector_store():
     try:
-        chromadb.config.Settings(anonymized_telemetry=False)
+        # Suppress telemetry to avoid argument errors
+        settings = chromadb.Settings(allow_reset=True, is_persistent=True, anonymized_telemetry=False)
         embeddings = OllamaEmbeddings(model=LLM_MODEL, base_url=OLLAMA_BASE_URL)
         return Chroma(
             collection_name=CHROMADB_COLLECTION,
             embedding_function=embeddings,
-            persist_directory=CHROMADB_DIR
+            persist_directory=CHROMADB_DIR,
+            client_settings=settings
         )
     except Exception as e:
         print(f"Vector store initialization warning: {e}")
@@ -30,18 +43,49 @@ def initialize_vector_store():
 def should_exclude_table(table_name, exclude_patterns):
     return any(re.compile(pattern, re.IGNORECASE).search(table_name) for pattern in exclude_patterns)
 
-def get_schema_metadata(schemas=None):
+def generate_llm_description(schema, table, columns, relationships=None):
+    try:
+        llm = ChatOllama(model=LLM_MODEL, base_url=OLLAMA_BASE_URL, temperature=0.3)
+
+        col_summary = "\n".join([f"- {col['name']} ({col['type']})" for col in columns])
+        rel_summary = "\n".join([
+            f"- {r['source_column']} → {r['target_table']}({r['target_column']})" for r in relationships
+        ]) if relationships else "None"
+
+        prompt = f"""
+        You are a helpful database assistant. Given the following table and column information, generate a one-line human-readable description of what this table likely stores.
+
+        Schema: {schema}
+        Table: {table}
+        Columns:
+        {col_summary}
+        Foreign Keys:
+        {rel_summary}
+
+        Description:
+        """
+
+        response = llm.invoke(prompt).content.strip()
+        return response
+
+    except Exception as e:
+        print(f"Failed to generate LLM description for {schema}.{table}: {e}")
+        return f"A table named {table} with fields like {', '.join([c['name'] for c in columns[:3]])}."
+
+def get_schema_metadata():
     cache_file = "schema_cache.json"
     column_map_file = "column_map.json"
+    cache_key = hash(MSSQL_CONNECTION)  # Invalidate cache on connection change
 
     if os.path.exists(cache_file) and os.path.exists(column_map_file):
         try:
             with open(cache_file, "r") as f:
-                schema_metadata = json.load(f)
-            with open(column_map_file, "r") as f:
-                column_map = json.load(f)
-            vector_store = initialize_vector_store()
-            return schema_metadata, column_map, vector_store
+                cached_data = json.load(f)
+            if cached_data.get("cache_key") == cache_key:
+                with open(column_map_file, "r") as f:
+                    column_map = json.load(f)
+                vector_store = initialize_vector_store()
+                return cached_data["metadata"], column_map, vector_store
         except Exception as e:
             print(f"Failed to load cache: {e}")
 
@@ -53,15 +97,13 @@ def get_schema_metadata(schemas=None):
     try:
         with engine.connect() as conn:
             inspector = inspect(engine)
-            if schemas is None:
-                schemas = [s.schema_name for s in inspector.get_schema_names() if s != "INFORMATION_SCHEMA"]
-
+            excluded_schemas = ["INFORMATION_SCHEMA", "guest", "sys", "db_owner", "db_accessadmin", 
+                                "db_securityadmin", "db_ddladmin", "db_backupoperator", 
+                                "db_datareader", "db_datawriter", "db_denydatareader", "db_denydatawriter"]
+            schemas = [s for s in inspector.get_schema_names() if s not in excluded_schemas]
             for schema in schemas:
-                table_names = [t for t in inspector.get_table_names(schema=schema) 
-                             if not should_exclude_table(t, EXCLUDE_TABLE_PATTERNS)]
-                view_names = inspector.get_view_names(schema=schema)
-                table_names.extend(view_names)
-
+                table_names = [t for t in inspector.get_table_names(schema=schema)
+                               if not should_exclude_table(t, EXCLUDE_TABLE_PATTERNS)]
                 for table_name in table_names:
                     columns = inspector.get_columns(table_name, schema=schema)
                     fks = inspector.get_foreign_keys(table_name, schema=schema)
@@ -87,10 +129,12 @@ def get_schema_metadata(schemas=None):
                         } for fk in fks
                     ]
 
+                    description = generate_llm_description(schema, table_name, col_details, fk_info)
+
                     table_metadata = {
                         "schema": schema,
                         "table": table_name,
-                        "description": f"Contains data about {table_name.replace('_', ' ')}",
+                        "description": description,
                         "columns": col_details,
                         "relationships": fk_info,
                         "primary_keys": pks.get('constrained_columns', []),
@@ -107,7 +151,7 @@ def get_schema_metadata(schemas=None):
                             schema_text = (
                                 f"Schema: {schema}\n"
                                 f"Table: {table_name}\n"
-                                f"Description: {table_metadata['description']}\n"
+                                f"Description: {description}\n"
                                 f"Columns: {column_str}\n"
                                 f"Relationships: {rel_str}\n"
                                 f"Primary Keys: {pk_str}"
@@ -128,7 +172,7 @@ def get_schema_metadata(schemas=None):
                             print(f"Failed to store schema for {schema}.{table_name}: {e}")
 
             with open(cache_file, "w") as f:
-                json.dump(schema_metadata, f, indent=2)
+                json.dump({"cache_key": cache_key, "metadata": schema_metadata}, f, indent=2)
             with open(column_map_file, "w") as f:
                 json.dump(column_map, f, indent=2)
 
@@ -152,23 +196,11 @@ def execute_query(query):
         print(f"Query execution failed: {e}")
         return None, None
 
-    engine = get_engine()
-    try:
-        with engine.connect() as conn:
-            result = conn.execute(text(query))
-            conn.commit()
-            if query.strip().upper().startswith("SELECT"):
-                return result.fetchall(), result.keys()
-            return None, None
-    except Exception as e:
-        print(f"Query execution failed: {e}")
-        return None, None
-
-def refresh_schema_cache(schemas=None):
+def refresh_schema_cache():
     try:
         for file in ["schema_cache.json", "column_map.json"]:
             if os.path.exists(file):
                 os.remove(file)
     except FileNotFoundError:
         pass
-    return get_schema_metadata(schemas)
+    return get_schema_metadata()
