@@ -4,7 +4,6 @@ from config import OLLAMA_BASE_URL, LLM_MODEL
 import sqlparse
 import re
 
-# Initialize the LLM once when the module is loaded
 llm = ChatOllama(model=LLM_MODEL, base_url=OLLAMA_BASE_URL, temperature=0.0)
 
 def validate_sql(sql_query, schema_metadata, column_map):
@@ -58,7 +57,6 @@ def validate_sql(sql_query, schema_metadata, column_map):
     except Exception as e:
         return False, f"Validator error: {str(e)}"
 
-
 def col_text(col):
     return f"{col['name']} ({col['type']})"
 
@@ -71,7 +69,6 @@ def generate_sql_query(nl_query, schema_metadata, column_map, entities, vector_s
     if not entities.get("is_database_related", False):
         return "This query is not related to the database. Please ask about data present in the connected database."
 
-    # Provide full schema and relationships to LLM
     schema_text = "\n\n".join([
         (
             f"Table: {m['schema']}.{m['table']}\n"

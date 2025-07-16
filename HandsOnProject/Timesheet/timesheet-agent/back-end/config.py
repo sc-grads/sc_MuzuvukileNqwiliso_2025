@@ -4,15 +4,13 @@ import urllib.parse
 
 load_dotenv()
 
-# Default connection string (can be overridden by environment or command-line)
 MSSQL_CONNECTION_BASE = os.getenv("MSSQL_CONNECTION")
 if not MSSQL_CONNECTION_BASE:
     raise ValueError("MSSQL_CONNECTION environment variable is required")
 
-MSSQL_CONNECTION = MSSQL_CONNECTION_BASE  # Will be updated dynamically
+MSSQL_CONNECTION = MSSQL_CONNECTION_BASE
 
 def update_mssql_connection(database_name):
-    """Updates the MSSQL_CONNECTION string with a new database name."""
     global MSSQL_CONNECTION
     if not database_name:
         if 'DATABASE=' not in MSSQL_CONNECTION_BASE.upper():
@@ -21,7 +19,6 @@ def update_mssql_connection(database_name):
         print(f"Using default database from .env file.")
         return
 
-    # Parse the base connection string to replace or add the database
     parts = MSSQL_CONNECTION_BASE.split(';')
     new_parts = []
     database_found = False
@@ -29,7 +26,7 @@ def update_mssql_connection(database_name):
         if part.strip().upper().startswith('DATABASE='):
             new_parts.append(f'DATABASE={database_name}')
             database_found = True
-        elif part:  # Avoid adding empty parts from trailing semicolons
+        elif part:
             new_parts.append(part)
     
     if not database_found:
@@ -52,3 +49,6 @@ EXCLUDE_TABLE_PATTERNS = [
     r"temp",
     r"backup"
 ]
+
+SCHEMA_CACHE_FILE = "schema_cache.json"
+COLUMN_MAP_FILE = "column_map.json"

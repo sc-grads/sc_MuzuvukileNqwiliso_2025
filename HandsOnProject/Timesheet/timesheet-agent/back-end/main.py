@@ -51,6 +51,16 @@ def main(refresh_schema=False, database=None):
             entities = extract_entities(nl_query, schema_metadata, query_fn, vector_store)
             print(f"Extracted Entities: {entities}")
 
+            # Intent-based filtering
+            if entities["intent"] == "greeting":
+                print("Hello! How can I assist you with your database?")
+                save_query(nl_query, None, timestamp, False, "Non-database greeting")
+                continue
+            elif not entities["is_database_related"]:
+                print("I can only assist with database queries. Try asking about your data!")
+                save_query(nl_query, None, timestamp, False, "Non-database query")
+                continue
+
             sql_query = generate_sql_query(nl_query, schema_metadata, column_map, entities, vector_store)
             generation_time = time.time() - start_time
             print(f"SQL generation took {generation_time:.2f} seconds")

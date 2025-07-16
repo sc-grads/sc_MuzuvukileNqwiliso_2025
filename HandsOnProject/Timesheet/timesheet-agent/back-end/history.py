@@ -6,7 +6,6 @@ from typing import List, Dict, Optional
 HISTORY_FILE = "query_history.json"
 
 def save_query(nl_query: str, sql_query: Optional[str], timestamp: str, success: bool, error: Optional[str] = None):
-    """Save a query to the history file."""
     history = get_query_history()
     entry = {
         "timestamp": timestamp,
@@ -17,7 +16,6 @@ def save_query(nl_query: str, sql_query: Optional[str], timestamp: str, success:
     }
     history.append(entry)
     
-    # Keep only the last 100 queries
     if len(history) > 100:
         history = history[-100:]
     
@@ -25,14 +23,13 @@ def save_query(nl_query: str, sql_query: Optional[str], timestamp: str, success:
         with open(HISTORY_FILE, "w") as f:
             json.dump(history, f, indent=2)
     except Exception as e:
-        print(f"Failed to save query history: {e}")
+        print(f"Error saving query history: {e}")
 
 def get_query_history() -> List[Dict]:
-    """Retrieve query history from the file."""
     if os.path.exists(HISTORY_FILE):
         try:
             with open(HISTORY_FILE, "r") as f:
                 return json.load(f)
         except Exception as e:
-            print(f"Failed to load query history: {e}")
+            print(f"Error loading query history: {e}")
     return []
