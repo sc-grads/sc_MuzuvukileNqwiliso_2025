@@ -10,6 +10,7 @@ export const DatabaseConnectionModal = ({ setIsModalOpen }) => {
     username: "",
     password: "",
   });
+  const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const modalRef = useRef(null);
 
@@ -19,10 +20,32 @@ export const DatabaseConnectionModal = ({ setIsModalOpen }) => {
       ...prevDetails,
       [name]: value,
     }));
+    // Clear error on change
+    if (errors[name]) {
+      setErrors((prevErrors) => ({ ...prevErrors, [name]: null }));
+    }
+  };
+
+  const validate = () => {
+    const newErrors = {};
+    if (!connectionDetails.hostname)
+      newErrors.hostname = "Hostname is required.";
+    if (!connectionDetails.port) newErrors.port = "Port is required.";
+    if (!connectionDetails.dbName)
+      newErrors.dbName = "Database name is required.";
+    if (!connectionDetails.username)
+      newErrors.username = "Username is required.";
+    return newErrors;
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const validationErrors = validate();
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+
     setIsLoading(true);
     // Simulate a network request
     setTimeout(() => {
@@ -56,19 +79,22 @@ export const DatabaseConnectionModal = ({ setIsModalOpen }) => {
           />
         </div>
         <form onSubmit={handleSubmit} className="model-form">
-          {/* Form inputs... */}
           <div className="form-control">
             <label htmlFor="hostname">Hostname/IP</label>
             <input
               type="text"
               name="hostname"
               id="hostname"
-              className="hostname-input"
+              className={`hostname-input ${
+                errors.hostname ? "input-error" : ""
+              }`}
               value={connectionDetails.hostname}
               placeholder="Hostname"
               onChange={handleChange}
-              required
             />
+            {errors.hostname && (
+              <span className="error-message">{errors.hostname}</span>
+            )}
           </div>
           <div className="form-control">
             <label htmlFor="port">Port</label>
@@ -76,11 +102,14 @@ export const DatabaseConnectionModal = ({ setIsModalOpen }) => {
               type="text"
               name="port"
               id="port"
+              className={errors.port ? "input-error" : ""}
               value={connectionDetails.port}
               placeholder="Port"
               onChange={handleChange}
-              required
             />
+            {errors.port && (
+              <span className="error-message">{errors.port}</span>
+            )}
           </div>
           <div className="form-control">
             <label htmlFor="dbName">Database Name</label>
@@ -88,11 +117,14 @@ export const DatabaseConnectionModal = ({ setIsModalOpen }) => {
               type="text"
               name="dbName"
               id="dbName"
+              className={errors.dbName ? "input-error" : ""}
               value={connectionDetails.dbName}
               placeholder="Database name"
               onChange={handleChange}
-              required
             />
+            {errors.dbName && (
+              <span className="error-message">{errors.dbName}</span>
+            )}
           </div>
           <div className="form-control">
             <label htmlFor="username">Username</label>
@@ -100,11 +132,14 @@ export const DatabaseConnectionModal = ({ setIsModalOpen }) => {
               type="text"
               name="username"
               id="username"
+              className={errors.username ? "input-error" : ""}
               value={connectionDetails.username}
               placeholder="Username"
               onChange={handleChange}
-              required
             />
+            {errors.username && (
+              <span className="error-message">{errors.username}</span>
+            )}
           </div>
           <div className="form-control">
             <label htmlFor="password">Password</label>

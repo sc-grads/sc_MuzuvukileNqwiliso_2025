@@ -86,6 +86,7 @@ body {
 }
 
 .main-content {
+  width: 100%;
   flex-grow: 1;
   padding: 2rem;
   background-color: var(--se-clr);
@@ -432,6 +433,16 @@ span.choose-label {
   line-height: var(--line-height);
 }
 
+.input-error {
+  border-color: var(--danger-clr);
+}
+
+.error-message {
+  color: var(--danger-clr);
+  font-size: var(--sml-s);
+  margin-top: 0.25rem;
+}
+
 .form-actions {
   width: 100%;
   display: flex;
@@ -449,7 +460,7 @@ span.choose-label {
   border: none;
   outline: none;
   background: var(--text-clr);
-  color: #FFF;
+  color: #fff;
   display: inline-block;
 }
 
@@ -499,4 +510,100 @@ span.choose-label {
 
 .form-control input:focus {
   outline: 2px solid #e2e2e2;
+}
+
+/* MAIN CONTENT */
+.main-content {
+  flex-grow: 1;
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.main-content .content-header {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  margin-bottom: 2rem;
+}
+
+.content-header h2 {
+  color: var(--text-clr);
+  font-size: 1.75rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.content-header p {
+  color: var(--grey-clr);
+  font-size: var(--normal-s2);
+  line-height: var(--line-height);
+}
+
+.main-content .prompt-form {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.prompt-form .input-wrapper {
+  width: 50%;
+  display: flex;
+  align-items: center; /* Default: center alignment */
+  padding-right: 0.3125rem;
+  background: #fff;
+  border-radius: 2px;
+  border: 1px solid var(--tr-clr);
+  transition: border-color 0.2s ease-in-out, outline 0.2s ease-in-out;
+}
+
+.prompt-form .input-wrapper.align-bottom {
+  align-items: flex-end;
+   padding-bottom: .3125rem;
+}
+
+.prompt-form .input-wrapper:focus-within {
+  outline: 2px solid #ccc;
+}
+
+.prompt-form .prompt-input {
+  flex-grow: 1;
+  display: inline-block;
+  border: none;
+  outline: none;
+  font-size: var(--normal-s2);
+  font-family: var(--ft-family);
+  background: transparent;
+  padding: 0.75rem;
+  resize: none;
+  overflow-y: hidden;
+}
+
+.prompt-form .prompt-input:focus {
+  outline: none;
+}
+
+.prompt-form .send-button {
+  border: none;
+  outline: none;
+  background: var(--text-clr);
+  color: #fff;
+  border-radius: 2px;
+  padding: 0.5rem 0.625rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.prompt-form .send-button:hover {
+  background: #001219;
 }

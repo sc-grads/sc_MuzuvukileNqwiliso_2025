@@ -7,11 +7,11 @@ function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   return (
-    <div id="root">
+    <>
       <SideBar setIsModalOpen={setIsModalOpen} />
       <MainContent />
       {isModalOpen && <DatabaseConnectionModal setIsModalOpen={setIsModalOpen} />}
-    </div>
+    </>
   );
 }
 
