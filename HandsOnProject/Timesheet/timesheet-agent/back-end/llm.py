@@ -58,9 +58,8 @@ def validate_sql(sql_query, schema_metadata, column_map):
     except Exception as e:
         return False, f"Validator error: {str(e)}"
 
-
 def col_text(col):
-    return f"{col['name']} ({col['type']})"
+    return f"{col['name']} ({col['type']}) - {col['description']}"
 
 def relationships_text(rels):
     if not rels:
@@ -71,7 +70,7 @@ def generate_sql_query(nl_query, schema_metadata, column_map, entities, vector_s
     if not entities.get("is_database_related", False):
         return "This query is not related to the database. Please ask about data present in the connected database."
 
-    # Provide full schema and relationships to LLM
+    # Provide full schema with detailed column descriptions
     schema_text = "\n\n".join([
         (
             f"Table: {m['schema']}.{m['table']}\n"
@@ -86,26 +85,26 @@ def generate_sql_query(nl_query, schema_metadata, column_map, entities, vector_s
     context = []
     intent = entities.get("intent")
     if intent == "list":
-        context.append("Return all relevant columns from the suggested tables.")
+        context.append("Return all relevant columns from the most relevant table, using joins only if relationships are required. Add ORDER BY for sorting if 'sort' or 'alphabetically' is implied.")
     elif intent == "count":
-        context.append("Use COUNT(*) for counting rows, with GROUP BY if needed based on relationships.")
+        context.append("Use COUNT(*) for counting rows, applying GROUP BY if implied by relationships or multiple entities.")
     elif intent == "sum":
-        context.append("Use SUM(column), AVG(column), or other aggregations as appropriate, with GROUP BY if needed based on relationships. Use HAVING for filtered aggregations if specified.")
+        context.append("Use SUM(column), AVG(column), or other aggregations as implied, with GROUP BY if needed, prioritizing numeric columns from descriptions.")
     elif intent == "filter":
-        context.append("Apply WHERE clauses for filtering using names or dates from the context.")
+        context.append("Apply WHERE clauses for filtering using names or dates, leveraging column descriptions.")
 
     if entities.get("names"):
-        context.append(f"Filter for names: {', '.join(entities['names'])} in appropriate name columns using LIKE '%[name]%' for user-provided names to handle spelling variations, unless the name is validated against a primary key.")
-    if entities.get("dates") and isinstance(entities["dates"], list):
+        context.append(f"Filter for names: {', '.join(entities['names'])} in appropriate name columns using LIKE '%[name]%' unless a primary key match is confirmed.")
+    if entities.get("dates"):
         for date_range in entities["dates"]:
             if isinstance(date_range, tuple):
                 context.append(f"Filter dates BETWEEN '{date_range[0]}' AND '{date_range[1]}' in date columns.")
             else:
                 context.append(f"Filter date = '{date_range}' in date columns.")
+    if entities.get("limit"):
+        context.append(f"Limit results to {entities['limit']} rows using TOP.")
     if entities.get("suggested_tables"):
-        context.append(f"Consider these suggested tables: {', '.join(entities['suggested_tables'])} and their relationships.")
-    if len(entities.get("suggested_tables", [])) > 1 or intent in ["sum", "count"]:
-        context.append("Use UNION or UNION ALL to combine results from multiple tables or aggregations if the query implies comparing or consolidating data from different sources. Use WITH clauses for complex subqueries if needed.")
+        context.append(f"Prioritize the most relevant table from: {', '.join(entities['suggested_tables'])}. Use relationships to determine joins only if multiple tables are essential to fulfill the query.")
 
     context_str = "\n".join(context) if context else "No specific filters or tables suggested."
 
@@ -115,16 +114,20 @@ def generate_sql_query(nl_query, schema_metadata, column_map, entities, vector_s
     prompt_template = PromptTemplate(
         input_variables=["schema", "query", "context", "previous_sql_query_section", "error_feedback_section"],
         template="""
-        You are a SQL expert for a SQL Server database. Generate a valid T-SQL SELECT query using the tables, columns, and relationships provided in the schema below. Follow these rules:
-        1. Use exact table and column names, enclosed in square brackets (e.g., [Schema].[Table]).
-        2. Use JOINs with ON clauses based on schema relationships to connect related tables relevant to the query.
-        3. Apply WHERE clauses for filters specified in the context (e.g., names with LIKE, dates in DATE/DATETIME columns).
-        4. Use SQL Server date formats ('YYYY-MM-DD').
-        5. For aggregations (COUNT, SUM, AVG), include GROUP BY if grouping by non-aggregated columns, and use HAVING for filtered aggregations.
-        6. Use UNION or UNION ALL to combine results from multiple tables or aggregations when comparing or consolidating data.
-        7. Use WITH clauses for complex subqueries or common table expressions if the query requires nested logic.
-        8. Select the most relevant tables based on the query and context, prioritizing suggested tables and their relationships.
-        9. Return ONLY the raw SQL query without explanations or backticks.
+        You are a T-SQL expert for a SQL Server database. Generate a valid T-SQL SELECT query using the tables, columns, and relationships provided in the schema below. Follow these strict rules:
+        1. Use exact table and column names in square brackets (e.g., [Schema].[Table]).
+        2. Select the simplest valid query that fulfills the intent, prioritizing the most relevant table based on the query and schema description.
+        3. Use JOINs with ON clauses only when relationships are required to connect tables relevant to the query, based on schema relationships.
+        4. Apply WHERE clauses for filters as specified in the context (e.g., names with LIKE, dates in DATE/DATETIME columns).
+        5. Use SQL Server date formats ('YYYY-MM-DD').
+        6. For aggregations (COUNT, SUM, AVG), include GROUP BY if grouping is implied, and use HAVING for filtered aggregations if needed.
+        7. Use UNION or UNION ALL only if the query explicitly implies comparing or consolidating distinct datasets (e.g., 'vs', 'compare', 'combine'), verified by relationships.
+        8. Use WITH clauses for complex subqueries or common table expressions if simpler approaches are insufficient.
+        9. Add ORDER BY if 'sort' or 'alphabetically' is implied, using relevant columns.
+        10. Add TOP if a limit is specified in the context, e.g., 'first 5' or 'top 10'.
+        11. Use CASE statements for conditional logic if implied by the query (e.g., 'if status is active').
+        12. Return ONLY the raw SQL query. Do not include explanations, comments, or text beyond the SQL itself—any non-SQL content will invalidate the query.
+        13. If error feedback indicates an invalid column or syntax, adjust the query to remove invalid references and simplify.
 
         Schema Information:
         {schema}
@@ -160,3 +163,11 @@ def generate_sql_query(nl_query, schema_metadata, column_map, entities, vector_s
         return f"Failed to generate valid SQL: {validated_query}"
     except Exception as e:
         return f"Error generating SQL: {str(e)}"
+
+def col_text(col):
+    return f"{col['name']} ({col['type']}) - {col['description']}"
+
+def relationships_text(rels):
+    if not rels:
+        return "None"
+    return ", ".join([f"{fk['source_column']} -> {fk['target_table']}.{fk['target_column']}" for fk in rels])

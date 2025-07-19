@@ -63,7 +63,8 @@ def extract_entities(query: str, schema_metadata: List[Dict], execute_query_fn, 
         "keywords": [],
         "intent": None,
         "suggested_tables": [],
-        "is_database_related": False
+        "is_database_related": False,
+        "limit": None
     }
 
     if nlp is not None and schema_metadata:
@@ -77,6 +78,8 @@ def extract_entities(query: str, schema_metadata: List[Dict], execute_query_fn, 
                         normalized = normalize_date(ent.text)
                         if normalized:
                             entities["dates"].append(normalized)
+                    elif ent.label_ == "CARDINAL" and "first" in query.lower() and any(n in query.lower() for n in ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]):
+                        entities["limit"] = int(re.search(r'\d+', ent.text).group())
         except Exception as e:
             print(f"Error during NLP entity extraction: {e}")
 
@@ -100,11 +103,25 @@ def extract_entities(query: str, schema_metadata: List[Dict], execute_query_fn, 
     if entities["is_database_related"]:
         if vector_store:
             schema_docs = vector_store.similarity_search(query, k=3)
+            # Rank tables by relevance to intent
+            table_scores = {}
             for doc in schema_docs:
                 table_info = doc.metadata
                 if table_info.get("type") == "schema":
-                    entities["suggested_tables"].append(f"{table_info['schema']}.{table_info['table']}")
-                    entities["is_database_related"] = True
+                    table_key = f"{table_info['schema']}.{table_info['table']}"
+                    # Score based on intent and table description
+                    score = 0
+                    if intent == "list" and "name" in table_info.get("description", "").lower():
+                        score += 2
+                    elif intent == "sum" and any(col["type"].startswith(("decimal", "int")) for col in schema_metadata[0]["columns"] if col["name"] in ["TotalHours", "BillableHours"]):
+                        score += 2
+                    elif any(kw in query_lower for kw in entities["keywords"] if kw in table_info.get("description", "").lower()):
+                        score += 1
+                    table_scores[table_key] = score
+            # Sort and take top 2 relevant tables
+            sorted_tables = sorted(table_scores.items(), key=lambda x: x[1], reverse=True)
+            entities["suggested_tables"] = [table for table, _ in sorted_tables[:2]]
+            entities["is_database_related"] = bool(entities["suggested_tables"])
         else:
             schema_terms = set()
             for meta in schema_metadata:
@@ -120,6 +137,8 @@ def extract_entities(query: str, schema_metadata: List[Dict], execute_query_fn, 
         for doc in schema_docs:
             table_info = doc.metadata
             if table_info.get("type") == "schema":
-                entities["suggested_tables"].append(f"{table_info['schema']}.{table_info['table']}")
+                table_key = f"{table_info['schema']}.{table_info['table']}"
+                if table_key not in entities["suggested_tables"]:
+                    entities["suggested_tables"].append(table_key)
 
     return entities
