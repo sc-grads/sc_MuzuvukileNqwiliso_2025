@@ -5,11 +5,16 @@ import { DatabaseConnectionModal } from "./components/DatabaseConnectionModal";
 
 function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [chatKey, setChatKey] = useState(0);
+
+  const handleNewChat = () => {
+    setChatKey((prevKey) => prevKey + 1);
+  };
 
   return (
     <>
-      <SideBar setIsModalOpen={setIsModalOpen} />
-      <MainContent />
+      <SideBar setIsModalOpen={setIsModalOpen} handleNewChat={handleNewChat} />
+      <MainContent key={chatKey} />
       {isModalOpen && <DatabaseConnectionModal setIsModalOpen={setIsModalOpen} />}
     </>
   );
