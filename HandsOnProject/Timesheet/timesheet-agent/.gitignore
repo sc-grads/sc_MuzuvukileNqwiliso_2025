@@ -4,3 +4,6 @@ query_history.json
 schema_cache.json
 test_file.py
 zip
+.kiro
+*test*
+*SUMMARY*

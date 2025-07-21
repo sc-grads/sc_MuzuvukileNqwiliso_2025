@@ -5,7 +5,7 @@ import { LiaEdit } from "react-icons/lia";
 import { History } from "./History";
 import { IoIosAdd } from "react-icons/io";
 
-export const SideBar = ({ setIsModalOpen }) => {
+export const SideBar = ({ setIsModalOpen, handleNewChat }) => {
   return (
     <>
       <div className="side-bar">
@@ -15,7 +15,7 @@ export const SideBar = ({ setIsModalOpen }) => {
           </a>
         </div>
         <DatabaseStatus />
-        <button className="new-chat-btn">
+        <button className="new-chat-btn" onClick={handleNewChat}>
           <LiaEdit />
           New Chat
         </button>
