@@ -517,13 +517,19 @@ span.choose-label {
   flex-grow: 1;
   width: 100%;
   height: 100%;
-  overflow-x: hidden;
-  overflow-y: auto;
+  overflow: hidden;
   padding: 2rem;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
   align-items: center;
+  /* Default state: content is centered */
+  justify-content: center;
+  transition: justify-content 0.3s ease-in-out;
+}
+
+/* State when chat is active */
+.main-content.chat-active {
+  justify-content: flex-start;
 }
 
 .main-content .content-header {
@@ -533,6 +539,7 @@ span.choose-label {
   align-items: center;
   flex-direction: column;
   margin-bottom: 2rem;
+  text-align: center;
 }
 
 .content-header h2 {
@@ -552,12 +559,18 @@ span.choose-label {
   width: 100%;
   display: flex;
   justify-content: center;
+  margin-top: 0;
+  transition: margin-top 0.3s ease-in-out;
+}
+
+.main-content.chat-active .prompt-form {
+  margin-top: auto;
 }
 
 .prompt-form .input-wrapper {
   width: 50%;
   display: flex;
-  align-items: center; /* Default: center alignment */
+  align-items: center;
   padding-right: 0.3125rem;
   background: #fff;
   border-radius: 2px;
@@ -612,7 +625,6 @@ span.choose-label {
 .chat-container {
   width: 100%;
   flex-grow: 1;
-  max-height: 60vh;
   overflow-y: auto;
   padding: 1rem;
   margin-bottom: 1rem;

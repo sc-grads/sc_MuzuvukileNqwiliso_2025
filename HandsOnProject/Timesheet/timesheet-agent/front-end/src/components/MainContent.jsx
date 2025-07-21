@@ -11,8 +11,7 @@ export const MainContent = ({ newChatTrigger }) => {
   // Chat state management
   const [messages, setMessages] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
-  const [showHeader, setShowHeader] = useState(true);
-  const [isNewChatMode, setIsNewChatMode] = useState(false);
+  const [chatHasStarted, setChatHasStarted] = useState(false);
 
   // Message ID generation function
   const generateMessageId = () => {
@@ -46,17 +45,8 @@ export const MainContent = ({ newChatTrigger }) => {
   const clearMessages = () => {
     setMessages([]);
     setIsTyping(false); // Reset typing indicator
-    setIsNewChatMode(true);
+    setChatHasStarted(false);
   };
-
-  // Effect to manage header visibility based on messages and new chat mode
-  useEffect(() => {
-    if (messages.length > 0 || isNewChatMode) {
-      setShowHeader(false);
-    } else {
-      setShowHeader(true);
-    }
-  }, [messages, isNewChatMode]);
 
   // Effect to handle new chat trigger from SideBar
   useEffect(() => {
@@ -128,8 +118,10 @@ export const MainContent = ({ newChatTrigger }) => {
       const userMessage = inputValue.trim();
       addUserMessage(userMessage);
 
-      // Exit new chat mode when first message is sent
-      setIsNewChatMode(false);
+      // Start the chat and remove the header
+      if (!chatHasStarted) {
+        setChatHasStarted(true);
+      }
 
       // Clear textarea after message submission
       setInputValue("");
@@ -144,8 +136,8 @@ export const MainContent = ({ newChatTrigger }) => {
   };
 
   return (
-    <main className="main-content">
-      {showHeader && (
+    <main className={`main-content ${chatHasStarted ? "chat-active" : ""}`}>
+      {!chatHasStarted && (
         <div className="content-header">
           <h2>Talk to Your Data</h2>
           <p>
@@ -154,7 +146,9 @@ export const MainContent = ({ newChatTrigger }) => {
           </p>
         </div>
       )}
-      <ChatContainer messages={messages} isTyping={isTyping} />
+      {chatHasStarted && (
+        <ChatContainer messages={messages} isTyping={isTyping} />
+      )}
       <form onSubmit={handleSubmit} className="prompt-form">
         <div className={`input-wrapper ${isMultiLine ? "align-bottom" : ""}`}>
           <textarea
