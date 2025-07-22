@@ -27,19 +27,27 @@ def extract_employee_name(query_lower: str) -> Optional[str]:
     return None
 
 def generate_fast_sql(nl_query: str, schema_metadata: List[Dict]) -> str:
-    """Generate SQL quickly using pattern matching instead of LLM"""
+    """Generate SQL using the new hybrid intelligent system"""
     
-    # Use the complete trainer for ALL 48 questions
-    from complete_sql_trainer import generate_complete_sql
-    
+    # Use the new hybrid system that can handle unlimited query variations
     try:
+        from hybrid_sql_system import generate_hybrid_sql
+        result = generate_hybrid_sql(nl_query, schema_metadata)
+        if result:
+            return result
+    except Exception as e:
+        print(f"Hybrid system failed: {e}")
+    
+    # Fallback to complete trainer for backward compatibility
+    try:
+        from complete_sql_trainer import generate_complete_sql
         result = generate_complete_sql(nl_query, schema_metadata)
-        if result and not result.startswith("Error"):
+        if result and not result.startswith("Error") and result is not None:
             return result
     except Exception as e:
         print(f"Complete trainer failed: {e}")
     
-    # Fallback to original fast generation
+    # Final fallback to original fast generation
     query_lower = nl_query.lower().strip()
     
     # Get the first few tables for simple queries
