@@ -1,66 +1,785 @@
 {
-  "conversation_id": "conv_20250720_232916",
-  "start_time": "2025-07-20T23:29:16.723173",
-  "last_activity": "2025-07-20T23:33:01.005298",
+  "conversation_id": "conv_20250722_064710",
+  "start_time": "2025-07-22T06:47:10.557336",
+  "last_activity": "2025-07-22T09:45:46.191601",
   "active_entities": {
-    "employee": "John Doe",
-    "test": "data"
+    "numeric_values": {
+      "values": [
+        2025.0
+      ],
+      "ranges": [],
+      "percentages": [],
+      "currencies": [],
+      "hours": [],
+      "context": [
+        "value"
+      ]
+    },
+    "schema_matches": {
+      "tables": [
+        {
+          "element": {
+            "name": "Employee",
+            "type": "table",
+            "schema": "Timesheet",
+            "full_name": "Timesheet.Employee",
+            "description": "This table, named 'Employee' within the 'Timesheet' schema, likely stores information about individual employees in the organization. Each employee is uniquely identified by an integer 'EmployeeID', and their full name is stored as a string in the 'EmployeeName' column.",
+            "metadata": {
+              "schema": "Timesheet",
+              "table": "Employee",
+              "description": "This table, named 'Employee' within the 'Timesheet' schema, likely stores information about individual employees in the organization. Each employee is uniquely identified by an integer 'EmployeeID', and their full name is stored as a string in the 'EmployeeName' column.",
+              "columns": [
+                {
+                  "name": "EmployeeID",
+                  "type": "integer",
+                  "nullable": false,
+                  "default": "NEXT VALUE FOR [Timesheet].[EmployeeSeq]",
+                  "primary_key": true,
+                  "description": "The 'EmployeeID' column is an integer data type used to uniquely identify each employee within the database, with no related entities or foreign keys.",
+                  "business_patterns": [
+                    {
+                      "type": "identifier",
+                      "confidence": 0.95,
+                      "semantic_meaning": "Likely serves as a unique identifier or reference"
+                    }
+                  ]
+                },
+                {
+                  "name": "EmployeeName",
+                  "type": "varchar(100) collate \"latin1_general_ci_as\"",
+                  "nullable": false,
+                  "default": null,
+                  "primary_key": false,
+                  "description": "The 'EmployeeName' column stores the names of employees in a case-insensitive manner, with a maximum length of 100 characters, using Latin1 character set. It does not have any relationships with other tables.",
+                  "business_patterns": [
+                    {
+                      "type": "name",
+                      "confidence": 0.9,
+                      "semantic_meaning": "Likely stores human-readable names or labels"
+                    }
+                  ]
+                }
+              ],
+              "relationships": [],
+              "primary_keys": [
+                "EmployeeID"
+              ],
+              "sample_query": "SELECT TOP 5 * FROM [Timesheet].[Employee]",
+              "inferred_relationships": [
+                {
+                  "source_column": "EmployeeID",
+                  "target_table": "Timesheet.Forecast",
+                  "target_column": "EmployeeID",
+                  "relationship_type": "one_to_many",
+                  "confidence": 1.0,
+                  "semantic_meaning": "Inferred relationship based on column naming patterns",
+                  "inferred": true
+                },
+                {
+                  "source_column": "EmployeeID",
+                  "target_table": "Timesheet.LeaveRequest",
+                  "target_column": "EmployeeID",
+                  "relationship_type": "one_to_many",
+                  "confidence": 1.0,
+                  "semantic_meaning": "Inferred relationship based on column naming patterns",
+                  "inferred": true
+                },
+                {
+                  "source_column": "EmployeeID",
+                  "target_table": "Timesheet.ProcessedFiles",
+                  "target_column": "EmployeeID",
+                  "relationship_type": "one_to_many",
+                  "confidence": 1.0,
+                  "semantic_meaning": "Inferred relationship based on column naming patterns",
+                  "inferred": true
+                },
+                {
+                  "source_column": "EmployeeID",
+                  "target_table": "Timesheet.Timesheet",
+                  "target_column": "EmployeeID",
+                  "relationship_type": "one_to_many",
+                  "confidence": 1.0,
+                  "semantic_meaning": "Inferred relationship based on column naming patterns",
+                  "inferred": true
+                }
+              ],
+              "priority": {
+                "score": 0.97,
+                "business_importance": "high",
+                "relevance_factors": [
+                  "Contains 2 business patterns"
+                ]
+              }
+            }
+          },
+          "similarity": 100,
+          "match_type": "fuzzy_string",
+          "name_score": 100,
+          "full_name_score": 56,
+          "word_score": 12.5
+        }
+      ],
+      "columns": [
+        {
+          "element": {
+            "name": "EmployeeID",
+            "type": "column",
+            "schema": "Timesheet",
+            "table": "Employee",
+            "full_name": "Timesheet.Employee.EmployeeID",
+            "data_type": "integer",
+            "description": "The 'EmployeeID' column is an integer data type used to uniquely identify each employee within the database, with no related entities or foreign keys.",
+            "metadata": {
+              "name": "EmployeeID",
+              "type": "integer",
+              "nullable": false,
+              "default": "NEXT VALUE FOR [Timesheet].[EmployeeSeq]",
+              "primary_key": true,
+              "description": "The 'EmployeeID' column is an integer data type used to uniquely identify each employee within the database, with no related entities or foreign keys.",
+              "business_patterns": [
+                {
+                  "type": "identifier",
+                  "confidence": 0.95,
+                  "semantic_meaning": "Likely serves as a unique identifier or reference"
+                }
+              ]
+            }
+          },
+          "similarity": 80,
+          "match_type": "fuzzy_string",
+          "name_score": 80,
+          "full_name_score": 45,
+          "word_score": 12.5
+        },
+        {
+          "element": {
+            "name": "EmployeeID",
+            "type": "column",
+            "schema": "Timesheet",
+            "table": "Forecast",
+            "full_name": "Timesheet.Forecast.EmployeeID",
+            "data_type": "integer",
+            "description": "The \"EmployeeID\" column is an integer that uniquely identifies each employee in the database, and it links to the corresponding employee record in the \"Timesheet\" table through the foreign key relationship.",
+            "metadata": {
+              "name": "EmployeeID",
+              "type": "integer",
+              "nullable": false,
+              "default": null,
+              "primary_key": false,
+              "description": "The \"EmployeeID\" column is an integer that uniquely identifies each employee in the database, and it links to the corresponding employee record in the \"Timesheet\" table through the foreign key relationship.",
+              "business_patterns": [
+                {
+                  "type": "identifier",
+                  "confidence": 0.95,
+                  "semantic_meaning": "Likely serves as a unique identifier or reference"
+                }
+              ]
+            }
+          },
+          "similarity": 80,
+          "match_type": "fuzzy_string",
+          "name_score": 80,
+          "full_name_score": 45,
+          "word_score": 12.5
+        },
+        {
+          "element": {
+            "name": "EmployeeID",
+            "type": "column",
+            "schema": "Timesheet",
+            "table": "LeaveRequest",
+            "full_name": "Timesheet.LeaveRequest.EmployeeID",
+            "data_type": "integer",
+            "description": "The 'EmployeeID' column is an integer that uniquely identifies each employee in the database, and it links to the 'Timesheet' table to establish a relationship between employees and their respective timesheets.",
+            "metadata": {
+              "name": "EmployeeID",
+              "type": "integer",
+              "nullable": false,
+              "default": null,
+              "primary_key": false,
+              "description": "The 'EmployeeID' column is an integer that uniquely identifies each employee in the database, and it links to the 'Timesheet' table to establish a relationship between employees and their respective timesheets.",
+              "business_patterns": [
+                {
+                  "type": "identifier",
+                  "confidence": 0.95,
+                  "semantic_meaning": "Likely serves as a unique identifier or reference"
+                }
+              ]
+            }
+          },
+          "similarity": 80,
+          "match_type": "fuzzy_string",
+          "name_score": 80,
+          "full_name_score": 42,
+          "word_score": 12.5
+        },
+        {
+          "element": {
+            "name": "EmployeeID",
+            "type": "column",
+            "schema": "Timesheet",
+            "table": "ProcessedFiles",
+            "full_name": "Timesheet.ProcessedFiles.EmployeeID",
+            "data_type": "integer",
+            "description": "The \"EmployeeID\" column is an integer that uniquely identifies each employee in the database, and it links to the corresponding employee record in the \"Timesheet\" table through the foreign key relationship.",
+            "metadata": {
+              "name": "EmployeeID",
+              "type": "integer",
+              "nullable": false,
+              "default": null,
+              "primary_key": false,
+              "description": "The \"EmployeeID\" column is an integer that uniquely identifies each employee in the database, and it links to the corresponding employee record in the \"Timesheet\" table through the foreign key relationship.",
+              "business_patterns": [
+                {
+                  "type": "identifier",
+                  "confidence": 0.95,
+                  "semantic_meaning": "Likely serves as a unique identifier or reference"
+                }
+              ]
+            }
+          },
+          "similarity": 80,
+          "match_type": "fuzzy_string",
+          "name_score": 80,
+          "full_name_score": 40,
+          "word_score": 12.5
+        },
+        {
+          "element": {
+            "name": "EmployeeID",
+            "type": "column",
+            "schema": "Timesheet",
+            "table": "Timesheet",
+            "full_name": "Timesheet.Timesheet.EmployeeID",
+            "data_type": "integer",
+            "description": "The 'EmployeeID' column is an integer that uniquely identifies each employee in the database, and it links to the 'Timesheet' table, associating each timesheet entry with its respective employee.",
+            "metadata": {
+              "name": "EmployeeID",
+              "type": "integer",
+              "nullable": false,
+              "default": null,
+              "primary_key": false,
+              "description": "The 'EmployeeID' column is an integer that uniquely identifies each employee in the database, and it links to the 'Timesheet' table, associating each timesheet entry with its respective employee.",
+              "business_patterns": [
+                {
+                  "type": "identifier",
+                  "confidence": 0.95,
+                  "semantic_meaning": "Likely serves as a unique identifier or reference"
+                }
+              ]
+            }
+          },
+          "similarity": 80,
+          "match_type": "fuzzy_string",
+          "name_score": 80,
+          "full_name_score": 40,
+          "word_score": 12.5
+        },
+        {
+          "element": {
+            "name": "TotalHours",
+            "type": "column",
+            "schema": "Timesheet",
+            "table": "Forecast",
+            "full_name": "Timesheet.Forecast.TotalHours",
+            "data_type": "decimal(10, 2)",
+            "description": "The \"TotalHours\" column in this database is used to store the total number of hours worked by an individual or entity, with a precision of up to two decimal places. This could be useful for tracking work hours, project durations, or any other time-based measurements.",
+            "metadata": {
+              "name": "TotalHours",
+              "type": "decimal(10, 2)",
+              "nullable": false,
+              "default": null,
+              "primary_key": false,
+              "description": "The \"TotalHours\" column in this database is used to store the total number of hours worked by an individual or entity, with a precision of up to two decimal places. This could be useful for tracking work hours, project durations, or any other time-based measurements.",
+              "business_patterns": [
+                {
+                  "type": "amount",
+                  "confidence": 0.9,
+                  "semantic_meaning": "Likely stores monetary or numeric values"
+                }
+              ]
+            }
+          },
+          "similarity": 70,
+          "match_type": "fuzzy_string",
+          "name_score": 70,
+          "full_name_score": 34,
+          "word_score": 25.0
+        },
+        {
+          "element": {
+            "name": "TotalHours",
+            "type": "column",
+            "schema": "Timesheet",
+            "table": "Timesheet",
+            "full_name": "Timesheet.Timesheet.TotalHours",
+            "data_type": "decimal(5, 2)",
+            "description": "The \"TotalHours\" column in the database stores the total number of hours worked by an entity (e.g., employee), with a precision of up to two decimal places.",
+            "metadata": {
+              "name": "TotalHours",
+              "type": "decimal(5, 2)",
+              "nullable": true,
+              "default": null,
+              "primary_key": false,
+              "description": "The \"TotalHours\" column in the database stores the total number of hours worked by an entity (e.g., employee), with a precision of up to two decimal places.",
+              "business_patterns": [
+                {
+                  "type": "amount",
+                  "confidence": 0.9,
+                  "semantic_meaning": "Likely stores monetary or numeric values"
+                }
+              ]
+            }
+          },
+          "similarity": 70,
+          "match_type": "fuzzy_string",
+          "name_score": 70,
+          "full_name_score": 33,
+          "word_score": 25.0
+        }
+      ],
+      "combined_matches": [
+        {
+          "element": {
+            "name": "Employee",
+            "type": "table",
+            "schema": "Timesheet",
+            "full_name": "Timesheet.Employee",
+            "description": "This table, named 'Employee' within the 'Timesheet' schema, likely stores information about individual employees in the organization. Each employee is uniquely identified by an integer 'EmployeeID', and their full name is stored as a string in the 'EmployeeName' column.",
+            "metadata": {
+              "schema": "Timesheet",
+              "table": "Employee",
+              "description": "This table, named 'Employee' within the 'Timesheet' schema, likely stores information about individual employees in the organization. Each employee is uniquely identified by an integer 'EmployeeID', and their full name is stored as a string in the 'EmployeeName' column.",
+              "columns": [
+                {
+                  "name": "EmployeeID",
+                  "type": "integer",
+                  "nullable": false,
+                  "default": "NEXT VALUE FOR [Timesheet].[EmployeeSeq]",
+                  "primary_key": true,
+                  "description": "The 'EmployeeID' column is an integer data type used to uniquely identify each employee within the database, with no related entities or foreign keys.",
+                  "business_patterns": [
+                    {
+                      "type": "identifier",
+                      "confidence": 0.95,
+                      "semantic_meaning": "Likely serves as a unique identifier or reference"
+                    }
+                  ]
+                },
+                {
+                  "name": "EmployeeName",
+                  "type": "varchar(100) collate \"latin1_general_ci_as\"",
+                  "nullable": false,
+                  "default": null,
+                  "primary_key": false,
+                  "description": "The 'EmployeeName' column stores the names of employees in a case-insensitive manner, with a maximum length of 100 characters, using Latin1 character set. It does not have any relationships with other tables.",
+                  "business_patterns": [
+                    {
+                      "type": "name",
+                      "confidence": 0.9,
+                      "semantic_meaning": "Likely stores human-readable names or labels"
+                    }
+                  ]
+                }
+              ],
+              "relationships": [],
+              "primary_keys": [
+                "EmployeeID"
+              ],
+              "sample_query": "SELECT TOP 5 * FROM [Timesheet].[Employee]",
+              "inferred_relationships": [
+                {
+                  "source_column": "EmployeeID",
+                  "target_table": "Timesheet.Forecast",
+                  "target_column": "EmployeeID",
+                  "relationship_type": "one_to_many",
+                  "confidence": 1.0,
+                  "semantic_meaning": "Inferred relationship based on column naming patterns",
+                  "inferred": true
+                },
+                {
+                  "source_column": "EmployeeID",
+                  "target_table": "Timesheet.LeaveRequest",
+                  "target_column": "EmployeeID",
+                  "relationship_type": "one_to_many",
+                  "confidence": 1.0,
+                  "semantic_meaning": "Inferred relationship based on column naming patterns",
+                  "inferred": true
+                },
+                {
+                  "source_column": "EmployeeID",
+                  "target_table": "Timesheet.ProcessedFiles",
+                  "target_column": "EmployeeID",
+                  "relationship_type": "one_to_many",
+                  "confidence": 1.0,
+                  "semantic_meaning": "Inferred relationship based on column naming patterns",
+                  "inferred": true
+                },
+                {
+                  "source_column": "EmployeeID",
+                  "target_table": "Timesheet.Timesheet",
+                  "target_column": "EmployeeID",
+                  "relationship_type": "one_to_many",
+                  "confidence": 1.0,
+                  "semantic_meaning": "Inferred relationship based on column naming patterns",
+                  "inferred": true
+                }
+              ],
+              "priority": {
+                "score": 0.97,
+                "business_importance": "high",
+                "relevance_factors": [
+                  "Contains 2 business patterns"
+                ]
+              }
+            }
+          },
+          "similarity": 100,
+          "match_type": "fuzzy_string",
+          "name_score": 100,
+          "full_name_score": 56,
+          "word_score": 12.5
+        },
+        {
+          "element": {
+            "name": "EmployeeID",
+            "type": "column",
+            "schema": "Timesheet",
+            "table": "Employee",
+            "full_name": "Timesheet.Employee.EmployeeID",
+            "data_type": "integer",
+            "description": "The 'EmployeeID' column is an integer data type used to uniquely identify each employee within the database, with no related entities or foreign keys.",
+            "metadata": {
+              "name": "EmployeeID",
+              "type": "integer",
+              "nullable": false,
+              "default": "NEXT VALUE FOR [Timesheet].[EmployeeSeq]",
+              "primary_key": true,
+              "description": "The 'EmployeeID' column is an integer data type used to uniquely identify each employee within the database, with no related entities or foreign keys.",
+              "business_patterns": [
+                {
+                  "type": "identifier",
+                  "confidence": 0.95,
+                  "semantic_meaning": "Likely serves as a unique identifier or reference"
+                }
+              ]
+            }
+          },
+          "similarity": 80,
+          "match_type": "fuzzy_string",
+          "name_score": 80,
+          "full_name_score": 45,
+          "word_score": 12.5
+        },
+        {
+          "element": {
+            "name": "EmployeeID",
+            "type": "column",
+            "schema": "Timesheet",
+            "table": "Forecast",
+            "full_name": "Timesheet.Forecast.EmployeeID",
+            "data_type": "integer",
+            "description": "The \"EmployeeID\" column is an integer that uniquely identifies each employee in the database, and it links to the corresponding employee record in the \"Timesheet\" table through the foreign key relationship.",
+            "metadata": {
+              "name": "EmployeeID",
+              "type": "integer",
+              "nullable": false,
+              "default": null,
+              "primary_key": false,
+              "description": "The \"EmployeeID\" column is an integer that uniquely identifies each employee in the database, and it links to the corresponding employee record in the \"Timesheet\" table through the foreign key relationship.",
+              "business_patterns": [
+                {
+                  "type": "identifier",
+                  "confidence": 0.95,
+                  "semantic_meaning": "Likely serves as a unique identifier or reference"
+                }
+              ]
+            }
+          },
+          "similarity": 80,
+          "match_type": "fuzzy_string",
+          "name_score": 80,
+          "full_name_score": 45,
+          "word_score": 12.5
+        },
+        {
+          "element": {
+            "name": "EmployeeID",
+            "type": "column",
+            "schema": "Timesheet",
+            "table": "LeaveRequest",
+            "full_name": "Timesheet.LeaveRequest.EmployeeID",
+            "data_type": "integer",
+            "description": "The 'EmployeeID' column is an integer that uniquely identifies each employee in the database, and it links to the 'Timesheet' table to establish a relationship between employees and their respective timesheets.",
+            "metadata": {
+              "name": "EmployeeID",
+              "type": "integer",
+              "nullable": false,
+              "default": null,
+              "primary_key": false,
+              "description": "The 'EmployeeID' column is an integer that uniquely identifies each employee in the database, and it links to the 'Timesheet' table to establish a relationship between employees and their respective timesheets.",
+              "business_patterns": [
+                {
+                  "type": "identifier",
+                  "confidence": 0.95,
+                  "semantic_meaning": "Likely serves as a unique identifier or reference"
+                }
+              ]
+            }
+          },
+          "similarity": 80,
+          "match_type": "fuzzy_string",
+          "name_score": 80,
+          "full_name_score": 42,
+          "word_score": 12.5
+        },
+        {
+          "element": {
+            "name": "EmployeeID",
+            "type": "column",
+            "schema": "Timesheet",
+            "table": "ProcessedFiles",
+            "full_name": "Timesheet.ProcessedFiles.EmployeeID",
+            "data_type": "integer",
+            "description": "The \"EmployeeID\" column is an integer that uniquely identifies each employee in the database, and it links to the corresponding employee record in the \"Timesheet\" table through the foreign key relationship.",
+            "metadata": {
+              "name": "EmployeeID",
+              "type": "integer",
+              "nullable": false,
+              "default": null,
+              "primary_key": false,
+              "description": "The \"EmployeeID\" column is an integer that uniquely identifies each employee in the database, and it links to the corresponding employee record in the \"Timesheet\" table through the foreign key relationship.",
+              "business_patterns": [
+                {
+                  "type": "identifier",
+                  "confidence": 0.95,
+                  "semantic_meaning": "Likely serves as a unique identifier or reference"
+                }
+              ]
+            }
+          },
+          "similarity": 80,
+          "match_type": "fuzzy_string",
+          "name_score": 80,
+          "full_name_score": 40,
+          "word_score": 12.5
+        },
+        {
+          "element": {
+            "name": "EmployeeID",
+            "type": "column",
+            "schema": "Timesheet",
+            "table": "Timesheet",
+            "full_name": "Timesheet.Timesheet.EmployeeID",
+            "data_type": "integer",
+            "description": "The 'EmployeeID' column is an integer that uniquely identifies each employee in the database, and it links to the 'Timesheet' table, associating each timesheet entry with its respective employee.",
+            "metadata": {
+              "name": "EmployeeID",
+              "type": "integer",
+              "nullable": false,
+              "default": null,
+              "primary_key": false,
+              "description": "The 'EmployeeID' column is an integer that uniquely identifies each employee in the database, and it links to the 'Timesheet' table, associating each timesheet entry with its respective employee.",
+              "business_patterns": [
+                {
+                  "type": "identifier",
+                  "confidence": 0.95,
+                  "semantic_meaning": "Likely serves as a unique identifier or reference"
+                }
+              ]
+            }
+          },
+          "similarity": 80,
+          "match_type": "fuzzy_string",
+          "name_score": 80,
+          "full_name_score": 40,
+          "word_score": 12.5
+        },
+        {
+          "element": {
+            "name": "TotalHours",
+            "type": "column",
+            "schema": "Timesheet",
+            "table": "Forecast",
+            "full_name": "Timesheet.Forecast.TotalHours",
+            "data_type": "decimal(10, 2)",
+            "description": "The \"TotalHours\" column in this database is used to store the total number of hours worked by an individual or entity, with a precision of up to two decimal places. This could be useful for tracking work hours, project durations, or any other time-based measurements.",
+            "metadata": {
+              "name": "TotalHours",
+              "type": "decimal(10, 2)",
+              "nullable": false,
+              "default": null,
+              "primary_key": false,
+              "description": "The \"TotalHours\" column in this database is used to store the total number of hours worked by an individual or entity, with a precision of up to two decimal places. This could be useful for tracking work hours, project durations, or any other time-based measurements.",
+              "business_patterns": [
+                {
+                  "type": "amount",
+                  "confidence": 0.9,
+                  "semantic_meaning": "Likely stores monetary or numeric values"
+                }
+              ]
+            }
+          },
+          "similarity": 70,
+          "match_type": "fuzzy_string",
+          "name_score": 70,
+          "full_name_score": 34,
+          "word_score": 25.0
+        },
+        {
+          "element": {
+            "name": "TotalHours",
+            "type": "column",
+            "schema": "Timesheet",
+            "table": "Timesheet",
+            "full_name": "Timesheet.Timesheet.TotalHours",
+            "data_type": "decimal(5, 2)",
+            "description": "The \"TotalHours\" column in the database stores the total number of hours worked by an entity (e.g., employee), with a precision of up to two decimal places.",
+            "metadata": {
+              "name": "TotalHours",
+              "type": "decimal(5, 2)",
+              "nullable": true,
+              "default": null,
+              "primary_key": false,
+              "description": "The \"TotalHours\" column in the database stores the total number of hours worked by an entity (e.g., employee), with a precision of up to two decimal places.",
+              "business_patterns": [
+                {
+                  "type": "amount",
+                  "confidence": 0.9,
+                  "semantic_meaning": "Likely stores monetary or numeric values"
+                }
+              ]
+            }
+          },
+          "similarity": 70,
+          "match_type": "fuzzy_string",
+          "name_score": 70,
+          "full_name_score": 33,
+          "word_score": 25.0
+        }
+      ]
+    },
+    "keywords": [
+      "total",
+      "for",
+      "per"
+    ],
+    "suggested_tables": [
+      "Timesheet.Employee",
+      "Timesheet.Forecast",
+      "Timesheet.LeaveRequest"
+    ],
+    "dates": [
+      [
+        "2025-05-01",
+        "2025-05-31"
+      ]
+    ],
+    "comparisons": [
+      {
+        "operator": ">",
+        "value": 8.0,
+        "type": "greater_than",
+        "original_text": "> 8"
+      }
+    ]
   },
-  "referenced_tables": [
-    "employees",
-    "projects"
-  ],
-  "referenced_columns": [
-    "department",
-    "name",
-    "salary"
-  ],
+  "referenced_tables": [],
+  "referenced_columns": [],
   "topic_keywords": [
-    "their",
-    "table",
-    "invalid",
-    "first",
-    "query",
-    "employee",
-    "complex",
-    "salaries",
-    "join",
-    "test",
-    "smith",
+    "each",
     "employees",
-    "data",
-    "wrong",
-    "what",
-    "error",
-    "select",
-    "john",
+    "pending",
+    "week",
+    "request",
+    "tsaoane",
+    "mjikeliso",
+    "siyakhanya",
+    "non",
+    "lucky",
+    "list",
     "all",
+    "available",
+    "names",
+    "sum",
+    "timesheets",
+    "approved",
+    "manamela",
+    "billable",
+    "projects",
+    "work",
+    "name",
+    "status",
+    "their",
+    "daily",
+    "from",
+    "muzuvukile",
+    "total",
+    "training",
+    "requests",
+    "worked",
+    "employee",
+    "forecasted",
+    "clients",
+    "per",
+    "compare",
+    "what",
+    "totalhours",
+    "project",
+    "govender",
+    "month",
+    "last",
+    "june",
+    "how",
+    "actual",
+    "april",
+    "who",
+    "type",
+    "files",
+    "types",
+    "details",
+    "nqwiliso",
+    "entries",
+    "leave",
+    "system",
+    "karabo",
+    "client",
+    "activities",
     "timesheet",
-    "about",
-    "column"
+    "pascal",
+    "where",
+    "hours",
+    "many",
+    "which",
+    "average",
+    "between",
+    "calculate",
+    "prending",
+    "january",
+    "march"
   ],
   "successful_queries": [
-    "SELECT 10",
-    "SELECT 11",
-    "SELECT 12",
-    "SELECT 13",
-    "SELECT 14"
+    "SELECT e.[EmployeeName],\nf.[TotalHours] as ForecastedHours,\nSUM(t.[TotalHours]) as ActualHours,\n(SUM(t.[TotalHours]) - f.[TotalHours]) as Variance\nFROM [Timesheet].[Employee] e\nLEFT JOIN [Timesheet].[Forecast] f ON e.[EmployeeID] = f.[EmployeeID]\nLEFT JOIN [Timesheet].[Timesheet] t ON e.[EmployeeID] = t.[EmployeeID]\nGROUP BY e.[EmployeeName], f.[TotalHours]\nORDER BY Variance DESC",
+    "SELECT TOP 10 [ActivityID], [ActivityName] FROM [Timesheet].[Activity]",
+    "SELECT TOP 10 [ActivityID], [ActivityName] FROM [Timesheet].[Activity]",
+    "SELECT TOP 10 [ActivityID], [ActivityName] FROM [Timesheet].[Activity]",
+    "SELECT TOP 10 [ActivityID], [ActivityName] FROM [Timesheet].[Activity]"
   ],
   "failed_patterns": [
     {
-      "query": "Show invalid table",
-      "error": "Table 'invalid_table' not found",
-      "timestamp": "2025-07-20T23:33:00.920284"
+      "query": "List all 'Training' activities for Siyakhanya Mjikeliso",
+      "error": "Column does not exist: (pyodbc.ProgrammingError) ('42S22', \"[42S22] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid column name 'ActivityID'. (207) (SQLExecDirectW)\")\n[SQL: SELECT t.[TimesheetID], t.[Date], a.[ActivityName], t.[TotalHours]\nFROM [Timesheet].[Timesheet] t\nJOIN [Timesheet].[Employee] e ON t.[EmployeeID] = e.[EmployeeID]\nJOIN [Timesheet].[Activity] a ON t.[ActivityID] = a.[ActivityID]\nWHERE e.[EmployeeName] LIKE '%Siyakhanya Mjikeliso%' AND a.[ActivityName] LIKE '%Training%'\nORDER BY t.[Date] DESC]\n(Background on this error at: https://sqlalche.me/e/20/f405)",
+      "timestamp": "2025-07-22T09:40:55.163428"
     },
     {
-      "query": "Select wrong column",
-      "error": "Column 'wrong_col' does not exist",
-      "timestamp": "2025-07-20T23:33:00.920284"
+      "query": "List all 'Training' activities for Siyakhanya Mjikeliso",
+      "error": "Column does not exist: (pyodbc.ProgrammingError) ('42S22', \"[42S22] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid column name 'ActivityID'. (207) (SQLExecDirectW)\")\n[SQL: SELECT t.[TimesheetID], t.[Date], a.[ActivityName], t.[TotalHours]\nFROM [Timesheet].[Timesheet] t\nJOIN [Timesheet].[Employee] e ON t.[EmployeeID] = e.[EmployeeID]\nJOIN [Timesheet].[Activity] a ON t.[ActivityID] = a.[ActivityID]\nWHERE e.[EmployeeName] LIKE '%Siyakhanya Mjikeliso%' AND a.[ActivityName] LIKE '%Training%'\nORDER BY t.[Date] DESC]\n(Background on this error at: https://sqlalche.me/e/20/f405)",
+      "timestamp": "2025-07-22T09:40:55.163428"
     },
     {
-      "query": "Complex join error",
-      "error": "Syntax error in JOIN clause",
-      "timestamp": "2025-07-20T23:33:00.920284"
+      "query": "List all 'Training' activities for Siyakhanya Mjikeliso",
+      "error": "Column does not exist: (pyodbc.ProgrammingError) ('42S22', \"[42S22] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid column name 'ActivityID'. (207) (SQLExecDirectW)\")\n[SQL: SELECT t.[TimesheetID], t.[Date], a.[ActivityName], t.[TotalHours]\nFROM [Timesheet].[Timesheet] t\nJOIN [Timesheet].[Employee] e ON t.[EmployeeID] = e.[EmployeeID]\nJOIN [Timesheet].[Activity] a ON t.[ActivityID] = a.[ActivityID]\nWHERE e.[EmployeeName] LIKE '%Siyakhanya Mjikeliso%' AND a.[ActivityName] LIKE '%Training%'\nORDER BY t.[Date] DESC]\n(Background on this error at: https://sqlalche.me/e/20/f405)",
+      "timestamp": "2025-07-22T09:40:55.163428"
     }
   ],
   "user_preferences": {}

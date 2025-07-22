@@ -692,90 +692,49 @@ def generate_fallback_query(nl_query: str, schema_metadata: List[Dict], intent: 
     if intent == "count":
         return f"SELECT COUNT(*) as RecordCount FROM [{schema}].[{table_name}]"
     else:
-        return f"SELECT TOP 10 * FROM [{schema}].[{table_name}]"
+        # Simple SELECT with TOP 10
+        columns = [col['name'] for col in high_priority_table['columns'][:5]]  # First 5 columns
+        column_list = ', '.join([f"[{col}]" for col in columns])
+        return f"SELECT TOP 10 {column_list} FROM [{schema}].[{table_name}]"
+
+def create_simple_query_for_leave_types() -> str:
+    """Create a simple query specifically for leave types based on the schema"""
+    return "SELECT [LeaveTypeID], [LeaveTypeName] FROM [Timesheet].[LeaveType]"
 
 def get_model_specific_prompt_template(model_name: str) -> str:
     """Get optimized prompt template based on the specific model being used"""
     
     if "mistral" in model_name.lower():
-        # Mistral 7B optimized prompt - more structured and explicit with advanced features
-        return """<s>[INST] You are an expert SQL Server T-SQL developer specializing in advanced query features. Your task is to generate precise, efficient T-SQL queries with complex aggregations, subqueries, CTEs, and optimized joins.
+        # Simplified Mistral prompt for speed
+        return """<s>[INST] Generate a simple SQL Server query.
 
-DATABASE SCHEMA:
+TABLES AND COLUMNS:
 {schema_text}
 
-USER REQUEST: {nl_query}
+QUERY: {nl_query}
 
-CONTEXT AND REQUIREMENTS:
-{context_str}
+RULES:
+- Use ONLY tables and columns shown above
+- Use [schema].[table] format
+- Use TOP not LIMIT
+- Keep it simple
+- Return only SQL, no explanations
 
-{conversation_section}
-
-{feedback_section}
-
-ADVANCED T-SQL CAPABILITIES:
-- Complex Aggregations: GROUP BY, HAVING, ROLLUP, CUBE, GROUPING SETS
-- Window Functions: ROW_NUMBER(), RANK(), DENSE_RANK(), LAG(), LEAD(), SUM() OVER()
-- Subqueries: Correlated and non-correlated, EXISTS, IN, scalar subqueries
-- CTEs: WITH clause for complex multi-step queries, recursive CTEs when needed
-- Conditional Logic: CASE WHEN, IIF(), COALESCE(), NULLIF()
-- Advanced Joins: Optimized join order, proper ON conditions, multiple table joins
-
-STRICT REQUIREMENTS:
-1. Use ONLY existing tables and columns from the schema above
-2. Use proper SQL Server syntax with square brackets: [schema].[table].[column]
-3. Use SQL Server functions: {sql_server_functions}
-4. Use proper date formats: 'YYYY-MM-DD' or 'YYYY-MM-DD HH:MM:SS'
-5. Use TOP instead of LIMIT for row limiting
-6. Use appropriate JOINs based on relationships shown in schema
-7. Include proper WHERE clauses for filtering
-8. Use GROUP BY with aggregations when needed
-9. Apply advanced features (CTEs, window functions, subqueries) when appropriate
-10. Optimize join order based on table relationships
-11. Return ONLY the SQL query - no explanations or comments
-
-Generate the advanced T-SQL query now: [/INST]
+[/INST]
 
 """
     
     elif "llama2" in model_name.lower():
-        # Llama2 optimized prompt - more conversational but structured with advanced features
-        return """### System: You are an expert SQL Server database developer specializing in advanced T-SQL features.
+        # Simplified Llama2 prompt
+        return """### System: Generate SQL Server queries.
 
-### Human: I need you to write an advanced T-SQL query for SQL Server based on this information:
+### Human: 
+TABLES: {schema_text}
+QUERY: {nl_query}
 
-DATABASE SCHEMA:
-{schema_text}
+Rules: Use only existing tables/columns, [schema].[table] format, TOP not LIMIT, keep simple.
 
-USER REQUEST: {nl_query}
-
-CONTEXT:
-{context_str}
-
-{conversation_section}
-
-{feedback_section}
-
-ADVANCED T-SQL FEATURES AVAILABLE:
-- Complex Aggregations: GROUP BY, HAVING, ROLLUP, CUBE, GROUPING SETS
-- Window Functions: ROW_NUMBER(), RANK(), DENSE_RANK(), LAG(), LEAD(), SUM() OVER()
-- Subqueries: Correlated and non-correlated, EXISTS, IN, scalar subqueries
-- CTEs: WITH clause for complex multi-step queries
-- Conditional Logic: CASE WHEN, IIF(), COALESCE(), NULLIF()
-- Advanced Joins: Optimized join order, proper ON conditions
-
-Please follow these rules:
-- Only use tables and columns that exist in the schema
-- Use SQL Server T-SQL syntax with square brackets
-- Use SQL Server functions like: {sql_server_functions}
-- Apply advanced features (CTEs, window functions, subqueries) when appropriate
-- Use TOP not LIMIT
-- Optimize join order based on table relationships
-- Return only the SQL query, no explanations
-
-### Assistant: Here is the advanced T-SQL query:
-
-"""
+### Assistant: """
     
     elif "codellama" in model_name.lower():
         # CodeLlama optimized prompt - code-focused with advanced features
@@ -813,43 +772,86 @@ Please follow these rules:
 """
     
     else:
-        # Default/generic prompt template with advanced features
-        return """You are an expert SQL Server T-SQL developer specializing in advanced query features. Generate precise, efficient T-SQL queries with complex aggregations, subqueries, CTEs, and optimized joins.
+        # Default simplified prompt
+        return """Generate SQL Server query.
 
-DATABASE SCHEMA:
-{schema_text}
+TABLES: {schema_text}
+REQUEST: {nl_query}
 
-USER REQUEST: {nl_query}
+Rules: Use only existing tables/columns, [schema].[table] format, TOP not LIMIT, simple queries only.
 
-CONTEXT:
-{context_str}
+SQL:"""
 
-{conversation_section}
-
-{feedback_section}
-
-ADVANCED T-SQL CAPABILITIES:
-- Complex Aggregations: GROUP BY, HAVING, ROLLUP, CUBE, GROUPING SETS
-- Window Functions: ROW_NUMBER(), RANK(), DENSE_RANK(), LAG(), LEAD(), SUM() OVER()
-- Subqueries: Correlated and non-correlated, EXISTS, IN, scalar subqueries
-- CTEs: WITH clause for complex multi-step queries
-- Conditional Logic: CASE WHEN, IIF(), COALESCE(), NULLIF()
-- Advanced Joins: Optimized join order, proper ON conditions
-
-REQUIREMENTS:
-1. Use ONLY existing tables and columns from the schema
-2. Use proper SQL Server syntax with square brackets: [schema].[table].[column]
-3. Use SQL Server functions: {sql_server_functions}
-4. Use proper date formats: 'YYYY-MM-DD' or 'YYYY-MM-DD HH:MM:SS'
-5. Use TOP instead of LIMIT for row limiting
-6. Use appropriate JOINs based on relationships
-7. Include proper WHERE clauses for filtering
-8. Use GROUP BY with aggregations
-9. Apply advanced features (CTEs, window functions, subqueries) when appropriate
-10. Optimize join order based on table relationships
-11. Return ONLY the SQL query - no explanations
-
-ADVANCED SQL QUERY:"""
+def validate_schema_references(sql_query: str, schema_metadata: List[Dict]) -> Tuple[bool, List[str]]:
+    """Validate that SQL query only references existing tables and columns"""
+    errors = []
+    
+    # System schemas and tables to block
+    BLOCKED_SCHEMAS = {
+        'sys', 'information_schema', 'master', 'model', 'msdb', 'tempdb',
+        'INFORMATION_SCHEMA', 'SYS', 'MASTER', 'MODEL', 'MSDB', 'TEMPDB'
+    }
+    
+    BLOCKED_TABLES = {
+        'sysobjects', 'syscolumns', 'sysindexes', 'systables', 'sysviews',
+        'sysprocedures', 'sysfunctions', 'sysusers', 'syslogins', 'sysroles'
+    }
+    
+    # Check for blocked system references
+    sql_upper = sql_query.upper()
+    for blocked_schema in BLOCKED_SCHEMAS:
+        if f'[{blocked_schema.upper()}].' in sql_upper or f'{blocked_schema.upper()}.' in sql_upper:
+            errors.append(f"Access to system schema '{blocked_schema}' is not allowed")
+    
+    for blocked_table in BLOCKED_TABLES:
+        if f'[{blocked_table.upper()}]' in sql_upper or f'{blocked_table.upper()}' in sql_upper:
+            errors.append(f"Access to system table '{blocked_table}' is not allowed")
+    
+    # Create lookup maps for validation
+    valid_tables = set()
+    valid_columns = set()
+    table_names = set()
+    
+    for table in schema_metadata:
+        table_key = f"{table['schema']}.{table['table']}"
+        valid_tables.add(table_key)
+        table_names.add(table['table'])  # Just the table name
+        for col in table['columns']:
+            valid_columns.add(col['name'])
+    
+    # Extract table references from SQL
+    table_pattern = r'\[([^\]]+)\]\.\[([^\]]+)\]'
+    table_matches = re.findall(table_pattern, sql_query)
+    
+    for schema, table in table_matches:
+        table_key = f"{schema}.{table}"
+        if table_key not in valid_tables:
+            errors.append(f"Table '{table_key}' does not exist in schema")
+    
+    # Extract column references - more precise pattern
+    # Look for columns that are not part of table references
+    sql_upper = sql_query.upper()
+    
+    # Remove table references to avoid false positives
+    sql_without_tables = re.sub(r'\[[^\]]+\]\.\[[^\]]+\]', '', sql_query)
+    
+    # Extract remaining column references
+    column_pattern = r'\[([^\]]+)\]'
+    column_matches = re.findall(column_pattern, sql_without_tables)
+    
+    # SQL keywords to ignore
+    sql_keywords = {'SELECT', 'FROM', 'WHERE', 'ORDER', 'BY', 'GROUP', 'HAVING', 'TOP', 'AS', 'AND', 'OR', 'IN', 'NOT', 'NULL', 'IS', 'LIKE', 'BETWEEN'}
+    
+    for column in column_matches:
+        # Skip if it's a table name or SQL keyword
+        if column in table_names or column.upper() in sql_keywords:
+            continue
+            
+        # Check if column exists in schema
+        if column not in valid_columns:
+            errors.append(f"Column '{column}' does not exist in any table")
+    
+    return len(errors) == 0, errors
 
 def generate_sql_query(nl_query, schema_metadata, column_map, entities, vector_store=None, previous_sql_query=None, error_feedback=None, enhanced_data=None, conversation_context=None):
     """Enhanced SQL query generation with improved accuracy, validation, and conversation context support."""
@@ -857,234 +859,75 @@ def generate_sql_query(nl_query, schema_metadata, column_map, entities, vector_s
     if not entities.get("is_database_related", False):
         return "This query is not related to the database. Please ask about data present in the connected database."
 
-    # Use enhanced schema understanding to prioritize and contextualize tables
-    prioritized_tables = schema_metadata
-    if enhanced_data:
-        # Get contextual priorities based on the query
-        from database import get_contextual_table_priorities
-        try:
-            contextual_priorities = get_contextual_table_priorities(nl_query, schema_metadata, enhanced_data)
-            # Sort schema_metadata by priority scores
-            priority_map = {f"{p.schema_name}.{p.table_name}": p.priority_score for p in contextual_priorities}
-            prioritized_tables = sorted(schema_metadata, 
-                                      key=lambda t: priority_map.get(f"{t['schema']}.{t['table']}", 0.4), 
-                                      reverse=True)
-        except Exception as e:
-            logger.warning(f"Could not apply contextual priorities: {e}")
-            prioritized_tables = schema_metadata
-
-    # Enhanced schema context with business patterns and priorities
+    # Simple schema processing - only essential info
     schema_text_parts = []
-    for m in prioritized_tables[:10]:  # Limit to top 10 most relevant tables
-        # Get business patterns for this table
-        business_patterns = []
-        if enhanced_data and 'business_patterns' in enhanced_data:
-            table_patterns = [p for p in enhanced_data['business_patterns'] 
-                            if p['schema_name'] == m['schema'] and p['table_name'] == m['table']]
-            business_patterns = [f"{p['pattern_type']} ({p['confidence']:.1f})" for p in table_patterns if p['confidence'] > 0.6]
-        
-        # Get priority information
-        priority_info = ""
-        if 'priority' in m:
-            priority_info = f" [Priority: {m['priority']['business_importance']}]"
-        
-        # Enhanced column descriptions with business patterns
-        enhanced_columns = []
-        for col in m['columns']:
-            col_desc = col_text(col)
-            if 'business_patterns' in col:
-                patterns = [p['type'] for p in col['business_patterns'] if p['confidence'] > 0.7]
-                if patterns:
-                    col_desc += f" ({', '.join(patterns)})"
-            enhanced_columns.append(col_desc)
-        
-        # Get inferred relationships
-        inferred_rels = []
-        if 'inferred_relationships' in m:
-            inferred_rels = [f"{rel['source_column']} -> {rel['target_table']}.{rel['target_column']} (inferred)" 
-                           for rel in m['inferred_relationships'] if rel['confidence'] > 0.7]
-        
-        all_relationships = relationships_text(m['relationships'])
-        if inferred_rels:
-            if all_relationships != "None":
-                all_relationships += ", " + ", ".join(inferred_rels)
-            else:
-                all_relationships = ", ".join(inferred_rels)
-        
-        table_text = (
-            f"Table: [{m['schema']}].[{m['table']}]{priority_info}\n"
-            f"Purpose: {m.get('description', 'No description')}\n"
-            f"Business Patterns: {', '.join(business_patterns) if business_patterns else 'None'}\n"
-            f"Columns: {', '.join(enhanced_columns)}\n"
-            f"Relationships: {all_relationships}\n"
-            f"Primary Keys: {', '.join(m['primary_keys']) if m['primary_keys'] else 'None'}"
-        )
+    
+    # Get suggested tables from entities, limit to 3 most relevant
+    suggested_tables = entities.get("suggested_tables", [])
+    relevant_tables = []
+    
+    for table_name in suggested_tables[:3]:  # Only top 3 tables
+        for m in schema_metadata:
+            table_key = f"{m['schema']}.{m['table']}"
+            if table_key == table_name:
+                relevant_tables.append(m)
+                break
+    
+    # If no suggested tables, use first 2 tables
+    if not relevant_tables:
+        relevant_tables = schema_metadata[:2]
+    
+    for m in relevant_tables:
+        # Simple table description
+        columns = [f"[{col['name']}]" for col in m['columns'][:5]]  # Only first 5 columns
+        table_text = f"[{m['schema']}].[{m['table']}]: {', '.join(columns)}"
         schema_text_parts.append(table_text)
     
-    schema_text = "\n\n".join(schema_text_parts)
+    schema_text = "\n".join(schema_text_parts)
 
-    # Analyze query requirements for advanced features
-    query_requirements = analyze_query_requirements(nl_query, entities)
-    
-    # Build enhanced context with advanced query capabilities
-    context = []
-    intent = entities.get("intent")
-    
-    # Basic intent handling
-    if intent == "list":
-        context.append("Generate a SELECT query to list records with appropriate columns and sorting.")
-    elif intent == "count":
-        context.append("Generate a COUNT query using COUNT(*) or COUNT(column) as appropriate.")
-    elif intent == "sum":
-        context.append("Generate aggregation queries using SUM, AVG, MIN, MAX with proper GROUP BY.")
-    elif intent == "filter":
-        context.append("Generate filtered SELECT with appropriate WHERE clauses.")
-
-    # Add advanced query context based on requirements analysis
-    advanced_context = generate_advanced_query_context(query_requirements, entities, schema_metadata)
-    if advanced_context:
-        context.append("\nADVANCED QUERY FEATURES NEEDED:")
-        context.append(advanced_context)
-
-    # Optimize table join order if multiple tables are involved
-    suggested_tables = entities.get("suggested_tables", [])
-    if len(suggested_tables) > 1:
-        optimized_tables = optimize_join_order(schema_metadata, suggested_tables)
-        context.append(f"\nOPTIMIZED TABLE JOIN ORDER: {' -> '.join(optimized_tables)}")
-        entities["suggested_tables"] = optimized_tables
-
-    # Entity-specific context
-    if entities.get("names"):
-        context.append(f"Filter for names: {', '.join(entities['names'])} using LIKE '%name%' for partial matches.")
-    if entities.get("dates"):
-        for date_range in entities["dates"]:
-            if isinstance(date_range, tuple):
-                context.append(f"Filter dates BETWEEN '{date_range[0]}' AND '{date_range[1]}'.")
-            else:
-                context.append(f"Filter date = '{date_range}'.")
-    if entities.get("limit"):
-        context.append(f"Limit results to {entities['limit']} rows using TOP.")
-    if entities.get("suggested_tables"):
-        context.append(f"Prioritize tables: {', '.join(entities['suggested_tables'])}.")
-
-    # Add numeric and comparison context
-    if entities.get("numeric_values"):
-        numeric_info = entities["numeric_values"]
-        if numeric_info.get("values"):
-            context.append(f"Numeric values mentioned: {numeric_info['values']}")
-        if numeric_info.get("ranges"):
-            context.append(f"Numeric ranges: {numeric_info['ranges']}")
-        if numeric_info.get("currencies"):
-            context.append(f"Currency amounts: {numeric_info['currencies']}")
-        if numeric_info.get("hours"):
-            context.append(f"Hour values: {numeric_info['hours']}")
-    
-    if entities.get("comparisons"):
-        comparison_context = []
-        for comp in entities["comparisons"]:
-            if comp["type"] == "between":
-                comparison_context.append(f"BETWEEN {comp['value'][0]} AND {comp['value'][1]}")
-            else:
-                comparison_context.append(f"{comp['operator']} {comp['value']}")
-        if comparison_context:
-            context.append(f"Comparison operators needed: {', '.join(comparison_context)}")
-
-    context_str = "\n".join(context) if context else "No specific context provided."
-
-    # Add conversation context to the prompt
+    # Simple context - no complex analysis
+    context_str = ""
     conversation_section = ""
-    if conversation_context:
-        conversation_parts = []
-        
-        # Add active entities from conversation
-        if conversation_context.get('active_entities'):
-            active_entities_str = ", ".join([f"{k}: {v}" for k, v in conversation_context['active_entities'].items() if v])
-            if active_entities_str:
-                conversation_parts.append(f"Active Context: {active_entities_str}")
-        
-        # Add recent successful patterns
-        if conversation_context.get('successful_patterns'):
-            recent_patterns = conversation_context['successful_patterns'][-2:]  # Last 2 successful patterns
-            if recent_patterns:
-                conversation_parts.append(f"Recent Successful Query Patterns: {'; '.join(recent_patterns)}")
-        
-        # Add context references if detected
-        if conversation_context.get('context_references'):
-            conversation_parts.append(f"Context References Detected: {', '.join(conversation_context['context_references'])}")
-        
-        # Add recent query context
-        if conversation_context.get('recent_queries'):
-            recent_queries = conversation_context['recent_queries'][-2:]  # Last 2 queries
-            recent_context = []
-            for query in recent_queries:
-                if query.get('success') and query.get('sql_query'):
-                    recent_context.append(f"Previous: '{query['natural_language_query']}' -> {query['sql_query']}")
-            if recent_context:
-                conversation_parts.append("Recent Query Context:\n" + "\n".join(recent_context))
-        
-        if conversation_parts:
-            conversation_section = f"""
-CONVERSATION CONTEXT:
-{chr(10).join(conversation_parts)}
-
-CONTEXT INSTRUCTIONS:
-- Use the active context to understand entity references
-- Learn from recent successful query patterns
-- Resolve context references (that, those, it, etc.) using recent queries
-- Maintain consistency with previous successful approaches
-"""
-
-    # Enhanced error feedback section
     feedback_section = ""
+    
+    # Only add error feedback if there was a previous attempt
     if previous_sql_query and error_feedback:
-        specific_feedback = provide_sql_generation_feedback(error_feedback, previous_sql_query)
-        feedback_section = f"""
-PREVIOUS ATTEMPT FAILED:
-Previous SQL: {previous_sql_query}
-Error: {error_feedback}
-Specific Guidance: {specific_feedback}
-
-CORRECTION INSTRUCTIONS:
-- Fix the identified issues above
-- Use only tables and columns that exist in the schema
-- Ensure proper SQL Server T-SQL syntax
-- Test with a simpler query if the current approach is too complex
-"""
-
+        feedback_section = f"Previous attempt failed: {error_feedback}. Fix the issues."
+    
     # Get model-specific prompt template
     current_model = llm_manager.current_model
     prompt_template = get_model_specific_prompt_template(current_model)
     
-    # Prepare comprehensive SQL Server functions string for the template
-    all_functions = []
-    for category, functions in SQL_SERVER_FUNCTIONS.items():
-        if category != 'advanced_aggregates' and category != 'cte_functions':
-            all_functions.extend(functions[:4])  # Take first 4 from each category
-    
-    # Add advanced features if needed
-    if query_requirements.get('needs_aggregation') or query_requirements.get('needs_grouping'):
-        all_functions.extend(SQL_SERVER_FUNCTIONS['advanced_aggregates'])
-    
-    if query_requirements.get('needs_cte'):
-        all_functions.extend(SQL_SERVER_FUNCTIONS['cte_functions'])
-    
-    sql_server_functions = ", ".join(all_functions)
-    
-    # Format the enhanced prompt using the model-specific template
+    # Format the simple prompt
     enhanced_prompt = prompt_template.format(
         schema_text=schema_text,
         nl_query=nl_query,
         context_str=context_str,
         conversation_section=conversation_section,
         feedback_section=feedback_section,
-        sql_server_functions=sql_server_functions
+        sql_server_functions=""
     )
 
     try:
         logger.info(f"Generating SQL for query: {nl_query}")
         logger.info(f"Using model: {llm_manager.current_model}")
         
-        # Use the enhanced LLM manager directly for better control
+        # Try fast pattern-based generation first for simple queries
+        from fast_sql_generator import generate_fast_sql, validate_fast_sql
+        
+        # Always try fast generation first
+        logger.info("Attempting fast pattern-based SQL generation...")
+        fast_sql = generate_fast_sql(nl_query, schema_metadata)
+        is_valid, validation_msg = validate_fast_sql(fast_sql, schema_metadata)
+        
+        if is_valid:
+            logger.info(f"Fast generation successful: {fast_sql}")
+            return fast_sql
+        else:
+            logger.warning(f"Fast generation failed validation: {validation_msg}")
+        
+        # Only use LLM for complex queries, with simplified prompt
+        logger.info("Using LLM for complex SQL generation...")
         sql_query = llm_manager.invoke(enhanced_prompt, use_cache=True)
         
         # Clean up response
@@ -1097,54 +940,41 @@ CORRECTION INSTRUCTIONS:
                 if line.strip() and not line.strip().startswith('--')]
         sql_query = '\n'.join(lines)
         
-        # Comprehensive validation using the new validator
-        validator = create_validator_from_schema(schema_metadata)
-        validation_result = validator.validate_query(sql_query, schema_metadata)
+        # First, validate schema references to prevent hallucination
+        schema_valid, schema_errors = validate_schema_references(sql_query, schema_metadata)
+        if not schema_valid:
+            error_details = "; ".join(schema_errors)
+            logger.error(f"Schema validation failed: {error_details}")
+            
+            # If this is a retry, return the error
+            if previous_sql_query:
+                return f"Failed to generate valid SQL: {error_details}"
+            
+            # Otherwise, try again with simpler approach
+            simplified_entities = {
+                "is_database_related": True,
+                "intent": entities.get("intent", "list"),
+                "suggested_tables": entities.get("suggested_tables", [])[:1]
+            }
+            return generate_sql_query(nl_query, schema_metadata, column_map, 
+                                    simplified_entities, vector_store, sql_query, error_details, enhanced_data)
         
-        # Log validation details
-        logger.info(f"Query validation summary:")
-        logger.info(validator.get_validation_summary(validation_result))
-        
-        if validation_result.is_valid:
-            # Log performance and security information
-            if validation_result.performance_risk != PerformanceRisk.LOW:
-                logger.warning(f"Performance risk: {validation_result.performance_risk.value}")
-                logger.warning(f"Estimated execution time: {validation_result.estimated_execution_time:.2f} seconds")
+        # Simple validation - just check basic syntax and schema references
+        try:
+            parsed = sqlparse.parse(sql_query)
+            if not parsed or not parsed[0].tokens:
+                return "Failed to generate valid SQL: Query could not be parsed"
             
-            if validation_result.security_risk != SecurityRisk.LOW:
-                logger.warning(f"Security risk: {validation_result.security_risk.value}")
+            # Basic SQL type check
+            statement = parsed[0]
+            if statement.get_type() not in ("SELECT", "UNION", "WITH"):
+                return "Failed to generate valid SQL: Only SELECT queries are allowed"
             
-            if validation_result.warnings:
-                for warning in validation_result.warnings:
-                    logger.warning(f"Warning: {warning}")
+            return sql_query
             
-            # Check if query should be blocked due to high risk
-            if validation_result.complexity == QueryComplexity.DANGEROUS:
-                return f"Query blocked: Complexity level is dangerous. {'; '.join(validation_result.suggestions)}"
-            
-            if validation_result.performance_risk == PerformanceRisk.CRITICAL:
-                return f"Query blocked: Critical performance risk detected. Estimated execution time: {validation_result.estimated_execution_time:.2f} seconds. {'; '.join(validation_result.suggestions)}"
-            
-            return validation_result.query
-        else:
-            error_details = "; ".join(validation_result.errors)
-            logger.error(f"SQL validation failed: {error_details}")
-            
-            # Include suggestions in error message
-            if validation_result.suggestions:
-                error_details += f" Suggestions: {'; '.join(validation_result.suggestions)}"
-            
-            # Retry with simplified approach
-            if not previous_sql_query:
-                simplified_entities = {
-                    "is_database_related": True,
-                    "intent": entities.get("intent", "list"),
-                    "suggested_tables": entities.get("suggested_tables", [])[:1]
-                }
-                return generate_sql_query(nl_query, schema_metadata, column_map, 
-                                        simplified_entities, vector_store, sql_query, error_details, enhanced_data)
-            
-            return f"Failed to generate valid SQL: {error_details}"
+        except Exception as parse_error:
+            logger.error(f"SQL parsing failed: {parse_error}")
+            return f"Failed to generate valid SQL: {str(parse_error)}"
             
     except Exception as e:
         logger.error(f"Error in SQL generation: {str(e)}")

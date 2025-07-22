@@ -47,7 +47,8 @@ EXCLUDE_TABLE_PATTERNS = [
     r"error",
     r"log",
     r"temp",
-    r"backup"
+    r"backup",
+    r"sys"
 ]
 
 SCHEMA_CACHE_FILE = "schema_cache.json"

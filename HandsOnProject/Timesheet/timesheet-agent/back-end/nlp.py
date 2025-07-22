@@ -484,7 +484,7 @@ def extract_entities(query: str, schema_metadata: List[Dict], execute_query_fn, 
     query_lower = query.lower()
     intent_keywords = {
         "greeting": ["hi", "hello", "hey", "good morning", "good afternoon", "how are you"],
-        "list": ["show", "display", "list", "get", "find", "retrieve", "fetch"],
+        "list": ["show", "display", "list", "get", "find", "retrieve", "fetch", "what", "which"],
         "count": ["how many", "count", "number of", "total count"],
         "sum": ["total", "sum", "how many hours", "average", "avg", "mean", "aggregate"],
         "filter": ["where", "for", "in", "by", "with", "having"],
@@ -492,6 +492,17 @@ def extract_entities(query: str, schema_metadata: List[Dict], execute_query_fn, 
         "sort": ["order by", "sort", "arrange", "rank", "top", "bottom", "highest", "lowest"],
         "group": ["group by", "grouped", "categorize", "breakdown", "per"]
     }
+    
+    # Database-related keywords that indicate database queries
+    database_keywords = [
+        "employee", "employees", "client", "clients", "project", "projects", 
+        "timesheet", "timesheets", "leave", "hours", "billable", "work", "worked",
+        "database", "table", "record", "data", "show", "list", "count", "total",
+        "forecast", "activity", "description", "file", "processed"
+    ]
+    
+    # Check if query contains database-related terms
+    has_database_terms = any(keyword in query_lower for keyword in database_keywords)
     
     # Determine primary intent
     intent_scores = {}
@@ -505,7 +516,9 @@ def extract_entities(query: str, schema_metadata: List[Dict], execute_query_fn, 
         entities["intent"] = max(intent_scores, key=intent_scores.get)
         if entities["intent"] == "greeting":
             return entities
-        entities["is_database_related"] = True
+    
+    # Mark as database-related if has intent OR database terms
+    entities["is_database_related"] = bool(intent_scores) or has_database_terms
     
     # Enhanced table suggestion using schema matches
     if entities["is_database_related"] and entities["schema_matches"]:
