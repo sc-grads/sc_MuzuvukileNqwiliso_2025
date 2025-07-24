@@ -495,10 +495,11 @@ def extract_entities(query: str, schema_metadata: List[Dict], execute_query_fn, 
     
     # Database-related keywords that indicate database queries
     database_keywords = [
-        "employee", "employees", "client", "clients", "project", "projects", 
+        "employee", "employees", "worker", "workers", "staff", "personnel",
+        "client", "clients", "customer", "customers", "project", "projects", 
         "timesheet", "timesheets", "leave", "hours", "billable", "work", "worked",
         "database", "table", "record", "data", "show", "list", "count", "total",
-        "forecast", "activity", "description", "file", "processed"
+        "forecast", "activity", "description", "file", "processed", "information", "info"
     ]
     
     # Check if query contains database-related terms
@@ -517,8 +518,10 @@ def extract_entities(query: str, schema_metadata: List[Dict], execute_query_fn, 
         if entities["intent"] == "greeting":
             return entities
     
-    # Mark as database-related if has intent OR database terms
-    entities["is_database_related"] = bool(intent_scores) or has_database_terms
+    # Only mark as database-related if has database terms OR database-specific intents
+    database_intents = ["list", "count", "sum", "filter", "comparison", "sort", "group"]
+    has_database_intent = entities["intent"] in database_intents if entities["intent"] else False
+    entities["is_database_related"] = has_database_terms or has_database_intent
     
     # Enhanced table suggestion using schema matches
     if entities["is_database_related"] and entities["schema_matches"]:
@@ -541,8 +544,8 @@ def extract_entities(query: str, schema_metadata: List[Dict], execute_query_fn, 
         
         entities["suggested_tables"] = table_suggestions[:3]  # Limit to top 3 suggestions
     
-    # Fallback table suggestion using vector store
-    if entities["is_database_related"] and vector_store and not entities["suggested_tables"]:
+    # Enhanced vector store fallback - try even if not initially database-related
+    if vector_store and not entities["suggested_tables"]:
         try:
             schema_docs = vector_store.similarity_search(query, k=5)
             table_scores = {}
@@ -556,9 +559,7 @@ def extract_entities(query: str, schema_metadata: List[Dict], execute_query_fn, 
                     score = 0
                     if entities["intent"] == "list" and "name" in table_info.get("description", "").lower():
                         score += 3
-                    elif entities["intent"] == "sum" and any(col["type"].startswith(("decimal", "int", "float")) 
-                                                           for col in schema_metadata[0]["columns"] 
-                                                           if col["name"].lower() in ["hours", "amount", "total", "sum"]):
+                    elif entities["intent"] == "sum":
                         score += 3
                     elif entities["intent"] == "count":
                         score += 2
@@ -568,12 +569,26 @@ def extract_entities(query: str, schema_metadata: List[Dict], execute_query_fn, 
                         if keyword in table_info.get("description", "").lower():
                             score += 1
                     
+                    # Additional semantic scoring for common database terms
+                    query_words = query.lower().split()
+                    description = table_info.get("description", "").lower()
+                    for word in query_words:
+                        if word in description:
+                            score += 2
+                    
+                    # Base score for vector similarity (since it was retrieved)
+                    score += 1
+                    
                     table_scores[table_key] = score
             
             # Sort and take top suggestions
             sorted_tables = sorted(table_scores.items(), key=lambda x: x[1], reverse=True)
-            entities["suggested_tables"] = [table for table, score in sorted_tables[:3] if score > 0]
-            entities["is_database_related"] = bool(entities["suggested_tables"])
+            high_score_tables = [table for table, score in sorted_tables[:3] if score >= 1]  # Include base score
+            
+            if high_score_tables:
+                entities["suggested_tables"] = high_score_tables
+                entities["is_database_related"] = True  # Override if vector store finds good matches
+                print(f"Vector store override: Found {len(high_score_tables)} relevant tables")
             
         except Exception as e:
             print(f"Error during vector store table suggestion: {e}")

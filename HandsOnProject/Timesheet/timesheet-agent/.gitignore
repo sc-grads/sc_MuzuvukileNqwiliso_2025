@@ -4,3 +4,7 @@ zip
 *SUMMARY*
 *.json
 *DATABASES.md*
+vector_data/
+archive/
+cache 
+doc

@@ -6,8 +6,8 @@ from typing import List, Dict, Optional, Set, Tuple
 from dataclasses import dataclass, asdict
 from collections import defaultdict
 
-HISTORY_FILE = "query_history.json"
-CONVERSATION_FILE = "conversation_context.json"
+HISTORY_FILE = "cache/query_history.json"
+CONVERSATION_FILE = "cache/conversation_context.json"
 
 @dataclass
 class QueryEntry:

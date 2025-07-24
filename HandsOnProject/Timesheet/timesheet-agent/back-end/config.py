@@ -20,9 +20,9 @@ def update_mssql_connection(database_name):
     if not database_name:
         # Use default database
         database_name = DEFAULT_DATABASE
-        print(f"🔄 Using default database: {database_name}")
+        print(f"Using default database: {database_name}")
     else:
-        print(f"🔄 Switching to database: {database_name}")
+        print(f"Switching to database: {database_name}")
 
     # Build new connection string
     parts = MSSQL_CONNECTION_BASE.split(';')
@@ -42,7 +42,7 @@ def update_mssql_connection(database_name):
     MSSQL_CONNECTION = ";".join(new_parts)
     CURRENT_DATABASE = database_name
     
-    print(f"✅ Connection string updated for database: {database_name}")
+    print(f"Connection string updated for database: {database_name}")
     return MSSQL_CONNECTION
 
 def get_current_database():
@@ -51,8 +51,8 @@ def get_current_database():
 
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 LLM_MODEL = os.getenv("LLM_MODEL", "mistral:7b")
-CHROMADB_DIR = os.getenv("CHROMADB_DIR", "./chroma_db")
-CHROMADB_COLLECTION = os.getenv("CHROMADB_COLLECTION", "timesheet_schema")
+VECTOR_STORE_DIR = os.getenv("VECTOR_STORE_DIR", "../vector_data")
+VECTOR_COLLECTION = os.getenv("VECTOR_COLLECTION", "schema_embeddings")
 FLASK_PORT = int(os.getenv("FLASK_PORT", "5000"))
 USE_LIVE_DB = os.getenv("USE_LIVE_DB", "False").lower() == "true"
 EXCLUDE_TABLE_PATTERNS = [
@@ -67,16 +67,12 @@ EXCLUDE_TABLE_PATTERNS = [
 
 def get_schema_cache_file():
     """Get database-specific schema cache file name"""
-    return f"schema_cache_{CURRENT_DATABASE}.json"
+    return f"cache/schema_cache_{CURRENT_DATABASE}.json"
 
 def get_column_map_file():
     """Get database-specific column map file name"""
-    return f"column_map_{CURRENT_DATABASE}.json"
+    return f"cache/column_map_{CURRENT_DATABASE}.json"
 
 def get_enhanced_schema_cache_file():
     """Get database-specific enhanced schema cache file name"""
-    return f"enhanced_schema_cache_{CURRENT_DATABASE}.json"
-
-# Legacy constants for backward compatibility
-SCHEMA_CACHE_FILE = "schema_cache.json"
-COLUMN_MAP_FILE = "column_map.json"
+    return f"cache/enhanced_schema_cache_{CURRENT_DATABASE}.json"

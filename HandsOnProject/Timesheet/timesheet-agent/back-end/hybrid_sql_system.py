@@ -51,8 +51,8 @@ class HybridSQLSystem:
         # Step 1: Analyze the query
         analysis = self.analyze_query(query, schema_metadata)
         
-        print(f"📊 Query Analysis: {analysis.complexity.value} (confidence: {analysis.confidence:.2f})")
-        print(f"🎯 Approach: {analysis.suggested_approach}")
+        print(f"Query Analysis: {analysis.complexity.value} (confidence: {analysis.confidence:.2f})")
+        print(f"Approach: {analysis.suggested_approach}")
         
         # Step 2: Route to appropriate handler based on analysis
         if analysis.complexity == QueryComplexity.SIMPLE and analysis.confidence > 0.8:
@@ -66,7 +66,7 @@ class HybridSQLSystem:
         
         else:
             # Route to LLM for complex queries or low confidence
-            print(f"🔄 Routing to LLM (complexity: {analysis.complexity.value}, confidence: {analysis.confidence:.2f})")
+            print(f"Routing to LLM (complexity: {analysis.complexity.value}, confidence: {analysis.confidence:.2f})")
             return None  # Triggers LLM fallback
     
     def analyze_query(self, query: str, schema_metadata: List[Dict]) -> QueryAnalysis:

@@ -1,4 +1,4 @@
-from database_simple import get_schema_metadata, execute_query, refresh_schema_cache
+from database import get_schema_metadata, execute_query, refresh_schema_cache
 from llm import generate_sql_query
 from nlp import extract_entities
 from history import (
@@ -31,14 +31,14 @@ def main(refresh_schema=False, database=None):
             ]
             
             current_db = get_current_database()
-            print(f"🗑️ Clearing schema cache for database: {current_db}")
+            print(f"Clearing schema cache for database: {current_db}")
             
             for cache_file in cache_files:
                 if os.path.exists(cache_file):
                     os.remove(cache_file)
-                    print(f"   ✅ Cleared cache: {cache_file}")
+                    print(f"   Cleared cache: {cache_file}")
             
-            print(f"🔄 Schema cache invalidated for database: {current_db}")
+            print(f"Schema cache invalidated for database: {current_db}")
 
         print("Loading database schema...")
         schema_metadata, column_map, vector_store, enhanced_data = get_schema_metadata()
@@ -66,15 +66,15 @@ def main(refresh_schema=False, database=None):
 
     query_fn = execute_query if USE_LIVE_DB else lambda sql: (None, None, None)
 
-    print(f"\n Live DB fuzzy name matching is {'ENABLED' if USE_LIVE_DB else 'DISABLED'}.")
+    print(f"\nLive DB fuzzy name matching is {'ENABLED' if USE_LIVE_DB else 'DISABLED'}.")
 
-    print("\n🤖 Welcome to the Data Agent!")
+    print("\nWelcome to the 🤖 Data Agent!")
     print("Enter a natural language query about your database (or 'exit' to quit).")
 
     while True:
-        nl_query = input("\n Your query: ")
+        nl_query = input("\nYour query: ")
         if nl_query.lower() == "exit":
-            print("👋 Goodbye!")
+            print("👋Goodbye!")
             break
 
         start_time = time.time()
@@ -109,16 +109,16 @@ def main(refresh_schema=False, database=None):
 
             # Intent-based filtering
             if entities["intent"] == "greeting":
-                print("👋 Hello! How can I assist you with your database?")
+                print("👋Hello! How can I assist you with your database?")
                 save_query(nl_query, None, timestamp, False, "Non-database greeting", entities)
                 continue
             elif not entities["is_database_related"]:
-                print("🤖 I can only assist with database queries. Try asking about your data!")
+                print("⛓️‍💥I can only assist with database queries. Try asking about your data!")
                 
                 # Generate helpful suggestions
                 context.error_message = "Query not database-related"
                 error_response = error_handler.handle_generation_error(
-                    "This query is not related to the database", context, schema_metadata
+                    "😵This query is not related to the database", context, schema_metadata
                 )
                 print(error_handler.format_error_message(error_response))
                 
@@ -299,9 +299,9 @@ def main(refresh_schema=False, database=None):
         # Show recent query history with better formatting
         history = get_query_history()
         if history:
-            print("\n📚 Recent Queries:")
+            print("\nRecent Queries:")
             for entry in history[-3:]:
-                status_icon = "✅" if entry["success"] else "❌"
+                status_icon = "[SUCCESS]" if entry["success"] else "[FAILED]"
                 status_text = "Success" if entry["success"] else f"Failed: {entry['error'][:50]}..."
                 query_preview = entry['natural_language_query'][:60] + "..." if len(entry['natural_language_query']) > 60 else entry['natural_language_query']
                 print(f"   {status_icon} {query_preview} ({status_text})")

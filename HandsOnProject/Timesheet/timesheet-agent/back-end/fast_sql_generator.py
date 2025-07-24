@@ -286,7 +286,7 @@ if __name__ == "__main__":
     for query in test_queries:
         sql = generate_fast_sql(query, test_schema)
         is_valid, validation_msg = validate_fast_sql(sql, test_schema)
-        status = "✅" if is_valid else "❌"
+        status = "[PASS]" if is_valid else "[FAIL]"
         print(f"{status} {query}")
         print(f"   SQL: {sql}")
         print(f"   Validation: {validation_msg}")
