@@ -51,6 +51,10 @@ class OllamaManager:
     def _initialize_llm(self):
         """Initialize LLM with current model"""
         try:
+            # Fix for Pydantic v2 compatibility
+            from langchain_core.caches import BaseCache
+            ChatOllama.model_rebuild()
+            
             self.llm_instance = ChatOllama(
                 model=self.current_model, 
                 base_url=self.base_url, 

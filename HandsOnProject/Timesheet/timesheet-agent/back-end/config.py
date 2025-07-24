@@ -5,35 +5,49 @@ import urllib.parse
 load_dotenv()
 
 MSSQL_CONNECTION_BASE = os.getenv("MSSQL_CONNECTION")
+DEFAULT_DATABASE = os.getenv("DEFAULT_DATABASE", "TimesheetDB")
+
 if not MSSQL_CONNECTION_BASE:
     raise ValueError("MSSQL_CONNECTION environment variable is required")
 
-MSSQL_CONNECTION = MSSQL_CONNECTION_BASE
+# Initialize with default database
+MSSQL_CONNECTION = f"{MSSQL_CONNECTION_BASE};DATABASE={DEFAULT_DATABASE}"
+CURRENT_DATABASE = DEFAULT_DATABASE
 
 def update_mssql_connection(database_name):
-    global MSSQL_CONNECTION
+    global MSSQL_CONNECTION, CURRENT_DATABASE
+    
     if not database_name:
-        if 'DATABASE=' not in MSSQL_CONNECTION_BASE.upper():
-            raise ValueError("No database specified in command-line or .env file.")
-        MSSQL_CONNECTION = MSSQL_CONNECTION_BASE
-        print(f"Using default database from .env file.")
-        return
+        # Use default database
+        database_name = DEFAULT_DATABASE
+        print(f"🔄 Using default database: {database_name}")
+    else:
+        print(f"🔄 Switching to database: {database_name}")
 
+    # Build new connection string
     parts = MSSQL_CONNECTION_BASE.split(';')
     new_parts = []
     database_found = False
+    
     for part in parts:
         if part.strip().upper().startswith('DATABASE='):
             new_parts.append(f'DATABASE={database_name}')
             database_found = True
-        elif part:
-            new_parts.append(part)
+        elif part.strip():  # Only add non-empty parts
+            new_parts.append(part.strip())
     
     if not database_found:
         new_parts.append(f'DATABASE={database_name}')
 
     MSSQL_CONNECTION = ";".join(new_parts)
-    print(f"Connection string updated to use database: {database_name}")
+    CURRENT_DATABASE = database_name
+    
+    print(f"✅ Connection string updated for database: {database_name}")
+    return MSSQL_CONNECTION
+
+def get_current_database():
+    """Get the currently configured database name"""
+    return CURRENT_DATABASE
 
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 LLM_MODEL = os.getenv("LLM_MODEL", "mistral:7b")
@@ -51,5 +65,18 @@ EXCLUDE_TABLE_PATTERNS = [
     r"sys"
 ]
 
+def get_schema_cache_file():
+    """Get database-specific schema cache file name"""
+    return f"schema_cache_{CURRENT_DATABASE}.json"
+
+def get_column_map_file():
+    """Get database-specific column map file name"""
+    return f"column_map_{CURRENT_DATABASE}.json"
+
+def get_enhanced_schema_cache_file():
+    """Get database-specific enhanced schema cache file name"""
+    return f"enhanced_schema_cache_{CURRENT_DATABASE}.json"
+
+# Legacy constants for backward compatibility
 SCHEMA_CACHE_FILE = "schema_cache.json"
 COLUMN_MAP_FILE = "column_map.json"

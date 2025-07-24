@@ -1,4 +1,4 @@
-from database import get_schema_metadata, execute_query, refresh_schema_cache
+from database_simple import get_schema_metadata, execute_query, refresh_schema_cache
 from llm import generate_sql_query
 from nlp import extract_entities
 from history import (
@@ -21,12 +21,24 @@ def main(refresh_schema=False, database=None):
 
     try:
         if refresh_schema:
-            cache_files = ["schema_cache.json", "column_map.json", "enhanced_schema_cache.json"]
+            from config import get_schema_cache_file, get_column_map_file, get_enhanced_schema_cache_file, get_current_database
+            
+            # Clear database-specific cache files
+            cache_files = [
+                get_schema_cache_file(),
+                get_column_map_file(), 
+                get_enhanced_schema_cache_file()
+            ]
+            
+            current_db = get_current_database()
+            print(f"🗑️ Clearing schema cache for database: {current_db}")
+            
             for cache_file in cache_files:
                 if os.path.exists(cache_file):
                     os.remove(cache_file)
-                    print(f" Cleared cache: {cache_file}")
-            print(" Schema cache invalidated.")
+                    print(f"   ✅ Cleared cache: {cache_file}")
+            
+            print(f"🔄 Schema cache invalidated for database: {current_db}")
 
         print("Loading database schema...")
         schema_metadata, column_map, vector_store, enhanced_data = get_schema_metadata()

@@ -28,7 +28,7 @@ def get_dynamic_employee_names(schema_metadata: List[Dict]) -> List[str]:
         return _employee_cache['names']
     
     try:
-        from database import execute_query
+        from database_simple import execute_query
         
         # Find the Employee table
         employee_table = None
@@ -42,12 +42,12 @@ def get_dynamic_employee_names(schema_metadata: List[Dict]) -> List[str]:
         
         # Query to get all employee names
         query = f"SELECT [EmployeeName] FROM [{employee_table['schema']}].[{employee_table['table']}]"
-        result = execute_query(query)
+        rows, columns, error = execute_query(query)
         
-        if result and result.get('success'):
+        if error is None and rows:
             # Extract names from result and convert to lowercase
             employee_names = []
-            for row in result.get('data', []):
+            for row in rows:
                 if isinstance(row, dict) and 'EmployeeName' in row:
                     employee_names.append(row['EmployeeName'].lower())
                 elif isinstance(row, (list, tuple)) and len(row) > 0:

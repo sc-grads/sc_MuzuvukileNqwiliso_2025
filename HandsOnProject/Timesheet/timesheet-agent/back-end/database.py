@@ -1,5 +1,9 @@
 from sqlalchemy import create_engine, inspect, text
-from config import MSSQL_CONNECTION, CHROMADB_DIR, CHROMADB_COLLECTION, OLLAMA_BASE_URL, LLM_MODEL, EXCLUDE_TABLE_PATTERNS
+from config import (
+    CHROMADB_DIR, CHROMADB_COLLECTION, OLLAMA_BASE_URL, 
+    LLM_MODEL, EXCLUDE_TABLE_PATTERNS, get_schema_cache_file, 
+    get_column_map_file, get_enhanced_schema_cache_file, get_current_database
+)
 from langchain_chroma import Chroma
 from langchain_ollama import OllamaEmbeddings, ChatOllama
 import os
@@ -11,6 +15,9 @@ from dataclasses import dataclass
 from collections import defaultdict
 
 os.environ["CHROMA_TELEMETRY_ENABLED"] = "false"
+os.environ["ANONYMIZED_TELEMETRY"] = "false"
+os.environ["CHROMA_DB_IMPL"] = "duckdb+parquet"
+os.environ["CHROMA_API_IMPL"] = "chromadb.api.segment.SegmentAPI"
 
 import urllib.parse
 
@@ -422,6 +429,8 @@ def convert_odbc_to_sqlalchemy_url(odbc_string):
 
 def get_engine():
     try:
+        # Import connection string dynamically to get updated value
+        from config import MSSQL_CONNECTION
         sqlalchemy_url = convert_odbc_to_sqlalchemy_url(MSSQL_CONNECTION)
         return create_engine(sqlalchemy_url, echo=False)
     except Exception as e:
@@ -501,9 +510,16 @@ def generate_column_description(column, relationships):
         return f"A column named {column['name']} of type {column['type']}."
 
 def get_schema_metadata():
-    cache_file = "schema_cache.json"
-    column_map_file = "column_map.json"
-    enhanced_cache_file = "enhanced_schema_cache.json"
+    # Use database-specific cache files
+    cache_file = get_schema_cache_file()
+    column_map_file = get_column_map_file()
+    enhanced_cache_file = get_enhanced_schema_cache_file()
+    
+    current_db = get_current_database()
+    print(f"📊 Using schema cache for database: {current_db}")
+    
+    # Import connection string dynamically to get updated value
+    from config import MSSQL_CONNECTION
     cache_key = hash(MSSQL_CONNECTION)  
 
     if os.path.exists(cache_file) and os.path.exists(column_map_file) and os.path.exists(enhanced_cache_file):
@@ -787,13 +803,26 @@ def execute_query(query):
         return None, None, enhanced_error # Return enhanced error message
 
 def refresh_schema_cache():
-    """Refresh all schema cache files and regenerate enhanced metadata"""
+    """Refresh all database-specific schema cache files and regenerate enhanced metadata"""
     try:
-        for file in ["schema_cache.json", "column_map.json", "enhanced_schema_cache.json"]:
+        # Use database-specific cache files
+        cache_files = [
+            get_schema_cache_file(),
+            get_column_map_file(),
+            get_enhanced_schema_cache_file()
+        ]
+        
+        current_db = get_current_database()
+        print(f"🔄 Refreshing schema cache for database: {current_db}")
+        
+        for file in cache_files:
             if os.path.exists(file):
                 os.remove(file)
+                print(f"   🗑️ Removed: {file}")
+                
     except FileNotFoundError:
         pass
+    
     return get_schema_metadata()
 
 def get_business_patterns_for_table(schema_name: str, table_name: str, enhanced_data: Dict) -> List[Dict]:
