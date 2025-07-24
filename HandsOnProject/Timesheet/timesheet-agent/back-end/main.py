@@ -80,7 +80,7 @@ def main(refresh_schema=False, database=None):
         start_time = time.time()
         timestamp = datetime.now().isoformat()
 
-        # Create error context for this query
+        # Create error context for this queryls
         context = ErrorContext(
             user_query=nl_query,
             timestamp=datetime.now(),
