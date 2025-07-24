@@ -21,26 +21,38 @@ def main(refresh_schema=False, database=None):
 
     try:
         if refresh_schema:
-            cache_files = ["schema_cache.json", "column_map.json", "enhanced_schema_cache.json"]
+            from config import get_schema_cache_file, get_column_map_file, get_enhanced_schema_cache_file, get_current_database
+            
+            # Clear database-specific cache files
+            cache_files = [
+                get_schema_cache_file(),
+                get_column_map_file(), 
+                get_enhanced_schema_cache_file()
+            ]
+            
+            current_db = get_current_database()
+            print(f"Clearing schema cache for database: {current_db}")
+            
             for cache_file in cache_files:
                 if os.path.exists(cache_file):
                     os.remove(cache_file)
-                    print(f"✅ Cleared cache: {cache_file}")
-            print("✅ Schema cache invalidated.")
+                    print(f"   Cleared cache: {cache_file}")
+            
+            print(f"Schema cache invalidated for database: {current_db}")
 
-        print("🔄 Loading database schema...")
+        print("Loading database schema...")
         schema_metadata, column_map, vector_store, enhanced_data = get_schema_metadata()
 
         if not schema_metadata:
-            print("❌ No schema metadata available. Please check your database connection.")
-            print("\n🔧 Troubleshooting steps:")
+            print(" No schema metadata available. Please check your database connection.")
+            print("\n Troubleshooting steps:")
             print("   1. Verify your database connection string in .env file")
             print("   2. Ensure the database is accessible and you have permissions")
             print("   3. Try using --refresh-schema to reload the schema")
             return
         else:
             schemas = set(m['schema'] for m in schema_metadata)
-            print(f"✅ Loaded schema metadata for {len(schema_metadata)} tables in schemas: {', '.join(schemas)}")
+            print(f" Loaded schema metadata for {len(schema_metadata)} tables in schemas: {', '.join(schemas)}")
 
     except Exception as e:
         context = ErrorContext(
@@ -54,22 +66,21 @@ def main(refresh_schema=False, database=None):
 
     query_fn = execute_query if USE_LIVE_DB else lambda sql: (None, None, None)
 
-    print(f"\n🔗 Live DB fuzzy name matching is {'ENABLED' if USE_LIVE_DB else 'DISABLED'}.")
+    print(f"\nLive DB fuzzy name matching is {'ENABLED' if USE_LIVE_DB else 'DISABLED'}.")
 
-    print("\n🤖 Welcome to the Data Agent!")
+    print("\nWelcome to the 🤖 Data Agent!")
     print("Enter a natural language query about your database (or 'exit' to quit).")
-    print("💡 Try questions like: 'Show me all tables', 'Count records in [table]', or 'Find data where [condition]'")
 
     while True:
-        nl_query = input("\n🔍 Your query: ")
+        nl_query = input("\nYour query: ")
         if nl_query.lower() == "exit":
-            print("👋 Goodbye!")
+            print("👋Goodbye!")
             break
 
         start_time = time.time()
         timestamp = datetime.now().isoformat()
 
-        # Create error context for this query
+        # Create error context for this queryls
         context = ErrorContext(
             user_query=nl_query,
             timestamp=datetime.now(),
@@ -77,43 +88,37 @@ def main(refresh_schema=False, database=None):
         )
 
         try:
-            print("🔄 Processing your query...")
+            print(" Processing your query...")
             
             # Get conversation context for this query
             conversation_context = get_conversation_context_for_query(nl_query)
             
             # Check for context references and resolve them
             if conversation_context.get('context_references'):
-                print(f"🔗 Detected context references: {conversation_context['context_references']}")
                 resolved_query = resolve_context_references(nl_query, conversation_context)
                 if resolved_query != nl_query:
-                    print(f"🔄 Resolved query: {resolved_query}")
                     nl_query = resolved_query
-            
-            # Show conversation context if available
-            if conversation_context.get('active_entities'):
-                print(f"💭 Active context: {conversation_context['active_entities']}")
             
             # Find similar successful queries for learning
             similar_queries = find_similar_successful_queries(nl_query)
             if similar_queries:
-                print(f"📚 Found {len(similar_queries)} similar successful queries for reference")
+                print(f" Found {len(similar_queries)} similar successful queries for reference")
             
             entities = extract_entities(nl_query, schema_metadata, query_fn, vector_store)
-            print(f"📊 Extracted Entities: {entities}")
+            print(f" Extracted Entities: {entities}")
 
             # Intent-based filtering
             if entities["intent"] == "greeting":
-                print("👋 Hello! How can I assist you with your database?")
+                print("👋Hello! How can I assist you with your database?")
                 save_query(nl_query, None, timestamp, False, "Non-database greeting", entities)
                 continue
             elif not entities["is_database_related"]:
-                print("🤖 I can only assist with database queries. Try asking about your data!")
+                print("⛓️‍💥I can only assist with database queries. Try asking about your data!")
                 
                 # Generate helpful suggestions
                 context.error_message = "Query not database-related"
                 error_response = error_handler.handle_generation_error(
-                    "This query is not related to the database", context, schema_metadata
+                    "😵This query is not related to the database", context, schema_metadata
                 )
                 print(error_handler.format_error_message(error_response))
                 
@@ -127,7 +132,7 @@ def main(refresh_schema=False, database=None):
             
             for retry_count in range(context.max_retries):
                 context.retry_count = retry_count
-                print(f"🔄 Attempt {retry_count + 1}/{context.max_retries} to generate and execute SQL...")
+                print(f" Attempt {retry_count + 1}/{context.max_retries} to generate and execute SQL...")
                 
                 try:
                     # Generate SQL with previous context and conversation context
@@ -144,25 +149,25 @@ def main(refresh_schema=False, database=None):
                     )
                     
                     generation_time = time.time() - start_time
-                    print(f"⏱️  SQL generation took {generation_time:.2f} seconds")
+                    print(f"  SQL generation took {generation_time:.2f} seconds")
 
                     # Check if SQL generation was successful
                     success = not sql_query.startswith(("Failed", "Error", "This query is not related"))
                     
                     if success:
-                        print("\n📝 Generated SQL Query:")
+                        print("\n Generated SQL Query:")
                         print(f"   {sql_query}")
                         context.generated_sql = sql_query
                         
                         if USE_LIVE_DB:
-                            print("🔄 Executing query against live database...")
+                            print(" Executing query against live database...")
                             try:
                                 rows, columns, db_error = execute_query(sql_query)
                                 
                                 if db_error is None:  # Query executed successfully
-                                    print("\n✅ Query Results:")
+                                    print("\n Query Results:")
                                     if columns:
-                                        print(f"📋 Columns: {', '.join(columns)}")
+                                        print(f" Columns: {', '.join(columns)}")
                                     
                                     if rows:
                                         for i, row in enumerate(rows[:10]):  # Limit display to first 10 rows
@@ -186,7 +191,7 @@ def main(refresh_schema=False, database=None):
                                     context.error_message = str(db_error)
                                     error_response = error_handler.handle_error(db_exception, context, schema_metadata)
                                     
-                                    print(f"\n❌ Database execution failed:")
+                                    print(f"\n Database execution failed:")
                                     print(error_handler.format_error_message(error_response))
                                     
                                     execution_error = str(db_error)
@@ -195,7 +200,7 @@ def main(refresh_schema=False, database=None):
                                     
                                     # Check if we should retry
                                     if not error_handler.should_retry(context):
-                                        print("🛑 Maximum retries reached for database execution errors.")
+                                        print(" Maximum retries reached for database execution errors.")
                                         break
                                     
                                     # Apply retry strategy
@@ -210,7 +215,7 @@ def main(refresh_schema=False, database=None):
                                 context.error_message = str(db_exception)
                                 error_response = error_handler.handle_error(db_exception, context, schema_metadata)
                                 
-                                print(f"\n❌ Unexpected database error:")
+                                print(f"\n Unexpected database error:")
                                 print(error_handler.format_error_message(error_response))
                                 
                                 execution_error = str(db_exception)
@@ -231,7 +236,7 @@ def main(refresh_schema=False, database=None):
                         context.error_message = sql_query
                         error_response = error_handler.handle_generation_error(sql_query, context, schema_metadata)
                         
-                        print(f"\n❌ SQL generation failed:")
+                        print(f"\n SQL generation failed:")
                         print(error_handler.format_error_message(error_response))
                         
                         execution_error = sql_query
@@ -240,7 +245,7 @@ def main(refresh_schema=False, database=None):
                         
                         # Check if we should retry
                         if not error_handler.should_retry(context):
-                            print("🛑 Maximum retries reached for SQL generation errors.")
+                            print(" Maximum retries reached for SQL generation errors.")
                             break
                         
                         # Apply retry strategy for generation errors
@@ -255,7 +260,7 @@ def main(refresh_schema=False, database=None):
                     context.error_message = str(gen_exception)
                     error_response = error_handler.handle_error(gen_exception, context, schema_metadata)
                     
-                    print(f"\n❌ Unexpected error during SQL generation:")
+                    print(f"\n Unexpected error during SQL generation:")
                     print(error_handler.format_error_message(error_response))
                     
                     execution_error = str(gen_exception)
@@ -266,16 +271,16 @@ def main(refresh_schema=False, database=None):
             
             # Final status report
             if final_success:
-                print(f"\n✅ Query completed successfully!")
+                print(f"\n Query completed successfully!")
             else:
-                print(f"\n❌ Query failed after {context.max_retries} attempts.")
+                print(f"\n Query failed after {context.max_retries} attempts.")
                 if execution_error:
-                    print(f"💬 Last error: {execution_error}")
+                    print(f" Last error: {execution_error}")
                 
                 # Provide final suggestions
                 final_suggestions = error_handler.suggestion_engine.generate_suggestions(context, schema_metadata)
                 if final_suggestions:
-                    print("\n💡 Try these alternatives:")
+                    print("\n Try these alternatives:")
                     for i, suggestion in enumerate(final_suggestions[:3], 1):
                         print(f"   {i}. {suggestion.suggestion}")
                         if suggestion.example:
@@ -286,7 +291,7 @@ def main(refresh_schema=False, database=None):
             context.error_message = str(e)
             error_response = error_handler.handle_error(e, context, schema_metadata)
             
-            print(f"\n❌ Unexpected error processing query:")
+            print(f"\n Unexpected error processing query:")
             print(error_handler.format_error_message(error_response, show_technical_details=True))
             
             save_query(nl_query, None, timestamp, False, str(e), None, None, 0)
@@ -294,9 +299,9 @@ def main(refresh_schema=False, database=None):
         # Show recent query history with better formatting
         history = get_query_history()
         if history:
-            print("\n📚 Recent Queries:")
+            print("\nRecent Queries:")
             for entry in history[-3:]:
-                status_icon = "✅" if entry["success"] else "❌"
+                status_icon = "[SUCCESS]" if entry["success"] else "[FAILED]"
                 status_text = "Success" if entry["success"] else f"Failed: {entry['error'][:50]}..."
                 query_preview = entry['natural_language_query'][:60] + "..." if len(entry['natural_language_query']) > 60 else entry['natural_language_query']
                 print(f"   {status_icon} {query_preview} ({status_text})")

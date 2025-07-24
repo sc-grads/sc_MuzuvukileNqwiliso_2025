@@ -1,9 +1,10 @@
-chromadb_data
-column_map.json
-query_history.json
-schema_cache.json
-test_file.py
 zip
 .kiro
 *test*
 *SUMMARY*
+*.json
+*DATABASES.md*
+vector_data/
+archive/
+cache 
+doc
