@@ -10,8 +10,9 @@ langchain-core>=0.3.17
 langchain-community==0.3.7
 langchain-ollama==0.2.0
 
-# Vector database
+# Vector database and embeddings
 faiss-cpu==1.7.4
+sentence-transformers==2.7.0
 
 # NLP and text processing
 spacy==3.7.5

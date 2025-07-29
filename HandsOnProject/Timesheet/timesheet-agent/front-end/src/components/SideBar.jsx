@@ -1,6 +1,6 @@
 import React from "react";
 import { DatabaseStatus } from "./DatabaseStatus";
-import logo from "../assets/logo.png";
+import logo from "../assets/logo-1.png";
 import { LiaEdit } from "react-icons/lia";
 import { History } from "./History";
 import { IoIosAdd } from "react-icons/io";
