@@ -164,7 +164,7 @@ class RAGSQLAgent:
                 intent_engine=self.intent_engine,
                 learning_engine=self.learning_engine,
                 error_data_path=os.path.join(self.vector_store_path, "error_patterns"),
-                embedder=self.embedder
+                embedding_model=config['embedding_model'] # Pass embedding_model instead of embedder
             )
         else:
             self.error_handler = None

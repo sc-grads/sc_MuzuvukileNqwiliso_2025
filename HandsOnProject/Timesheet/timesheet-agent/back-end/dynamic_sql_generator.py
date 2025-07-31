@@ -401,9 +401,28 @@ class SemanticQueryBuilder:
     def _build_rag_enhanced_where_clause(self, query_intent: QueryIntent, table: Dict, rag_context: Dict[str, Any]) -> List[str]:
         """Build WHERE clause using RAG-enhanced entity matching."""
         where_conditions = []
+
+        simple_query_patterns = [
+            'how many', 'count all', 'show all', 'list all', 'get all',
+            'what is the average', 'what is the total', 'what is the sum'
+        ]
+        
+        query_lower = query_intent.original_query.lower()
+        is_simple_query = any(pattern in query_lower for pattern in simple_query_patterns)
+
+        # If it's a simple "show all" or "list all" query with no specific entities, return no WHERE clause
+        if is_simple_query and not query_intent.entities:
+            return []
         
         for entity in query_intent.entities:
-            if entity.entity_type == EntityType.PERSON and len(entity.name) > 2:
+            # Only create WHERE conditions for entities that are actual filter criteria
+            # and not just general terms from a "show all" type query.
+            # This is a heuristic and might need further refinement.
+            if entity.entity_type in [EntityType.PERSON, EntityType.PROJECT, EntityType.DEPARTMENT, EntityType.STATUS, EntityType.DATE, EntityType.NUMBER]:
+                # Avoid creating conditions for entities that are just the table name itself in a simple query
+                if is_simple_query and entity.name.lower() == table['table'].lower():
+                    continue
+
                 # Use RAG to find the best name column
                 name_col = self._find_best_name_column(table, rag_context)
                 if name_col:

@@ -219,6 +219,14 @@ Description:"""
         """Get description if ready, otherwise return fallback"""
         return self.completed_descriptions.get(key, fallback)
 
+    def stop(self):
+        """Stop the background worker thread"""
+        self.running = False
+        if self.worker_thread and self.worker_thread.is_alive():
+            self.worker_thread.join(timeout=5) # Give it some time to finish
+            if self.worker_thread.is_alive():
+                print("Warning: LazyLLMDescriptionGenerator worker thread did not stop gracefully.")
+
 # Global lazy description generator
 lazy_generator = LazyLLMDescriptionGenerator()
 

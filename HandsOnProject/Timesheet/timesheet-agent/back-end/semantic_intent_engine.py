@@ -493,7 +493,7 @@ class SemanticIntentEngine:
         for i, word in enumerate(words):
             if word[0].isupper() and len(word) > 2 and word.isalpha():
                 # Skip common words that are capitalized
-                if word.lower() not in ['the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for']:
+                if word.lower() not in ['the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'show', 'list', 'all', 'me', 'what', 'how', 'many', 'get', 'find', 'display', 'who', 'which', 'retrieve', 'fetch', 'system', 'clients', 'employees']:
                     start_pos = query.find(word)
                     end_pos = start_pos + len(word)
                     

@@ -712,7 +712,7 @@ class VectorSchemaStore:
         
         for table_metadata in schema_metadata:
             schema_name = table_metadata.get('schema', 'default')
-            table_name = table_metadata.get('table_name', '')
+            table_name = table_metadata.get('table', '')
             
             # Store table vector
             table_metadata_copy = table_metadata.copy()
