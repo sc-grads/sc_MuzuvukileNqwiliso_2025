@@ -40,7 +40,7 @@ def generate_fast_sql(nl_query: str, schema_metadata: List[Dict]) -> str:
     
     # Fallback to complete trainer for backward compatibility
     try:
-        from complete_sql_trainer import generate_complete_sql
+        
         result = generate_complete_sql(nl_query, schema_metadata)
         if result and not result.startswith("Error") and result is not None:
             return result

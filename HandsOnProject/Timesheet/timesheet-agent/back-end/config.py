@@ -65,14 +65,21 @@ EXCLUDE_TABLE_PATTERNS = [
     r"sys"
 ]
 
+def ensure_cache_dir():
+    """Ensures that the cache directory exists."""
+    os.makedirs('cache', exist_ok=True)
+
 def get_schema_cache_file():
     """Get database-specific schema cache file name"""
+    ensure_cache_dir()
     return f"cache/schema_cache_{CURRENT_DATABASE}.json"
 
 def get_column_map_file():
     """Get database-specific column map file name"""
+    ensure_cache_dir()
     return f"cache/column_map_{CURRENT_DATABASE}.json"
 
 def get_enhanced_schema_cache_file():
     """Get database-specific enhanced schema cache file name"""
+    ensure_cache_dir()
     return f"cache/enhanced_schema_cache_{CURRENT_DATABASE}.json"

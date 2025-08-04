@@ -2,7 +2,11 @@ import React, { useState, useEffect, useRef } from "react";
 import { IoIosClose } from "react-icons/io";
 import { ThreeDots } from "react-loader-spinner";
 
-export const DatabaseConnectionModal = ({ setIsModalOpen }) => {
+export const DatabaseConnectionModal = ({
+  setIsModalOpen,
+  handleConnectionChange,
+  addDatabase,
+}) => {
   const [connectionDetails, setConnectionDetails] = useState({
     hostname: "",
     port: "",
@@ -38,7 +42,7 @@ export const DatabaseConnectionModal = ({ setIsModalOpen }) => {
     return newErrors;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const validationErrors = validate();
     if (Object.keys(validationErrors).length > 0) {
@@ -47,12 +51,33 @@ export const DatabaseConnectionModal = ({ setIsModalOpen }) => {
     }
 
     setIsLoading(true);
-    // Simulate a network request
-    setTimeout(() => {
+    try {
+      const response = await fetch("http://localhost:5000/connect", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(connectionDetails),
+      });
+
+      if (response.ok) {
+        handleConnectionChange(true, connectionDetails.dbName);
+        addDatabase(connectionDetails);
+        setIsModalOpen(false);
+      } else {
+        // User-friendly error message
+        setErrors({
+          api: "Connection failed. Please check your details and try again.",
+        });
+      }
+    } catch (error) {
+      // User-friendly error message
+      setErrors({
+        api: "Connection failed. Please check your details and try again.",
+      });
+    } finally {
       setIsLoading(false);
-      console.log("Connection Details:", connectionDetails);
-      setIsModalOpen(false); // Close modal on success
-    }, 2000);
+    }
   };
 
   useEffect(() => {
@@ -79,6 +104,7 @@ export const DatabaseConnectionModal = ({ setIsModalOpen }) => {
           />
         </div>
         <form onSubmit={handleSubmit} className="model-form">
+          {errors.api && <p className="error-message">{errors.api}</p>}
           <div className="form-control">
             <label htmlFor="hostname">Hostname/IP</label>
             <input
