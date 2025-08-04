@@ -219,27 +219,76 @@ Description:"""
         """Get description if ready, otherwise return fallback"""
         return self.completed_descriptions.get(key, fallback)
 
+    def stop(self):
+        """Stop the background worker thread"""
+        self.running = False
+        if self.worker_thread and self.worker_thread.is_alive():
+            self.worker_thread.join(timeout=5) # Give it some time to finish
+            if self.worker_thread.is_alive():
+                print("Warning: LazyLLMDescriptionGenerator worker thread did not stop gracefully.")
+
 # Global lazy description generator
 lazy_generator = LazyLLMDescriptionGenerator()
+
+def _generate_schema_signature(engine):
+    """Generates a unique signature based on the current DB schema."""
+    try:
+        inspector = inspect(engine)
+        schema_elements = []
+        excluded_schemas = ["INFORMATION_SCHEMA", "guest", "sys", "db_owner", "db_accessadmin", 
+                            "db_securityadmin", "db_ddladmin", "db_backupoperator", 
+                            "db_datareader", "db_datawriter", "db_denydatareader", "db_denydatawriter"]
+        
+        schemas = [s for s in inspector.get_schema_names() if s not in excluded_schemas]
+        
+        for schema in sorted(schemas):
+            for table_name in sorted(inspector.get_table_names(schema=schema)):
+                if should_exclude_table(table_name, EXCLUDE_TABLE_PATTERNS):
+                    continue
+                schema_elements.append(f"{schema}.{table_name}")
+                columns = inspector.get_columns(table_name, schema=schema)
+                for col in sorted(columns, key=lambda x: x['name']):
+                    schema_elements.append(f"{schema}.{table_name}.{col['name']}:{str(col['type'])}")
+        
+        return str(hash("".join(schema_elements)))
+    except Exception as e:
+        print(f"Warning: Could not generate schema signature. Cache validation may be incomplete. Error: {e}")
+        return None
 
 def get_schema_metadata():
     """Fast schema loading with ChromaDB vectorization and lazy LLM descriptions"""
     cache_file = get_schema_cache_file()
     column_map_file = get_column_map_file()
     enhanced_cache_file = get_enhanced_schema_cache_file()
+    business_patterns_file = 'business_patterns.json'
     
     current_db = get_current_database()
     print(f"Using hybrid schema cache for database: {current_db}")
     
-    from config import MSSQL_CONNECTION
-    cache_key = hash(MSSQL_CONNECTION)
+    engine = get_engine()
+    live_signature = _generate_schema_signature(engine)
+
+    # Load business patterns if available
+    business_patterns = {}
+    if os.path.exists(business_patterns_file):
+        try:
+            with open(business_patterns_file, "r") as f:
+                patterns_data = json.load(f)
+                for pattern in patterns_data.get("patterns", []):
+                    business_patterns[pattern['maps_to']] = pattern
+            print(f"Loaded {len(business_patterns)} business patterns.")
+        except Exception as e:
+            print(f"Warning: Could not load business patterns file: {e}")
 
     # Check cache validity
     if os.path.exists(cache_file) and os.path.exists(column_map_file):
         try:
             with open(cache_file, "r") as f:
                 cached_data = json.load(f)
-            if cached_data.get("cache_key") == cache_key:
+            
+            cached_signature = cached_data.get("schema_signature")
+
+            if live_signature and cached_signature and live_signature == cached_signature:
                 print("Schema cache found and valid. Loading from cache...")
                 with open(column_map_file, "r") as f:
                     column_map = json.load(f)
@@ -250,23 +299,20 @@ def get_schema_metadata():
                 else:
                     enhanced_data = {'business_patterns': [], 'table_priorities': [], 'inferred_relationships': []}
                 
-                # Initialize vector store
                 vector_store = initialize_vector_store()
                 
-                # Start background LLM description enhancement
                 for table in cached_data["metadata"]:
                     key = f"{table['schema']}.{table['table']}"
                     lazy_generator.queue_description(key, table['schema'], table['table'], table['columns'])
                 
                 return cached_data["metadata"], column_map, vector_store, enhanced_data
             else:
-                print("Schema cache invalid. Regenerating...")
+                print("Schema has changed or cache is invalid. Forcing a refresh...")
         except Exception as e:
             print(f"Cache load failed: {e}. Regenerating...")
 
     print("Fast schema generation with FAISS vectorization...")
     
-    engine = get_engine()
     vector_store = initialize_vector_store()
     schema_metadata = []
     column_map = {}
@@ -290,10 +336,17 @@ def get_schema_metadata():
                     columns = inspector.get_columns(table_name, schema=schema)
                     fks = inspector.get_foreign_keys(table_name, schema=schema)
                     pks = inspector.get_pk_constraint(table_name, schema=schema)
+                    
+                    full_table_name = f"{schema}.{table_name}"
+                    table_pattern = business_patterns.get(full_table_name, {})
+                    table_business_desc = f"Business context: {table_pattern['term']} - {table_pattern['description']}" if table_pattern else ""
 
-                    # Fast column processing
                     col_details = []
                     for col in columns:
+                        full_col_name = f"{full_table_name}.{col['name']}"
+                        col_pattern = business_patterns.get(full_col_name, {})
+                        business_desc = f"Business context: {col_pattern['term']} - {col_pattern['description']}" if col_pattern else ""
+                        
                         col_info = {
                             "name": col['name'],
                             "type": str(col["type"]).lower(),
@@ -304,13 +357,12 @@ def get_schema_metadata():
                                 "name": col['name'], 
                                 "type": str(col["type"]).lower()
                             }),
-                            "business_patterns": []
+                            "business_description": business_desc
                         }
                         col_details.append(col_info)
 
-                    column_map[f"{schema}.{table_name}"] = [col["name"] for col in columns]
+                    column_map[full_table_name] = [col["name"] for col in columns]
 
-                    # Process foreign keys
                     fk_info = []
                     for fk in fks:
                         fk_info.append({
@@ -319,17 +371,15 @@ def get_schema_metadata():
                             "target_column": fk['referred_columns'][0]
                         })
 
-                    # Fast description (no LLM blocking)
                     fast_description = generate_fast_description(schema, table_name, col_details)
                     
-                    # Queue for background LLM enhancement
-                    table_key = f"{schema}.{table_name}"
+                    table_key = full_table_name
                     lazy_generator.queue_description(table_key, schema, table_name, col_details, fk_info)
 
                     table_metadata = {
                         "schema": schema,
                         "table": table_name,
-                        "description": fast_description,
+                        "description": f"{fast_description} {table_business_desc}".strip(),
                         "columns": col_details,
                         "relationships": fk_info,
                         "primary_keys": pks.get('constrained_columns', []),
@@ -341,37 +391,34 @@ def get_schema_metadata():
                             "relevance_factors": []
                         }
                     }
-
                     schema_metadata.append(table_metadata)
 
-                    # Add to vector store (non-blocking)
                     if vector_store:
                         try:
-                            column_str = ', '.join([f"{c['name']} ({c['type']})" for c in col_details])
+                            column_str = ', '.join([f"{c['name']} ({c['type']}) - {c.get('business_description', '')}" for c in col_details])
                             pk_str = ', '.join(pks.get('constrained_columns', []))
                             fk_str = ', '.join([f"{fk['source_column']} -> {fk['target_table']}" for fk in fk_info])
                             
                             schema_text = (
-                                f"Table: {schema}.{table_name}\n"
-                                f"Description: {fast_description}\n"
+                                f"Table: {full_table_name}\n"
+                                f"Description: {table_metadata['description']}\n"
                                 f"Columns: {column_str}\n"
                                 f"Primary Keys: {pk_str}\n"
                                 f"Foreign Keys: {fk_str}"
                             )
                             
-                            # Add to FAISS vector store
                             vector_store.add_texts(
                                 texts=[schema_text],
                                 metadatas=[{
                                     'type': 'schema',
                                     'schema': schema,
                                     'table': table_name,
-                                    'full_name': f"{schema}.{table_name}"
+                                    'full_name': full_table_name
                                 }]
                             )
                             
                         except Exception as e:
-                            print(f"   Vector store add failed for {schema}.{table_name}: {e}")
+                            print(f"   Vector store add failed for {full_table_name}: {e}")
 
         # Enhanced data structure
         enhanced_data = {
@@ -390,7 +437,7 @@ def get_schema_metadata():
         }
 
         # Save cache
-        cache_data = {"cache_key": cache_key, "metadata": schema_metadata}
+        cache_data = {"schema_signature": live_signature, "metadata": schema_metadata}
         
         try:
             with open(cache_file, "w") as f:

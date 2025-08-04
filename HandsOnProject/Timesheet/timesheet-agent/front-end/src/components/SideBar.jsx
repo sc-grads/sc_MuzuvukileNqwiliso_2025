@@ -4,17 +4,30 @@ import logo from "../assets/logo-1.png";
 import { LiaEdit } from "react-icons/lia";
 import { History } from "./History";
 import { IoIosAdd } from "react-icons/io";
+import { Link } from "react-router-dom";
 
-export const SideBar = ({ setIsModalOpen, handleNewChat }) => {
+export const SideBar = ({
+  setIsModalOpen,
+  handleNewChat,
+  isConnected,
+  databases,
+  selectedDb,
+  handleDatabaseSelection,
+}) => {
   return (
     <>
       <div className="side-bar">
         <div className="logo-container">
-          <a href="#" className="logo-link">
+          <Link to={"/"} className="logo-link">
             <img src={logo} alt="logo" className="logo-icon" />
-          </a>
+          </Link>
         </div>
-        <DatabaseStatus />
+        <DatabaseStatus
+          isConnected={isConnected}
+          databases={databases}
+          selectedDb={selectedDb}
+          onSelect={handleDatabaseSelection}
+        />
         <button className="new-chat-btn" onClick={handleNewChat}>
           <LiaEdit />
           New Chat

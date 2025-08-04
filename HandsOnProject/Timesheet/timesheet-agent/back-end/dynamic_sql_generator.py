@@ -19,6 +19,7 @@ from semantic_intent_engine import (
     SemanticIntentEngine, QueryIntent, Entity, EntityType, IntentType,
     ComplexityLevel, AggregationType, TemporalContext, SchemaMapping
 )
+from query_intent_classifier import QueryIntentClassifier, QueryType
 from vector_schema_store import (
     VectorSchemaStore, TableMatch, ColumnMatch, RelationshipGraph
 )
@@ -81,6 +82,12 @@ class SQLQuery:
     generation_metadata: Dict[str, Any]
 
 
+def sanitize_sql_literal(value: str) -> str:
+    """Sanitizes a string literal to prevent basic SQL injection."""
+    if not isinstance(value, str):
+        return value
+    return value.replace("'", "''")
+
 class SemanticQueryBuilder:
     """
     Core SQL construction class using semantic understanding.
@@ -101,6 +108,7 @@ class SemanticQueryBuilder:
         """
         self.vector_store = vector_store
         self.intent_engine = intent_engine
+        self.query_classifier = QueryIntentClassifier()
         
         # SQL generation patterns learned from successful queries
         self.learned_patterns = {}
@@ -118,12 +126,13 @@ class SemanticQueryBuilder:
         
         logger.info("SemanticQueryBuilder initialized")
     
-    def build_sql_query(self, query_intent: QueryIntent) -> SQLQuery:
+    def build_sql_query(self, query_intent: QueryIntent, conversation_context: Optional[Dict[str, Any]] = None) -> SQLQuery:
         """
         Build a complete SQL query using pattern-based approach similar to the original system.
         
         Args:
             query_intent: QueryIntent object with extracted semantic information
+            conversation_context: Optional context from previous conversation turn
             
         Returns:
             SQLQuery object with generated SQL and metadata
@@ -131,11 +140,11 @@ class SemanticQueryBuilder:
         logger.info(f"Building SQL query for intent: {query_intent.intent_type.value}")
         
         # Use pattern-based generation similar to the original fast_sql_generator
-        sql = self._generate_pattern_based_sql(query_intent)
+        sql = self._generate_pattern_based_sql(query_intent, conversation_context)
         
         if not sql:
             # Fallback to the original vector-based approach
-            sql = self._generate_vector_based_sql(query_intent)
+            sql = self._generate_vector_based_sql(query_intent, conversation_context)
         
         # Parse the generated SQL to extract metadata
         tables_used = self._extract_tables_from_sql(sql)
@@ -162,85 +171,125 @@ class SemanticQueryBuilder:
         logger.info(f"SQL query generated with confidence: {confidence:.3f}")
         return sql_query
     
-    def _generate_pattern_based_sql(self, query_intent: QueryIntent) -> str:
+    def _generate_pattern_based_sql(self, query_intent: QueryIntent, conversation_context: Optional[Dict[str, Any]] = None) -> str:
         """
-        Generate SQL using enhanced RAG-powered pattern-based approach.
+        Generate SQL using LLM-based approach with RAG enhancement.
+        This is where the actual LLM generation happens.
         """
         query_lower = query_intent.original_query.lower().strip()
         
-        # Step 1: Retrieve relevant context using RAG
+        # Step 1: Handle greetings and conversational queries
+        if self._is_greeting_or_conversational(query_lower):
+            return self._handle_conversational_query(query_lower)
+        
+        # Step 2: Retrieve relevant context using RAG
         rag_context = self._retrieve_relevant_context(query_intent)
         
-        # Step 2: Get schema metadata (enhanced with RAG context)
+        # Step 3: Get schema metadata (enhanced with RAG context)
         schema_metadata = self._get_enhanced_schema_metadata(rag_context)
         
         if not schema_metadata:
             return "Error: No schema available"
         
-        # Step 3: Generate SQL using advanced pattern matching with RAG enhancement
+        # Step 4: Prepare data for LLM-based SQL generation
+        # Import the actual LLM-based SQL generation function
+        from llm import generate_sql_query
+        from database import get_schema_metadata
         
-        # Check for advanced SQL patterns first
-        advanced_sql = self._generate_advanced_sql_patterns(query_lower, query_intent, schema_metadata, rag_context)
-        if advanced_sql:
-            return advanced_sql
+        # Get full schema metadata and column mappings
+        try:
+            full_schema_result = get_schema_metadata()
+            if isinstance(full_schema_result, tuple):
+                full_schema_metadata = full_schema_result[0]
+                column_map = full_schema_result[1] if len(full_schema_result) > 1 else {}
+            else:
+                full_schema_metadata = full_schema_result
+                column_map = {}
+        except Exception as e:
+            logger.error(f"Failed to get schema metadata: {e}")
+            return "Error: Could not retrieve database schema"
         
-        # 1. Count queries
+        # Prepare entities for LLM using advanced NLP extraction
+        from nlp import extract_entities
+        
+        # Use the sophisticated entity extraction from nlp.py
+        nlp_entities = extract_entities(
+            query=query_intent.original_query,
+            schema_metadata=full_schema_metadata,
+            execute_query_fn=None,  # Not needed for entity extraction
+            vector_store=self.vector_store
+        )
+        
+        # Combine with RAG context
+        entities = {
+            "is_database_related": nlp_entities.get("is_database_related", True),
+            "suggested_tables": nlp_entities.get("suggested_tables", []) or [table.table_name for table in rag_context.get('similar_tables', [])],
+            "entities": query_intent.entities,
+            "intent_type": query_intent.intent_type.value,
+            "confidence": query_intent.confidence,
+            # Add advanced NLP features
+            "names": nlp_entities.get("names", []),
+            "dates": nlp_entities.get("dates", []),
+            "numeric_values": nlp_entities.get("numeric_values", {}),
+            "comparisons": nlp_entities.get("comparisons", []),
+            "schema_matches": nlp_entities.get("schema_matches", {}),
+            "limit": nlp_entities.get("limit", None)
+        }
+        
+        # Step 5: Use LLM to generate SQL
+        try:
+            logger.info("Using LLM-based SQL generation...")
+            sql_query = generate_sql_query(
+                nl_query=query_intent.original_query,
+                schema_metadata=full_schema_metadata,
+                column_map=column_map,
+                entities=entities,
+                vector_store=self.vector_store,
+                conversation_context=conversation_context
+            )
+            
+            if sql_query and not sql_query.startswith("Error") and not sql_query.startswith("This query"):
+                return sql_query
+            else:
+                logger.warning(f"LLM generation failed or returned error: {sql_query}")
+                # Fallback to simple pattern-based approach
+                return self._generate_simple_fallback_sql(query_intent, schema_metadata)
+                
+        except Exception as e:
+            logger.error(f"LLM SQL generation failed: {e}")
+            # Fallback to simple pattern-based approach
+            return self._generate_simple_fallback_sql(query_intent, schema_metadata)
+    
+    def _generate_simple_fallback_sql(self, query_intent: QueryIntent, schema_metadata: List[Dict]) -> str:
+        """
+        Simple fallback SQL generation when LLM fails.
+        This uses basic patterns as a last resort.
+        """
+        query_lower = query_intent.original_query.lower().strip()
+        
+        # Find the most relevant table
+        target_table = self._find_best_table_for_query(query_lower, schema_metadata)
+        if not target_table:
+            return "Error: No relevant table found"
+        
+        table_name = f"{target_table['schema']}.{target_table['table']}"
+        
+        # Simple pattern matching for basic queries
         if query_intent.intent_type == IntentType.COUNT or any(word in query_lower for word in ['count', 'how many', 'number of']):
-            target_table = self._find_best_table_for_query(query_lower, schema_metadata)
-            if target_table:
-                # Use RAG context to determine if we need GROUP BY
-                if self._should_group_by_from_context(query_lower, rag_context):
-                    group_col = self._find_grouping_column(target_table, query_lower, rag_context)
-                    if group_col:
-                        return f"SELECT {group_col}, COUNT(*) as RecordCount FROM {target_table['schema']}.{target_table['table']} GROUP BY {group_col}"
-                
-                return f"SELECT COUNT(*) as RecordCount FROM {target_table['schema']}.{target_table['table']}"
+            return f"SELECT COUNT(*) as RecordCount FROM {table_name}"
         
-        # 2. Aggregation queries (SUM, AVG, MAX, MIN)
         elif query_intent.intent_type in [IntentType.SUM, IntentType.AVERAGE, IntentType.MAX, IntentType.MIN]:
-            target_table = self._find_best_table_for_query(query_lower, schema_metadata)
-            if target_table:
-                # Use RAG to find the best numeric column
-                numeric_col = self._find_best_numeric_column(target_table, query_lower, rag_context)
-                if numeric_col:
-                    agg_func = query_intent.intent_type.value.upper()
-                    if agg_func == "AVERAGE":
-                        agg_func = "AVG"
-                    
-                    # Check if grouping is needed
-                    if self._should_group_by_from_context(query_lower, rag_context):
-                        group_col = self._find_grouping_column(target_table, query_lower, rag_context)
-                        if group_col:
-                            return f"SELECT {group_col}, {agg_func}({numeric_col}) FROM {target_table['schema']}.{target_table['table']} GROUP BY {group_col}"
-                    
-                    return f"SELECT {agg_func}({numeric_col}) FROM {target_table['schema']}.{target_table['table']}"
+            # Find first numeric column
+            numeric_col = self._find_numeric_column(target_table)
+            if numeric_col:
+                agg_func = query_intent.intent_type.value.upper()
+                if agg_func == "AVERAGE":
+                    agg_func = "AVG"
+                return f"SELECT {agg_func}({numeric_col}) as Result FROM {table_name}"
         
-        # 3. List/Show queries
-        elif query_intent.intent_type == IntentType.SELECT or any(word in query_lower for word in ['list', 'show', 'display', 'get']):
-            target_table = self._find_best_table_for_query(query_lower, schema_metadata)
-            if target_table:
-                # Use RAG to select most relevant columns
-                columns = self._select_relevant_columns(target_table, query_lower, rag_context)
-                column_list = ', '.join(columns)
-                
-                sql = f"SELECT TOP 10 {column_list} FROM {target_table['schema']}.{target_table['table']}"
-                
-                # Add WHERE clause using RAG-enhanced entity matching
-                where_conditions = self._build_rag_enhanced_where_clause(query_intent, target_table, rag_context)
-                
-                if where_conditions:
-                    sql += " WHERE " + " AND ".join(where_conditions)
-                
-                return sql
-        
-        # Default fallback with RAG enhancement
-        if schema_metadata:
-            first_table = schema_metadata[0]
-            columns = self._select_relevant_columns(first_table, query_lower, rag_context)
-            column_list = ', '.join(columns)
-            return f"SELECT TOP 10 {column_list} FROM {first_table['schema']}.{first_table['table']}"
-        
-        return "Error: Unable to generate SQL"
+        # Default to simple SELECT
+        columns = self._get_display_columns(target_table)
+        return f"SELECT TOP 10 {columns} FROM {table_name}"
     
     def _retrieve_relevant_context(self, query_intent: QueryIntent) -> Dict[str, Any]:
         """
@@ -401,15 +450,102 @@ class SemanticQueryBuilder:
     def _build_rag_enhanced_where_clause(self, query_intent: QueryIntent, table: Dict, rag_context: Dict[str, Any]) -> List[str]:
         """Build WHERE clause using RAG-enhanced entity matching."""
         where_conditions = []
+
+        simple_query_patterns = [
+            'how many', 'count all', 'show all', 'list all', 'get all',
+            'what is the average', 'what is the total', 'what is the sum'
+        ]
+        
+        query_lower = query_intent.original_query.lower()
+        is_simple_query = any(pattern in query_lower for pattern in simple_query_patterns)
+
+        # If it's a simple "show all" or "list all" query with no specific entities, return no WHERE clause
+        if is_simple_query and not query_intent.entities:
+            return []
         
         for entity in query_intent.entities:
-            if entity.entity_type == EntityType.PERSON and len(entity.name) > 2:
+            # Only create WHERE conditions for entities that are actual filter criteria
+            # and not just general terms from a "show all" type query.
+            # This is a heuristic and might need further refinement.
+            if entity.entity_type in [EntityType.PERSON, EntityType.PROJECT, EntityType.DEPARTMENT, EntityType.STATUS, EntityType.DATE, EntityType.NUMBER]:
+                # Avoid creating conditions for entities that are just the table name itself in a simple query
+                if is_simple_query and entity.name.lower() == table['table'].lower():
+                    continue
+
                 # Use RAG to find the best name column
                 name_col = self._find_best_name_column(table, rag_context)
                 if name_col:
                     where_conditions.append(f"{name_col} LIKE '%{entity.name}%'")
         
         return where_conditions
+    
+    def _is_greeting_or_conversational(self, query_lower: str) -> bool:
+        """Check if query is a greeting or conversational"""
+        greetings = ['hi', 'hello', 'hey', 'good morning', 'good afternoon', 'good evening']
+        conversational = ['how are you', 'what can you do', 'help me', 'thanks', 'thank you']
+        
+        return any(greeting in query_lower for greeting in greetings + conversational)
+    
+    def _handle_conversational_query(self, query_lower: str) -> str:
+        """Handle conversational queries appropriately"""
+        if any(greeting in query_lower for greeting in ['hi', 'hello', 'hey']):
+            # Return a simple query that shows system is working
+            return "SELECT 'Hello! I can help you query your database. Try asking about employees, projects, or timesheets.' as Message"
+        return "SELECT 'I can help you query your database. What would you like to know?' as Message"
+    
+    def _classify_precise_intent(self, query_lower: str, query_intent: QueryIntent) -> str:
+        """Classify query intent more precisely to avoid wrong WHERE clauses"""
+        
+        # Check for "show all" / "list all" patterns
+        list_all_patterns = [
+            'show all', 'list all', 'get all', 'display all', 'retrieve all',
+            'show me all', 'give me all', 'find all', 'select all'
+        ]
+        
+        if any(pattern in query_lower for pattern in list_all_patterns):
+            return 'list_all'
+        
+        # Check for specific search patterns (when we DO want WHERE clauses)
+        specific_search_patterns = [
+            'show me', 'find', 'get', 'where', 'with', 'for', 'by', 'in', 'on', 'at'
+        ]
+        
+        # Only consider it a specific search if it has actual search terms (not just "show all employees")
+        has_specific_entities = any(
+            entity.entity_type in [EntityType.PERSON, EntityType.PROJECT, EntityType.DATE, EntityType.NUMBER]
+            and entity.name.lower() not in ['show', 'all', 'list', 'employees', 'clients', 'projects', 'types']
+            for entity in query_intent.entities
+        )
+        
+        if has_specific_entities:
+            return 'specific_search'
+        
+        return 'general_query'
+    
+    def _get_listing_columns(self, table: Dict, query_lower: str) -> str:
+        """Get appropriate columns for listing queries by prioritizing name-like columns."""
+        columns = table.get('columns', [])
+        if not columns:
+            return '*'
+
+        # Prioritize columns with 'name', 'title', 'label' in the name
+        name_like_columns = [
+            col['name'] for col in columns 
+            if any(keyword in col['name'].lower() for keyword in ['name', 'title', 'label'])
+        ]
+        if name_like_columns:
+            return ', '.join(name_like_columns[:3])
+
+        # As a second choice, look for 'id' and text-based columns
+        id_and_text_columns = [
+            col['name'] for col in columns
+            if 'id' in col['name'].lower() or 'varchar' in col['type'].lower() or 'text' in col['type'].lower()
+        ]
+        if id_and_text_columns:
+            return ', '.join(id_and_text_columns[:3])
+
+        # Fallback to first 3 columns if no better option is found
+        return ', '.join([col['name'] for col in columns[:3]])
     
     def _find_best_name_column(self, table: Dict, rag_context: Dict[str, Any]) -> Optional[str]:
         """Find the best name column using RAG context."""
@@ -914,6 +1050,23 @@ WHERE e.id NOT IN (
                 return col['name']
         return None
     
+    def _get_display_columns(self, table: Dict) -> str:
+        """Get appropriate columns for display in SELECT queries."""
+        columns = table.get('columns', [])
+        if not columns:
+            return '*'
+        
+        # Look for name columns first
+        name_col = self._find_name_column(table)
+        if name_col:
+            return name_col
+        
+        # Otherwise, return first few columns
+        if len(columns) <= 3:
+            return ', '.join([col['name'] for col in columns])
+        else:
+            return ', '.join([col['name'] for col in columns[:3]])
+    
     def _extract_tables_from_sql(self, sql: str) -> List[str]:
         """Extract table names from SQL."""
         tables = []
@@ -946,7 +1099,7 @@ WHERE e.id NOT IN (
         
         return columns
     
-    def _generate_vector_based_sql(self, query_intent: QueryIntent) -> str:
+    def _generate_vector_based_sql(self, query_intent: QueryIntent, conversation_context: Optional[Dict[str, Any]] = None) -> str:
         """Fallback to original vector-based approach."""
         # This is the original complex approach - keep as fallback
         try:
@@ -1495,24 +1648,44 @@ WHERE e.id NOT IN (
         where_conditions = []
         confidence = 0.8
         
-        # Only process meaningful entities for WHERE conditions
-        # Filter out common query words and table names
-        skip_words = {
-            'show', 'me', 'all', 'get', 'find', 'list', 'display', 'what', 'how', 'many',
-            'count', 'total', 'sum', 'average', 'max', 'min', 'is', 'the', 'are', 'there',
-            'of', 'with', 'by', 'from', 'to', 'in', 'on', 'at', 'for', 'and', 'or',
-            'employees', 'employee', 'department', 'departments', 'project', 'projects',
-            'salary', 'salaries', 'name', 'names', 'information', 'info', 'data'
-        }
+        # Use the query classifier to determine if WHERE clause is needed
+        query_classification = self.query_classifier.classify_query(query_intent.original_query)
         
-        meaningful_entities = [
-            entity for entity in query_intent.entities
-            if entity.entity_type in [EntityType.PERSON, EntityType.PROJECT, EntityType.DEPARTMENT, 
-                                     EntityType.STATUS, EntityType.DATE, EntityType.NUMBER] and
-            entity.name.lower() not in skip_words and
-            len(entity.name) > 2 and  # Skip very short words
-            not entity.name.lower().startswith(('what', 'how', 'show', 'get', 'find'))
-        ]
+        # Don't add WHERE conditions for certain query types
+        if not query_classification.requires_where_clause:
+            return None
+        
+        # Only process meaningful entities for WHERE conditions
+        # Use the classifier's target entities instead of all extracted entities
+        meaningful_entities = []
+        
+        if query_classification.target_entities:
+            # Use entities identified by the classifier
+            for entity_name in query_classification.target_entities:
+                # Find matching entity from query_intent.entities
+                matching_entities = [
+                    entity for entity in query_intent.entities
+                    if entity.name.lower() == entity_name.lower()
+                ]
+                meaningful_entities.extend(matching_entities)
+        else:
+            # Fallback to filtering entities manually
+            skip_words = {
+                'show', 'me', 'all', 'get', 'find', 'list', 'display', 'what', 'how', 'many',
+                'count', 'total', 'sum', 'average', 'max', 'min', 'is', 'the', 'are', 'there',
+                'of', 'with', 'by', 'from', 'to', 'in', 'on', 'at', 'for', 'and', 'or',
+                'employees', 'employee', 'department', 'departments', 'project', 'projects',
+                'salary', 'salaries', 'name', 'names', 'information', 'info', 'data'
+            }
+            
+            meaningful_entities = [
+                entity for entity in query_intent.entities
+                if entity.entity_type in [EntityType.PERSON, EntityType.PROJECT, EntityType.DEPARTMENT, 
+                                         EntityType.STATUS, EntityType.DATE, EntityType.NUMBER] and
+                entity.name.lower() not in skip_words and
+                len(entity.name) > 2 and  # Skip very short words
+                not entity.name.lower().startswith(('what', 'how', 'show', 'get', 'find'))
+            ]
         
         # Process meaningful entities to create WHERE conditions
         for entity in meaningful_entities:
@@ -1528,16 +1701,8 @@ WHERE e.id NOT IN (
             if temporal_condition:
                 where_conditions.append(temporal_condition)
         
-        # For simple queries like "How many employees are there?", don't add WHERE clause
-        simple_query_patterns = [
-            'how many', 'count all', 'show all', 'list all', 'get all',
-            'what is the average', 'what is the total', 'what is the sum'
-        ]
-        
-        query_lower = query_intent.original_query.lower()
-        is_simple_query = any(pattern in query_lower for pattern in simple_query_patterns)
-        
-        if is_simple_query and not meaningful_entities:
+        # Additional check: if classifier says no WHERE clause needed, respect that
+        if not query_classification.requires_where_clause:
             return None
         
         if not where_conditions:
@@ -1609,7 +1774,8 @@ WHERE e.id NOT IN (
         # Create condition based on entity type
         if entity.entity_type == EntityType.PERSON:
             # For person names, use LIKE for partial matching
-            return f"{target_column.table_name}.{target_column.column_name} LIKE '%{entity.name}%'"
+            sanitized_name = sanitize_sql_literal(entity.name)
+            return f"{target_column.table_name}.{target_column.column_name} LIKE '%{sanitized_name}%'"
         
         elif entity.entity_type == EntityType.NUMBER:
             # For numbers, use exact match or comparison
@@ -1618,7 +1784,8 @@ WHERE e.id NOT IN (
         
         elif entity.entity_type in [EntityType.PROJECT, EntityType.DEPARTMENT, EntityType.STATUS]:
             # For categorical entities, use LIKE for flexibility
-            return f"{target_column.table_name}.{target_column.column_name} LIKE '%{entity.name}%'"
+            sanitized_name = sanitize_sql_literal(entity.name)
+            return f"{target_column.table_name}.{target_column.column_name} LIKE '%{sanitized_name}%'"
         
         elif entity.entity_type == EntityType.DATE:
             # For dates, create appropriate date conditions
@@ -2009,29 +2176,18 @@ class DynamicSQLGenerator:
         
         logger.info("DynamicSQLGenerator initialized")
     
-    def generate_sql(self, nl_query: str) -> SQLQuery:
+    def generate_sql(self, query_intent: QueryIntent, conversation_context: Optional[Dict[str, Any]] = None) -> SQLQuery:
         """
-        Generate SQL query from natural language input.
+        Generate a SQL query from a QueryIntent object.
         
         Args:
-            nl_query: Natural language query string
+            query_intent: The QueryIntent object from the semantic engine.
+            conversation_context: Optional context from the previous turn.
             
         Returns:
-            SQLQuery object with generated SQL and metadata
+            A SQLQuery object containing the generated SQL and metadata.
         """
-        logger.info(f"Generating SQL for query: {nl_query}")
-        
-        # Step 1: Analyze query intent
-        query_intent = self.intent_engine.analyze_query(nl_query)
-        
-        # Step 2: Generate SQL using semantic query builder
-        sql_query = self.query_builder.build_sql_query(query_intent)
-        
-        # Step 3: Update statistics
-        self._update_generation_stats(sql_query)
-        
-        logger.info(f"SQL generation complete. Confidence: {sql_query.confidence:.3f}")
-        return sql_query
+        return self.query_builder.build_sql_query(query_intent, conversation_context)
     
     def _update_generation_stats(self, sql_query: SQLQuery):
         """Update generation statistics."""

@@ -124,7 +124,7 @@ class IntelligentSQLGenerator:
     
     def _extract_employees_semantic(self, query: str, schema_metadata: List[Dict]) -> List[str]:
         """Extract employee names using semantic understanding"""
-        from complete_sql_trainer import get_dynamic_employee_names
+        
         
         # Get all employees from database
         all_employees = get_dynamic_employee_names(schema_metadata)
