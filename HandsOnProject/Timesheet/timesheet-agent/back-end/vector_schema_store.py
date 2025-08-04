@@ -123,6 +123,31 @@ class VectorSchemaStore:
         self._load_from_disk()
         
         logger.info(f"VectorSchemaStore initialized with {self.index.ntotal} vectors")
+        self.dimension = dimension
+        self.embedding_model_name = embedding_model
+        
+        # Initialize embedding model
+        self.embedder = SentenceTransformer(embedding_model)
+        
+        # Initialize FAISS index with ID mapping for efficient updates/deletions
+        index = faiss.IndexFlatIP(dimension)
+        self.index = faiss.IndexIDMap(index)
+        
+        # Storage for metadata and mappings
+        self.schema_vectors: Dict[str, SchemaVector] = {}
+        self.faiss_id_to_element_id: Dict[int, str] = {}  # FAISS index ID to element ID
+        self.element_id_to_faiss_id: Dict[str, int] = {}  # Element ID to FAISS index ID
+        self.table_embeddings: Dict[str, np.ndarray] = {}
+        self.column_embeddings: Dict[str, np.ndarray] = {}
+        self.relationship_graph: RelationshipGraph = RelationshipGraph([], [], {})
+        
+        # Ensure storage directory exists
+        os.makedirs(vector_db_path, exist_ok=True)
+        
+        # Load existing data if available
+        self._load_from_disk()
+        
+        logger.info(f"VectorSchemaStore initialized with {self.index.ntotal} vectors")
     
     def _normalize_vector(self, vector: np.ndarray) -> np.ndarray:
         """Normalize vector for cosine similarity using inner product."""

@@ -8,12 +8,17 @@ import calendar
 import numpy as np
 
 def initialize_nlp():
+    """Initializes the spaCy NLP model and checks if the required model is downloaded."""
     global nlp
     nlp = None
+    model_name = "en_core_web_md"
     try:
-        nlp = spacy.load("en_core_web_md")
+        nlp = spacy.load(model_name)
+        print(f"spaCy model '{model_name}' loaded successfully.")
         return True
     except OSError:
+        print(f"spaCy model '{model_name}' not found.")
+        print(f"Please run 'python -m spacy download {model_name}' to install it.")
         return False
 
 if not initialize_nlp():
@@ -319,7 +324,7 @@ def fuzzy_match_schema_elements(query: str, schema_metadata: List[Dict], vector_
     if vector_store:
         try:
             # Search for similar schema elements
-            similar_docs = vector_store.similarity_search(query, k=10)
+            similar_docs = vector_store.find_similar_vectors(query, k=10)
             for doc in similar_docs:
                 if doc.metadata.get('type') == 'schema':
                     table_info = doc.metadata

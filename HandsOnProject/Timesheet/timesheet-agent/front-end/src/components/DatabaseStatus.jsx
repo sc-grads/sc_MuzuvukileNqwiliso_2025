@@ -6,22 +6,22 @@ import {
 import { IoChevronDown } from "react-icons/io5";
 
 
-export const DatabaseStatus = () => {
-  const labelStatus = "Not connected";
-  const isConnected = labelStatus === "Connected";
-
+export const DatabaseStatus = ({
+  isConnected,
+  databases = [],
+  selectedDb,
+  onSelect,
+}) => {
+  const labelStatus = isConnected ? "Connected" : "Not connected";
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedDb, setSelectedDb] = useState("TimesheetDB");
   const dropdownRef = useRef(null);
-
-  const databases = ["TimesheetDB", "BikeStores", "AdventureWorks2022"];
 
   const handleToggle = () => {
     setIsOpen(!isOpen);
   };
 
   const handleSelect = (db) => {
-    setSelectedDb(db);
+    onSelect(db);
     setIsOpen(false);
   };
 
@@ -72,7 +72,7 @@ export const DatabaseStatus = () => {
             tabIndex={1}
           >
             <div className="select-box">
-              <span className="selected-db">{selectedDb}</span>
+              <span className="selected-db">{selectedDb || "None"}</span>
               <IoChevronDown className="select-arrow" />
             </div>
             <input type="hidden" name="database" value={selectedDb} />

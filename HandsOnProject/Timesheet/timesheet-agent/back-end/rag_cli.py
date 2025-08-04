@@ -37,10 +37,11 @@ def main(refresh_schema=False, database=None):
         print("   3. Try using --refresh-schema to reload the schema")
         return # Exit if agent fails to initialize
 
-    print(f"\nLive DB fuzzy name matching is {'ENABLED' if USE_LIVE_DB else 'DISABLED'}.")
 
     print("\nWelcome to the RAG Data Agent!")
     print("Enter a natural language query about your database (or 'exit' to quit).")
+
+    conversation_context = {}
 
     while True:
         nl_query = input("\nYour query: ")
@@ -54,13 +55,19 @@ def main(refresh_schema=False, database=None):
         try:
             print(" Processing your query with RAG Agent...")
 
-            # Process query using the RAG SQL Agent
-            rag_result: RAGQueryResult = rag_agent.process_query(nl_query)
+            # Process query using the RAG SQL Agent, now with context
+            rag_result: RAGQueryResult = rag_agent.process_query(nl_query, conversation_context)
 
             processing_time = time.time() - start_time
             print(f"  RAG Agent processing took {processing_time:.2f} seconds")
 
             if rag_result.success:
+                # Update context for the next turn
+                conversation_context = {
+                    'nl_query': nl_query,
+                    'sql_query': rag_result.sql_query,
+                    'tables_used': rag_result.metadata.get('tables_used', [])
+                }
                 print("\n Generated SQL Query:")
                 print(f"   {rag_result.sql_query}")
 
@@ -90,6 +97,8 @@ def main(refresh_schema=False, database=None):
 
                 print(f"\n Query completed successfully! Confidence: {rag_result.confidence:.2f}")
             else:
+                # Clear context on failure
+                conversation_context = {}
                 # Handle RAG Agent's internal failure
                 print("\n RAG Agent failed to process query:")
                 print(f"  Error: {rag_result.error_message}")
@@ -106,8 +115,10 @@ def main(refresh_schema=False, database=None):
                 print(f" Query failed.")
 
         except Exception as e:
+            # Clear context on unexpected error
+            conversation_context = {}
             # Handle any unexpected errors in the main loop (e.g., agent crashes)
-            print(f"\n❌ Unexpected error processing query: {e}")
+            print(f"\nUnexpected error processing query: {e}")
             # Save query with error, but no specific entities or metadata from RAG agent
             save_query(nl_query, None, timestamp, False, str(e), None, None, 0)
 

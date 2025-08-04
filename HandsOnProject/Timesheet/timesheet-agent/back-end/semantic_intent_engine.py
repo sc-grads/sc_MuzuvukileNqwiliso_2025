@@ -43,6 +43,8 @@ class EntityType(Enum):
     """Enumeration of entity types that can be extracted from queries"""
     PERSON = "person"
     PROJECT = "project"
+    CLIENT = "client"
+    TIMESHEET_CONCEPT = "timesheet_concept"
     DATE = "date"
     TIME_PERIOD = "time_period"
     NUMBER = "number"
@@ -72,6 +74,7 @@ class Entity:
     position: Tuple[int, int]  # Start and end position in query
     schema_mapping: Optional['SchemaMapping'] = None
     context_vector: Optional[np.ndarray] = None
+    metadata: Optional[Dict[str, Any]] = None
 
 
 @dataclass
@@ -220,14 +223,30 @@ class SemanticIntentEngine:
         entity_examples = {
             EntityType.PERSON: [
                 "employee", "person", "user", "staff", "worker", "member",
-                "developer", "manager", "analyst", "consultant"
+                "developer", "manager", "analyst", "consultant",
+                # Examples from training data
+                "Karabo Tsaoane", "Pascal Govender", "Bongani"
             ],
             EntityType.PROJECT: [
                 "project", "task", "assignment", "work", "job", "initiative",
-                "program", "campaign", "effort"
+                "program", "campaign", "effort",
+                # Examples from training data
+                "Graduate Program"
+            ],
+            EntityType.CLIENT: [
+                "client", "customer", "account",
+                # Examples from training data
+                "C. Steinweg"
+            ],
+            EntityType.TIMESHEET_CONCEPT: [
+                "timesheet", "hours", "billable", "non-billable", "overtime",
+                "leave", "vacation", "sick time", "work log", "standup meeting",
+                "soft skills", "progress check", "database", "training", "finalweek"
             ],
             EntityType.DATE: [
-                "date", "day", "month", "year", "time", "when", "during"
+                "date", "day", "month", "year", "time", "when", "during",
+                # Examples from training data
+                "April", "March"
             ],
             EntityType.TIME_PERIOD: [
                 "week", "month", "quarter", "year", "period", "duration",
@@ -238,7 +257,9 @@ class SemanticIntentEngine:
                 "sum", "value"
             ],
             EntityType.STATUS: [
-                "status", "state", "condition", "phase", "stage", "level"
+                "status", "state", "condition", "phase", "stage", "level",
+                # Examples from training data
+                "Billable", "Non-Billable", "Pending", "Approved", "Rejected"
             ],
             EntityType.DEPARTMENT: [
                 "department", "team", "group", "division", "unit", "section"
@@ -247,7 +268,9 @@ class SemanticIntentEngine:
                 "location", "place", "site", "office", "building", "city"
             ],
             EntityType.SKILL: [
-                "skill", "expertise", "ability", "competency", "knowledge"
+                "skill", "expertise", "ability", "competency", "knowledge",
+                # Examples from training data
+                "soft skills", "Linux"
             ],
             EntityType.ROLE: [
                 "role", "position", "title", "job", "function", "responsibility"
@@ -256,13 +279,16 @@ class SemanticIntentEngine:
         
         # Create vector embeddings for each entity type
         for entity_type, examples in entity_examples.items():
-            combined_text = " ".join(examples)
-            embedding = self.embedder.encode(combined_text)
-            self.entity_patterns[entity_type] = {
-                'embedding': self._normalize_vector(embedding),
-                'examples': examples,
-                'confidence_threshold': 0.25
-            }
+            # This check ensures we don't re-calculate embeddings unnecessarily,
+            # but for this operation, it will add all the new ones.
+            if entity_type not in self.entity_patterns:
+                combined_text = " ".join(examples)
+                embedding = self.embedder.encode(combined_text)
+                self.entity_patterns[entity_type] = {
+                    'embedding': self._normalize_vector(embedding),
+                    'examples': examples,
+                    'confidence_threshold': 0.25
+                }
     
     def _initialize_temporal_patterns(self) -> Dict[str, Any]:
         """Initialize temporal pattern recognition"""
@@ -377,6 +403,11 @@ class SemanticIntentEngine:
                 best_intent = IntentType.COUNT
                 best_score = max(best_score, 0.8)
         
+        elif any(word in query_lower for word in ['show me', 'list', 'display', 'get all', 'find all']) and not any(word in query_lower for word in ['how many', 'count', 'total', 'sum']):
+            if best_score < 0.8:
+                best_intent = IntentType.SELECT
+                best_score = max(best_score, 0.8)
+        
         elif any(word in query_lower for word in ['total', 'sum of', 'add up']):
             if best_score < 0.8:
                 best_intent = IntentType.SUM
@@ -488,16 +519,39 @@ class SemanticIntentEngine:
         """Extract named entities using pattern matching"""
         entities = []
         
+        # Comprehensive stop words list for query filtering
+        stop_words = {
+            'the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'show', 'list', 'all', 'me', 'what', 
+            'how', 'many', 'get', 'find', 'display', 'who', 'which', 'retrieve', 'fetch', 'system', 
+            'clients', 'employees', 'projects', 'data', 'information', 'records', 'entries', 'items',
+            'available', 'types', 'from', 'with', 'by', 'of', 'is', 'are', 'was', 'were', 'have', 'has',
+            'do', 'does', 'did', 'will', 'would', 'could', 'should', 'can', 'may', 'might', 'must',
+            'give', 'provide', 'return', 'select', 'choose', 'pick', 'take', 'bring', 'send', 'tell',
+            'hello', 'hi', 'hey', 'world', 'wolrd'  # Common greetings and typos
+        }
+        
         # Simple capitalized word detection for person names
         words = query.split()
         for i, word in enumerate(words):
             if word[0].isupper() and len(word) > 2 and word.isalpha():
-                # Skip common words that are capitalized
-                if word.lower() not in ['the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'show', 'list', 'all', 'me', 'what', 'how', 'many', 'get', 'find', 'display', 'who', 'which', 'retrieve', 'fetch', 'system', 'clients', 'employees']:
-                    start_pos = query.find(word)
-                    end_pos = start_pos + len(word)
+                # Skip stop words and common query terms
+                if word.lower() not in stop_words:
+                    # Additional validation: must be a potential person name
+                    # Check if it appears in context that suggests it's a person
+                    context_words = []
+                    if i > 0:
+                        context_words.append(words[i-1].lower())
+                    if i < len(words) - 1:
+                        context_words.append(words[i+1].lower())
                     
-                    entities.append(Entity(
+                    # Only consider as person if there are person-related context clues
+                    person_indicators = {'employee', 'person', 'user', 'staff', 'worker', 'member', 'hours', 'worked', 'timesheet', 'leave'}
+                    if any(indicator in ' '.join(context_words) for indicator in person_indicators) or \
+                       any(indicator in query.lower() for indicator in person_indicators):
+                        start_pos = query.find(word)
+                        end_pos = start_pos + len(word)
+                        
+                        entities.append(Entity(
                         name=word,
                         entity_type=EntityType.PERSON,
                         confidence=0.6,
@@ -508,50 +562,101 @@ class SemanticIntentEngine:
         return entities
     
     def _extract_numeric_entities(self, query: str) -> List[Entity]:
-        """Extract numeric entities from query"""
+        """Extract numeric entities from query using advanced NLP"""
         entities = []
         
-        # Find numbers in the query
-        number_pattern = r'\b\d+(?:\.\d+)?\b'
-        for match in re.finditer(number_pattern, query):
-            number_text = match.group()
-            start_pos, end_pos = match.span()
-            
+        # Use the sophisticated numeric extraction from nlp.py
+        from nlp import extract_numeric_values, extract_comparison_operators
+        
+        # Extract numeric values with context
+        numeric_info = extract_numeric_values(query)
+        
+        # Process different types of numeric values
+        for value in numeric_info.get('values', []):
             entities.append(Entity(
-                name=number_text,
+                name=str(value),
                 entity_type=EntityType.NUMBER,
                 confidence=0.9,
-                original_text=number_text,
-                position=(start_pos, end_pos)
+                original_text=str(value),
+                position=(0, 0),  # Position would need to be tracked separately
+                metadata={'context': 'general_number'}
+            ))
+        
+        for value in numeric_info.get('hours', []):
+            entities.append(Entity(
+                name=str(value),
+                entity_type=EntityType.NUMBER,
+                confidence=0.95,
+                original_text=str(value),
+                position=(0, 0),
+                metadata={'context': 'hours', 'unit': 'hours'}
+            ))
+        
+        for value in numeric_info.get('currencies', []):
+            entities.append(Entity(
+                name=str(value),
+                entity_type=EntityType.NUMBER,
+                confidence=0.95,
+                original_text=str(value),
+                position=(0, 0),
+                metadata={'context': 'currency', 'unit': 'currency'}
+            ))
+        
+        # Extract comparison operators
+        comparisons = extract_comparison_operators(query)
+        for comp in comparisons:
+            entities.append(Entity(
+                name=f"{comp['operator']} {comp['value']}",
+                entity_type=EntityType.NUMBER,
+                confidence=0.9,
+                original_text=comp['original_text'],
+                position=(0, 0),
+                metadata={'context': 'comparison', 'operator': comp['operator'], 'value': comp['value']}
             ))
         
         return entities
     
     def _extract_date_entities(self, query: str) -> List[Entity]:
-        """Extract date-related entities from query"""
+        """Extract date-related entities from query using advanced NLP"""
         entities = []
         
-        # Date patterns
+        # Use the sophisticated date parsing from nlp.py
+        from nlp import normalize_date
+        
+        # Advanced date patterns that nlp.py can handle
         date_patterns = [
-            (r'\b\d{4}\b', EntityType.DATE),  # Year
-            (r'\b\d{1,2}/\d{1,2}/\d{4}\b', EntityType.DATE),  # MM/DD/YYYY
-            (r'\b\d{4}-\d{1,2}-\d{1,2}\b', EntityType.DATE),  # YYYY-MM-DD
-            (r'\b(January|February|March|April|May|June|July|August|September|October|November|December)\b', EntityType.DATE),
-            (r'\b(last|this|next)\s+(week|month|quarter|year)\b', EntityType.TIME_PERIOD),
+            r'\b(?:today|yesterday|tomorrow)\b',
+            r'\b(?:this|last|next)\s+(?:week|month|quarter|year)\b',
+            r'\b(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b',
+            r'\b(?:january|february|march|april|may|june|july|august|september|october|november|december)\b',
+            r'\b\d{1,2}\s+days?\s+ago\b',
+            r'\bin\s+\d{1,2}\s+days?\b',
+            r'\b\d{1,2}\s+weeks?\s+ago\b',
+            r'\bin\s+\d{1,2}\s+weeks?\b',
+            r'\d{1,2}[/-]\d{1,2}[/-]\d{2,4}',
+            r'\d{4}-\d{1,2}-\d{1,2}'
         ]
         
-        for pattern, entity_type in date_patterns:
+        for pattern in date_patterns:
             for match in re.finditer(pattern, query, re.IGNORECASE):
                 date_text = match.group()
                 start_pos, end_pos = match.span()
                 
-                entities.append(Entity(
-                    name=date_text,
-                    entity_type=entity_type,
-                    confidence=0.8,
-                    original_text=date_text,
-                    position=(start_pos, end_pos)
-                ))
+                # Use nlp.py's advanced date normalization
+                normalized_date = normalize_date(date_text)
+                
+                if normalized_date:
+                    # Determine entity type based on the normalized result
+                    entity_type = EntityType.TIME_PERIOD if normalized_date[0] != normalized_date[1] else EntityType.DATE
+                    
+                    entities.append(Entity(
+                        name=date_text,
+                        entity_type=entity_type,
+                        confidence=0.9,  # Higher confidence due to advanced parsing
+                        original_text=date_text,
+                        position=(start_pos, end_pos),
+                        metadata={'normalized_date': normalized_date}
+                    ))
         
         return entities
     
@@ -1174,6 +1279,52 @@ class SemanticIntentEngine:
                 )
         
         return suggestions[:3]  # Return top 3 suggestions
+
+    def generate_clarification_question(self, query_intent: QueryIntent) -> str:
+        """
+        Generate a clarification question based on a low-confidence intent.
+        
+        Args:
+            query_intent: The low-confidence QueryIntent object
+            
+        Returns:
+            A string with a user-facing clarification question.
+        """
+        # Start with a generic prompt
+        clarification = "I'm not completely sure what you're asking. "
+        
+        # Extract the most likely entities
+        entities = sorted(query_intent.entities, key=lambda x: x.confidence, reverse=True)
+        primary_entity = entities[0] if entities else None
+        
+        intent = query_intent.intent_type
+        
+        # Build a question based on intent and primary entity
+        if intent == IntentType.COUNT and primary_entity:
+            # Try to find a plausible table name from schema mapping
+            table_name = primary_entity.schema_mapping.table if primary_entity.schema_mapping else primary_entity.name
+            clarification += f"Did you mean to ask 'how many {table_name} are there'?"
+        
+        elif intent == IntentType.SELECT and primary_entity:
+            table_name = primary_entity.schema_mapping.table if primary_entity.schema_mapping else primary_entity.name
+            clarification += f"Are you trying to list all '{table_name}'?"
+            
+        elif intent == IntentType.AGGREGATE and primary_entity:
+            # Find the most likely aggregation function
+            agg_type = query_intent.aggregation_type.function if query_intent.aggregation_type else "total"
+            table_name = primary_entity.schema_mapping.table if primary_entity.schema_mapping else primary_entity.name
+            clarification += f"Are you asking for the '{agg_type}' of something in '{table_name}'?"
+            
+        elif primary_entity:
+            # Generic fallback if intent is less clear but an entity was found
+            entity_name = primary_entity.name
+            clarification += f"Is your question related to '{entity_name}'?"
+            
+        else:
+            # Very low confidence fallback
+            clarification += "Could you please rephrase your question?"
+            
+        return clarification
     
     def update_entity_patterns(self, entity_type: EntityType, new_examples: List[str]):
         """

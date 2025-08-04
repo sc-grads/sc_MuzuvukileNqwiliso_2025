@@ -1,11 +1,4 @@
 #!/usr/bin/env python3
-"""
-RAG-based SQL Agent - Main application integration for the flexible RAG-SQL system.
-
-This module integrates all RAG components into a unified system that can dynamically
-adapt to any database structure without hardcoded patterns or JSON dependencies.
-"""
-
 import os
 import time
 import logging
@@ -26,6 +19,7 @@ from adaptive_learning_engine import AdaptiveLearningEngine
 from semantic_error_handler import SemanticErrorHandler, ErrorType, RecoveryPlan
 from vector_config import VectorConfig
 from sentence_transformers import SentenceTransformer
+from query_intent_classifier import QueryIntentClassifier, QueryType
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -44,6 +38,8 @@ class RAGQueryResult:
     error_message: Optional[str]
     recovery_plan: Optional[RecoveryPlan]
     metadata: Dict[str, Any]
+    needs_clarification: bool = False
+    clarification_question: Optional[str] = None
 
 
 @dataclass
@@ -141,6 +137,9 @@ class RAGSQLAgent:
             embedding_model=config['embedding_model']
         )
         
+        # Initialize query intent classifier
+        self.query_classifier = QueryIntentClassifier()
+        
         # Initialize dynamic SQL generator
         self.sql_generator = DynamicSQLGenerator(
             vector_store=self.vector_store,
@@ -177,9 +176,14 @@ class RAGSQLAgent:
         
         try:
             # Get schema metadata from existing system
-            schema_metadata, column_map, existing_vector_store, enhanced_data = get_schema_metadata()
+            schema_metadata, column_map, _, enhanced_data = get_schema_metadata()
             
             if schema_metadata:
+                logger.info(f"Schema metadata type: {type(schema_metadata)}")
+                if isinstance(schema_metadata, list) and len(schema_metadata) > 0:
+                    logger.info(f"First item type: {type(schema_metadata[0])}")
+                    logger.info(f"First item: {schema_metadata[0]}")
+                
                 # Ingest schema into our vector store
                 self.vector_store.ingest_schema(schema_metadata)
                 
@@ -191,15 +195,18 @@ class RAGSQLAgent:
                 logger.warning("No schema metadata available")
                 
         except Exception as e:
+            import traceback
             logger.error(f"Failed to initialize schema: {e}")
+            logger.error(f"Traceback: {traceback.format_exc()}")
             raise
     
-    def process_query(self, natural_language_query: str) -> RAGQueryResult:
+    def process_query(self, natural_language_query: str, conversation_context: Optional[Dict[str, Any]] = None) -> RAGQueryResult:
         """
         Process a natural language query using the RAG system.
         
         Args:
             natural_language_query: The user's natural language query
+            conversation_context: Optional dictionary with context from previous turn
             
         Returns:
             RAGQueryResult with processing results
@@ -207,18 +214,47 @@ class RAGSQLAgent:
         start_time = time.time()
         self.stats.total_queries_processed += 1
         
-        logger.info(f"Processing query: {natural_language_query[:100]}...")
+        # Use the original query without context modification for intent analysis
+        # Context will be used later in SQL generation if needed
+        full_query = natural_language_query
+        
+        # Store context for later use
+        has_context = conversation_context and conversation_context.get('sql_query')
+        if has_context:
+            logger.info(f"Conversational context available from previous query")
+
+        logger.info(f"Processing query: {full_query[:100]}...")
         
         try:
             # Step 1: Analyze query intent
-            query_intent = self.intent_engine.analyze_query(natural_language_query)
+            query_intent = self.intent_engine.analyze_query(full_query)
             logger.info(f"Query intent: {query_intent.intent_type.value} (confidence: {query_intent.confidence:.3f})")
-            
+
+            # Step 1.5: Check confidence and ask for clarification if needed
+            CONFIDENCE_THRESHOLD = 0.3  # Lowered threshold to be less restrictive
+            if query_intent.confidence < CONFIDENCE_THRESHOLD:
+                logger.warning(f"Query confidence ({query_intent.confidence:.3f}) is below threshold ({CONFIDENCE_THRESHOLD}). Asking for clarification.")
+                clarification_question = self.intent_engine.generate_clarification_question(query_intent)
+                
+                return RAGQueryResult(
+                    success=False,
+                    sql_query=None,
+                    results=None,
+                    columns=None,
+                    confidence=query_intent.confidence,
+                    processing_time=time.time() - start_time,
+                    error_message="Low confidence in query interpretation.",
+                    recovery_plan=None,
+                    metadata={'intent_type': query_intent.intent_type.value},
+                    needs_clarification=True,
+                    clarification_question=clarification_question
+                )
+
             # Step 2: Check for learned patterns (if learning is enabled)
             recommended_sql = None
             if self.learning_engine:
                 recommendation = self.learning_engine.get_pattern_recommendation(
-                    natural_language_query, query_intent
+                    full_query, query_intent
                 )
                 if recommendation:
                     recommended_sql, recommendation_confidence = recommendation
@@ -242,7 +278,7 @@ class RAGSQLAgent:
                 )
             else:
                 # Generate new SQL using dynamic generator
-                sql_query_obj = self.sql_generator.query_builder.build_sql_query(query_intent)
+                sql_query_obj = self.sql_generator.generate_sql(query_intent, conversation_context)
             
             logger.info(f"Generated SQL: {sql_query_obj.sql}")
             
