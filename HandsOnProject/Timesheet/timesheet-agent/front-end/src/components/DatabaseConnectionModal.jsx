@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { IoIosClose } from "react-icons/io";
+import { IoEyeOffOutline, IoEyeOutline } from "react-icons/io5";
 import { ThreeDots } from "react-loader-spinner";
 
 export const DatabaseConnectionModal = ({
@@ -17,6 +18,11 @@ export const DatabaseConnectionModal = ({
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const modalRef = useRef(null);
+  const [notHidden, setHidePassword] = useState(false);
+
+  const toggleHidePassword = () => {
+    setHidePassword(!notHidden);
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -170,13 +176,26 @@ export const DatabaseConnectionModal = ({
           <div className="form-control">
             <label htmlFor="password">Password</label>
             <input
-              type="password"
+              type={notHidden ? "text" : "password"}
               name="password"
               id="password"
               value={connectionDetails.password}
               placeholder="Password"
               onChange={handleChange}
             />
+            {notHidden ? (
+              <IoEyeOutline
+                className="hide-password"
+                onClick={toggleHidePassword}
+                role="button"
+              />
+            ) : (
+              <IoEyeOffOutline
+                className="hide-password"
+                onClick={toggleHidePassword}
+                role="button"
+              />
+            )}
           </div>
           <div className="form-actions">
             {isLoading && (

@@ -625,6 +625,7 @@ span.choose-label {
   align-items: start;
   flex-direction: column;
   gap: 0.125rem;
+  position: relative;
 }
 
 .form-control label {
@@ -645,6 +646,15 @@ span.choose-label {
 
 .form-control input:focus {
   outline: 2px solid #e2e2e2;
+}
+
+.modal-content .hide-password {
+  position: absolute;
+  right: 1rem;
+  top: 65%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: gray;
 }
 
 /* MAIN CONTENT */
