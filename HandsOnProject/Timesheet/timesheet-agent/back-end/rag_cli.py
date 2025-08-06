@@ -68,6 +68,13 @@ def main(refresh_schema=False, database=None):
                     'sql_query': rag_result.sql_query,
                     'tables_used': rag_result.metadata.get('tables_used', [])
                 }
+
+                # Display the tables the agent chose to use
+                if rag_result.metadata and rag_result.metadata.get('tables_used'):
+                    print("\n Agent selected the following tables:")
+                    for table in rag_result.metadata['tables_used']:
+                        print(f"   - {table}")
+
                 print("\n Generated SQL Query:")
                 print(f"   {rag_result.sql_query}")
 

@@ -123,7 +123,7 @@ class RAGSQLAgent:
         os.makedirs(self.vector_store_path, exist_ok=True)
         
         # Initialize embedder once
-        self.embedder = SentenceTransformer(config['embedding_model'])
+        self.embedder = SentenceTransformer('paraphrase-MiniLM-L3-v2')
 
         # Initialize vector schema store
         self.vector_store = VectorSchemaStore(
@@ -150,8 +150,7 @@ class RAGSQLAgent:
         if self.enable_learning:
             self.learning_engine = AdaptiveLearningEngine(
                 vector_store=self.vector_store,
-                learning_data_path=os.path.join(self.vector_store_path, "learning_patterns"),
-                embedding_model=config['embedding_model']
+                learning_data_path=os.path.join(self.vector_store_path, "learning_patterns")
             )
         else:
             self.learning_engine = None
@@ -162,8 +161,7 @@ class RAGSQLAgent:
                 vector_store=self.vector_store,
                 intent_engine=self.intent_engine,
                 learning_engine=self.learning_engine,
-                error_data_path=os.path.join(self.vector_store_path, "error_patterns"),
-                embedding_model=config['embedding_model'] # Pass embedding_model instead of embedder
+                error_data_path=os.path.join(self.vector_store_path, "error_patterns")
             )
         else:
             self.error_handler = None
@@ -251,34 +249,26 @@ class RAGSQLAgent:
                 )
 
             # Step 2: Check for learned patterns (if learning is enabled)
-            recommended_sql = None
             if self.learning_engine:
-                recommendation = self.learning_engine.get_pattern_recommendation(
+                recommended_sql, recommendation_confidence = self.learning_engine.get_pattern_recommendation(
                     full_query, query_intent
                 )
-                if recommendation:
-                    recommended_sql, recommendation_confidence = recommendation
-                    logger.info(f"Found learned pattern with confidence: {recommendation_confidence:.3f}")
-            
-            # Step 3: Generate SQL query
-            if recommended_sql and recommendation_confidence > 0.8:
-                # Use learned pattern
-                sql_query_obj = SQLQuery(
-                    sql=recommended_sql,
-                    confidence=recommendation_confidence,
-                    clauses=[],
-                    tables_used=[],
-                    columns_used=[],
-                    joins=[],
-                    complexity_score=0.5,
-                    generation_metadata={
-                        "source": "learned_pattern",
-                        "recommendation_confidence": recommendation_confidence
-                    }
-                )
+                if recommended_sql and recommendation_confidence > 0.85:  # High confidence threshold
+                    logger.info(f"Using learned pattern with confidence: {recommendation_confidence:.3f}")
+                    sql_query_obj = SQLQuery(
+                        sql=recommended_sql,
+                        confidence=recommendation_confidence,
+                        # Simplified metadata for learned patterns
+                        clauses=[], tables_used=[], columns_used=[], joins=[],
+                        complexity_score=0.5, # Placeholder
+                        generation_metadata={'source': 'learned_pattern'}
+                    )
+                else:
+                    # Generate new SQL if no high-confidence pattern is found
+                    sql_query_obj = self.sql_generator.build_sql_query(query_intent, conversation_context)
             else:
-                # Generate new SQL using dynamic generator
-                sql_query_obj = self.sql_generator.generate_sql(query_intent, conversation_context)
+                # Default to dynamic generation if learning is disabled
+                sql_query_obj = self.sql_generator.build_sql_query(query_intent, conversation_context)
             
             logger.info(f"Generated SQL: {sql_query_obj.sql}")
             
@@ -301,17 +291,10 @@ class RAGSQLAgent:
                 
                 # Learn from success (if learning is enabled)
                 if self.learning_engine:
-                    execution_result = {
-                        'success': True,
-                        'execution_time': processing_time,
-                        'row_count': len(results) if results else 0,
-                        'tables_used': sql_query_obj.tables_used,
-                        'columns_used': sql_query_obj.columns_used
-                    }
                     self.learning_engine.learn_from_success(
                         natural_language_query,
                         sql_query_obj.sql,
-                        execution_result,
+                        {'row_count': len(results) if results else 0},
                         query_intent
                     )
                 
@@ -331,7 +314,8 @@ class RAGSQLAgent:
                         'intent_type': query_intent.intent_type.value,
                         'complexity_level': query_intent.complexity_level.value,
                         'generation_method': sql_query_obj.generation_metadata.get('source', 'dynamic'),
-                        'database': get_current_database()
+                        'database': get_current_database(),
+                        'tables_used': sql_query_obj.tables_used
                     }
                 )
             

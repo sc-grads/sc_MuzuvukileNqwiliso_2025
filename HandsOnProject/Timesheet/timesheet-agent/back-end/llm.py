@@ -857,6 +857,87 @@ def validate_schema_references(sql_query: str, schema_metadata: List[Dict]) -> T
     
     return len(errors) == 0, errors
 
+def generate_targeted_llm_sql(nl_query: str, schema_metadata: List[Dict], intent: str, entities: Dict) -> str:
+    """
+    Generate SQL using LLM with targeted prompts based on intent.
+    """
+    # Simplified schema representation for the prompt
+    schema_text_parts = []
+    for table in schema_metadata[:5]:  # Limit to the first 5 tables for brevity
+        columns = [f"[{col['name']}]" for col in table['columns'][:5]]  # Limit to 5 columns
+        table_text = f"[{table['schema']}].[{table['table']}]: {', '.join(columns)}"
+        schema_text_parts.append(table_text)
+    schema_text = "\n".join(schema_text_parts)
+
+    # Construct a targeted prompt based on the intent
+    prompt_template = """<s>[INST] Generate a SQL Server query based on the user's request and the provided schema.
+
+CONTEXT: The user wants to {intent}.
+
+SCHEMA:
+{schema_text}
+
+USER QUERY: "{nl_query}"
+
+RULES:
+- Use ONLY tables and columns from the schema provided.
+- Always use the [schema].[table] format.
+- Use TOP 10 for all SELECT queries to limit results.
+- Return only the SQL query, with no explanations or comments.
+
+[/INST]
+"""
+    
+    prompt = prompt_template.format(
+        intent=intent,
+        schema_text=schema_text,
+        nl_query=nl_query
+    )
+
+    try:
+        # Use the centralized LLM manager to invoke the model
+        response = llm_manager.invoke(prompt)
+        
+        # Clean up the response to get only the SQL
+        sql_query = response.strip().replace("`", "").replace(";", "")
+        if "SELECT" not in sql_query.upper():
+            # Fallback to simple query if LLM fails
+            if schema_metadata:
+                first_table = schema_metadata[0]
+                return f"SELECT TOP 10 * FROM [{first_table['schema']}].[{first_table['table']}]"
+            return "Error: LLM failed to generate valid SQL"
+        return sql_query
+
+    except Exception as e:
+        logger.error(f"Error generating SQL with LLM: {e}")
+        # Fallback to simple query
+        if schema_metadata:
+            first_table = schema_metadata[0]
+            return f"SELECT TOP 10 * FROM [{first_table['schema']}].[{first_table['table']}]"
+        return "Error: SQL generation failed"
+
+def validate_generated_sql(sql_query: str, schema_metadata: List[Dict]) -> tuple[bool, str]:
+    """
+    Quick validation of generated SQL.
+    """
+    if not sql_query or not sql_query.strip():
+        return False, "Query is empty"
+    
+    if sql_query.startswith("Error:"):
+        return False, sql_query
+    
+    if "SELECT" not in sql_query.upper():
+        return False, "Only SELECT queries are allowed"
+    
+    # Basic check for blocked keywords to prevent system table access
+    blocked_keywords = ['sys.', 'information_schema.', 'master.', 'msdb.']
+    sql_lower = sql_query.lower()
+    for blocked in blocked_keywords:
+        if blocked in sql_lower:
+            return False, f"System table access is blocked: {blocked}"
+            
+    return True, "Valid"
+
 def generate_sql_query(nl_query, schema_metadata, column_map, entities, vector_store=None, previous_sql_query=None, error_feedback=None, enhanced_data=None, conversation_context=None):
     """Enhanced SQL query generation with improved accuracy, validation, and conversation context support."""
     
@@ -916,13 +997,24 @@ def generate_sql_query(nl_query, schema_metadata, column_map, entities, vector_s
         logger.info(f"Generating SQL for query: {nl_query}")
         logger.info(f"Using model: {llm_manager.current_model}")
         
-        # Try fast pattern-based generation first for simple queries
-        from fast_sql_generator import generate_fast_sql, validate_fast_sql
+        # Generate SQL directly with LLM using targeted prompts
+        logger.info("Generating SQL using LLM with targeted prompts...")
         
-        # Always try fast generation first
-        logger.info("Attempting fast pattern-based SQL generation...")
-        fast_sql = generate_fast_sql(nl_query, schema_metadata)
-        is_valid, validation_msg = validate_fast_sql(fast_sql, schema_metadata)
+        # Determine intent for better prompting
+        query_lower = nl_query.lower().strip()
+        intent = "execute a query"  # Default intent
+        if any(word in query_lower for word in ['list', 'show', 'display', 'get']):
+            intent = "list records"
+        elif any(word in query_lower for word in ['count', 'how many', 'number of']):
+            intent = "count records"
+        elif any(word in query_lower for word in ['project', 'client', 'employee']):
+            intent = "find specific information"
+        
+        # Generate SQL using targeted LLM approach
+        fast_sql = generate_targeted_llm_sql(nl_query, schema_metadata, intent, entities)
+        
+        # Validate the generated SQL
+        is_valid, validation_msg = validate_generated_sql(fast_sql, schema_metadata)
         
         if is_valid:
             logger.info(f"Fast generation successful: {fast_sql}")

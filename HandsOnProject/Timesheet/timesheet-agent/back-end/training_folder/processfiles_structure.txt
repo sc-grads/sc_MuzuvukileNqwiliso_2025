@@ -1,3 +1,0 @@
-FileID	FilePath	FileName	EmployeeID	RowCount	DataHash	LastModifiedDate	ProcessedDate
-1	C:\Timesheets\Karabo Tsaoane\Karabo_Tsaoane_April_FinalWeek.xlsx	Karabo_Tsaoane_April_FinalWeek.xlsx	1000	30	64D6F10FE518805FA4D7420A29233B9925F1BB35528100240D2607581369F94E	2025-07-22 00:00:00.000	2025-07-28 18:53:12.050
-2	C:\Timesheets\Karabo Tsaoane\Karabo_Tsaoane_March_Final.xlsx	Karabo_Tsaoane_March_Final.xlsx	1000	31	E44C7371624F27DB5337D3731F112CE64D6D3D50B3B7EDBA93FA35A5A4023842	2025-06-03 00:00:00.000	2025-07-28 18:53:12.727

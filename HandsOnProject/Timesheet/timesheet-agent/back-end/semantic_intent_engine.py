@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 
 class IntentType(Enum):
     """Enumeration of query intent types"""
+    GREETING = "greeting"
     SELECT = "select"
     AGGREGATE = "aggregate"
     JOIN = "join"
@@ -153,11 +154,21 @@ class SemanticIntentEngine:
         # Temporal patterns for date/time extraction
         self.temporal_patterns = self._initialize_temporal_patterns()
         
+        self.greeting_patterns = [
+            r'\b(hi|hello|hey|good\s+(morning|afternoon|evening))\b',
+            r'\bhow\s+are\s+you\b',
+            r'\bwhat\s+can\s+you\s+do\b'
+        ]
+        
         logger.info(f"SemanticIntentEngine initialized with model: {embedding_model}")
     
     def _initialize_intent_patterns(self):
         """Initialize intent classification patterns with vector embeddings"""
         intent_examples = {
+            IntentType.GREETING: [
+                "hello", "hi", "hey", "good morning", "good afternoon", 
+                "how are you", "what can you do"
+            ],
             IntentType.SELECT: [
                 "show me", "list all", "get", "find", "display", "what are",
                 "who are", "which", "retrieve", "fetch"
@@ -333,6 +344,21 @@ class SemanticIntentEngine:
             QueryIntent object with extracted semantic information
         """
         logger.info(f"Analyzing query: {nl_query}")
+        
+        # Fast-path for simple greetings
+        query_lower = nl_query.lower().strip()
+        if any(re.search(pattern, query_lower) for pattern in self.greeting_patterns):
+            return QueryIntent(
+                intent_type=IntentType.GREETING,
+                confidence=0.99,
+                entities=[],
+                temporal_context=None,
+                aggregation_type=None,
+                complexity_level=ComplexityLevel.SIMPLE,
+                original_query=nl_query,
+                query_vector=np.array([]),
+                semantic_features={'query_length': len(nl_query.split())}
+            )
         
         # Generate query vector
         query_vector = self._normalize_vector(self.embedder.encode(nl_query))

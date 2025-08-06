@@ -936,14 +936,14 @@ WHERE e.id NOT IN (
         
         # Add semantic scores
         for table_name, semantic_score in semantic_matches.items():
-            combined_scores[table_name] = semantic_score * 0.6  # 60% weight for semantics
+            combined_scores[table_name] = semantic_score * 0.4  # 40% weight for semantics
         
         # Add keyword scores
         for table_name, keyword_score in keyword_matches.items():
             if table_name in combined_scores:
-                combined_scores[table_name] += keyword_score * 0.4  # 40% weight for keywords
+                combined_scores[table_name] += keyword_score * 0.6  # 60% weight for keywords
             else:
-                combined_scores[table_name] = keyword_score * 0.4
+                combined_scores[table_name] = keyword_score * 0.6
         
         # Find best match
         if combined_scores:
@@ -1100,60 +1100,76 @@ WHERE e.id NOT IN (
         return columns
     
     def _generate_vector_based_sql(self, query_intent: QueryIntent, conversation_context: Optional[Dict[str, Any]] = None) -> str:
-        """Fallback to original vector-based approach."""
-        # This is the original complex approach - keep as fallback
+        """
+        Generate SQL using a holistic approach that considers all parts of the query together.
+        This new implementation replaces the old, clause-by-clause method.
+        """
         try:
-            # Initialize SQL clauses
-            clauses = []
-            tables_used = []
-            columns_used = []
-            joins = []
+            # 1. Identify all potentially relevant columns from the initial intent
+            initial_columns = self._select_columns_from_intent(query_intent, self.vector_store.get_all_tables())
+
+            # 2. Determine the final set of tables based on the columns needed for SELECT, WHERE, and GROUP BY
+            final_tables = self._determine_final_tables(query_intent, initial_columns)
             
-            # Step 1: Determine relevant tables using vector similarity
-            relevant_tables = self._select_tables_from_intent(query_intent)
-            tables_used.extend([table.table_name for table in relevant_tables])
-            
-            # Step 2: Determine relevant columns using vector similarity
-            relevant_columns = self._select_columns_from_intent(query_intent, relevant_tables)
-            columns_used.extend([f"{col.table_name}.{col.column_name}" for col in relevant_columns])
-            
-            # Step 3: Build SELECT clause based on intent
-            select_clause = self._build_select_clause(query_intent, relevant_columns)
-            clauses.append(select_clause)
-            
-            # Step 4: Build FROM clause with primary table
-            from_clause = self._build_from_clause(relevant_tables)
-            clauses.append(from_clause)
-            
-            # Step 5: Build JOIN clauses if multiple tables are needed
-            if len(relevant_tables) > 1:
-                join_clauses, join_conditions = self._build_join_clauses(relevant_tables, query_intent)
+            # 3. Determine the final set of columns based on the final tables
+            final_columns = [col for col in initial_columns if col.table_name in [t.table_name for t in final_tables]]
+
+            # 4. Build the JOIN clauses first, as this determines table aliases and availability
+            join_clauses, join_conditions = self._build_join_clauses(final_tables, query_intent)
+
+            # 5. Build the other clauses using the context of the final tables and joins
+            select_clause = self._build_select_clause(query_intent, final_columns)
+            from_clause = self._build_from_clause(final_tables)
+            where_clause = self._build_where_clause(query_intent, final_columns, final_tables)
+            group_by_clause = self._build_group_by_clause(query_intent, final_columns)
+            order_by_clause = self._build_order_by_clause(query_intent, final_columns)
+
+            # 6. Assemble the final query
+            clauses = [select_clause, from_clause]
+            if join_clauses:
                 clauses.extend(join_clauses)
-                joins.extend(join_conditions)
-            
-            # Step 6: Build WHERE clause from entities (but filter out query words)
-            where_clause = self._build_where_clause(query_intent, relevant_columns)
             if where_clause:
                 clauses.append(where_clause)
-            
-            # Step 7: Build GROUP BY clause if aggregation is needed
-            if query_intent.aggregation_type:
-                group_by_clause = self._build_group_by_clause(query_intent, relevant_columns)
-                if group_by_clause:
-                    clauses.append(group_by_clause)
-            
-            # Step 8: Build ORDER BY clause based on intent
-            order_by_clause = self._build_order_by_clause(query_intent, relevant_columns)
+            if group_by_clause:
+                clauses.append(group_by_clause)
             if order_by_clause:
                 clauses.append(order_by_clause)
             
-            # Step 9: Combine clauses into final SQL
             sql = self._combine_clauses(clauses)
             return sql
-            
+
         except Exception as e:
-            logger.error(f"Vector-based SQL generation failed: {e}")
-            return "Error: Unable to generate SQL"
+            logger.error(f"Holistic vector-based SQL generation failed: {e}")
+            return "Error: Unable to generate SQL from vector-based approach"
+
+    def _determine_final_tables(self, query_intent: QueryIntent, columns: List[ColumnMatch]) -> List[TableMatch]:
+        """Determines the final set of tables required to build the query."""
+        table_names = set()
+
+        # Add tables from columns needed for SELECT
+        for col in columns:
+            table_names.add(col.table_name)
+
+        # Add tables from entities in WHERE clause
+        for entity in query_intent.entities:
+            if entity.schema_mapping and entity.schema_mapping.table:
+                table_names.add(entity.schema_mapping.table)
+
+        # Add tables from GROUP BY clause
+        if query_intent.aggregation_type and query_intent.aggregation_type.group_by_columns:
+            for group_col_name in query_intent.aggregation_type.group_by_columns:
+                for col in columns:
+                    if col.column_name == group_col_name:
+                        table_names.add(col.table_name)
+        
+        # Convert table names back to TableMatch objects
+        all_tables = self.vector_store.get_all_tables()
+        final_tables = [table for table in all_tables if table.table_name in table_names]
+
+        if not final_tables:
+            return self._select_tables_from_intent(query_intent)
+
+        return final_tables
     
     def _select_tables_from_intent(self, query_intent: QueryIntent) -> List[TableMatch]:
         """
@@ -1634,7 +1650,7 @@ WHERE e.id NOT IN (
         # Default fallback
         return JoinType.INNER
     
-    def _build_where_clause(self, query_intent: QueryIntent, columns: List[ColumnMatch]) -> Optional[SQLClause]:
+    def _build_where_clause(self, query_intent: QueryIntent, columns: List[ColumnMatch], all_tables: List[TableMatch]) -> Optional[SQLClause]:
         """
         Build WHERE clause from extracted entities.
         
