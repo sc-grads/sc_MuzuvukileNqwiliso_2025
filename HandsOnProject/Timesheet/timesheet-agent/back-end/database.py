@@ -444,8 +444,8 @@ def get_schema_metadata():
                 json.dump(cache_data, f, indent=2)
             with open(column_map_file, "w") as f:
                 json.dump(column_map, f, indent=2)
-            with open(enhanced_cache_file, "w") as f:
-                json.dump(enhanced_data, f, indent=2)
+            # with open(enhanced_cache_file, "w") as f:
+            #     json.dump(enhanced_data, f, indent=2)
             
             print(f"Hybrid cache saved successfully")
             

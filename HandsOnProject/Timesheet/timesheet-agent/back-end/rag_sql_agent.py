@@ -13,13 +13,13 @@ from config import USE_LIVE_DB, get_current_database
 
 # Import RAG components
 from vector_schema_store import VectorSchemaStore
-from semantic_intent_engine import SemanticIntentEngine, QueryIntent
+from improved_semantic_intent_engine import ImprovedSemanticIntentEngine, QueryIntent
 from dynamic_sql_generator import DynamicSQLGenerator, SQLQuery
 from adaptive_learning_engine import AdaptiveLearningEngine
 from semantic_error_handler import SemanticErrorHandler, ErrorType, RecoveryPlan
 from vector_config import VectorConfig
 from sentence_transformers import SentenceTransformer
-from query_intent_classifier import QueryIntentClassifier, QueryType
+# from query_intent_classifier import QueryIntentClassifier, QueryType  # Not needed
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -132,13 +132,13 @@ class RAGSQLAgent:
         )
         
         # Initialize semantic intent engine
-        self.intent_engine = SemanticIntentEngine(
+        self.intent_engine = ImprovedSemanticIntentEngine(
             vector_store=self.vector_store,
             embedding_model=config['embedding_model']
         )
         
         # Initialize query intent classifier
-        self.query_classifier = QueryIntentClassifier()
+        # self.query_classifier = QueryIntentClassifier()  # Not needed with ImprovedSemanticIntentEngine
         
         # Initialize dynamic SQL generator
         self.sql_generator = DynamicSQLGenerator(
@@ -174,7 +174,15 @@ class RAGSQLAgent:
         
         try:
             # Get schema metadata from existing system
-            schema_metadata, column_map, _, enhanced_data = get_schema_metadata()
+            schema_result = get_schema_metadata()
+            if isinstance(schema_result, tuple):
+                schema_metadata = schema_result[0]
+                column_map = schema_result[1] if len(schema_result) > 1 else {}
+                enhanced_data = schema_result[3] if len(schema_result) > 3 else None
+            else:
+                schema_metadata = schema_result
+                column_map = {}
+                enhanced_data = None
             
             if schema_metadata:
                 logger.info(f"Schema metadata type: {type(schema_metadata)}")
@@ -248,27 +256,48 @@ class RAGSQLAgent:
                     clarification_question=clarification_question
                 )
 
-            # Step 2: Check for learned patterns (if learning is enabled)
+            # Step 2: Predict SQL features dynamically using DynamicFeaturePredictor
+            schema_result = get_schema_metadata()
+            if isinstance(schema_result, tuple):
+                schema_metadata = schema_result[0]
+            else:
+                schema_metadata = schema_result
+            
+            from dynamic_feature_predictor import DynamicFeaturePredictor
+            
+            feature_predictor = DynamicFeaturePredictor(self.vector_store, schema_metadata)
+            predicted_features = feature_predictor.predict_sql_features(query_intent, full_query)
+            
+            logger.info(f"Predicted tables: {predicted_features.tables}")
+            logger.info(f"Predicted complexity: {predicted_features.complexity}")
+            logger.info(f"Prediction confidence: {predicted_features.confidence:.3f}")
+
+            # Step 3: Check for learned patterns (if learning is enabled)
             if self.learning_engine:
-                recommended_sql, recommendation_confidence = self.learning_engine.get_pattern_recommendation(
+                recommendation = self.learning_engine.get_pattern_recommendation(
                     full_query, query_intent
                 )
-                if recommended_sql and recommendation_confidence > 0.85:  # High confidence threshold
-                    logger.info(f"Using learned pattern with confidence: {recommendation_confidence:.3f}")
-                    sql_query_obj = SQLQuery(
-                        sql=recommended_sql,
-                        confidence=recommendation_confidence,
-                        # Simplified metadata for learned patterns
-                        clauses=[], tables_used=[], columns_used=[], joins=[],
-                        complexity_score=0.5, # Placeholder
-                        generation_metadata={'source': 'learned_pattern'}
-                    )
+                if recommendation:
+                    recommended_sql, recommendation_confidence = recommendation
+                    if recommended_sql and recommendation_confidence > 0.85:  # High confidence threshold
+                        logger.info(f"Using learned pattern with confidence: {recommendation_confidence:.3f}")
+                        sql_query_obj = SQLQuery(
+                            sql=recommended_sql,
+                            confidence=recommendation_confidence,
+                            # Simplified metadata for learned patterns
+                            clauses=[], tables_used=predicted_features.tables, columns_used=predicted_features.columns, joins=[],
+                            complexity_score=0.5, # Placeholder
+                            generation_metadata={'source': 'learned_pattern'}
+                        )
+                    else:
+                        # Step 4: Generate SQL using predicted features
+                        sql_query_obj = self.sql_generator.generate_sql(query_intent, predicted_features, conversation_context)
                 else:
-                    # Generate new SQL if no high-confidence pattern is found
-                    sql_query_obj = self.sql_generator.build_sql_query(query_intent, conversation_context)
+                    # Step 4: Generate SQL using predicted features
+                    sql_query_obj = self.sql_generator.generate_sql(query_intent, predicted_features, conversation_context)
             else:
-                # Default to dynamic generation if learning is disabled
-                sql_query_obj = self.sql_generator.build_sql_query(query_intent, conversation_context)
+                # Step 4: Generate SQL using predicted features (default path)
+                sql_query_obj = self.sql_generator.generate_sql(query_intent, predicted_features, conversation_context)
             
             logger.info(f"Generated SQL: {sql_query_obj.sql}")
             
@@ -424,7 +453,10 @@ class RAGSQLAgent:
         """Update success statistics"""
         # Update average confidence
         total_successful = self.stats.successful_queries
-        if total_successful == 1:
+        if total_successful <= 0:
+            # Handle edge case where successful_queries is 0 or negative
+            self.stats.average_confidence = 0.0
+        elif total_successful == 1:
             self.stats.average_confidence = confidence
         else:
             self.stats.average_confidence = (
@@ -432,7 +464,10 @@ class RAGSQLAgent:
             )
         
         # Update average processing time
-        if total_successful == 1:
+        if total_successful <= 0:
+            # Handle edge case where successful_queries is 0 or negative
+            self.stats.average_processing_time = 0.0
+        elif total_successful == 1:
             self.stats.average_processing_time = processing_time
         else:
             self.stats.average_processing_time = (

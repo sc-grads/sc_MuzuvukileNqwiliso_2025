@@ -989,6 +989,52 @@ class ImprovedSemanticIntentEngine:
         else:
             return ComplexityLevel.SIMPLE
     
+    def generate_clarification_question(self, query_intent: QueryIntent) -> str:
+        """
+        Generate a clarification question based on a low-confidence intent.
+        
+        Args:
+            query_intent: The low-confidence QueryIntent object
+            
+        Returns:
+            A string with a user-facing clarification question.
+        """
+        # Start with a generic prompt
+        clarification = "I'm not completely sure what you're asking. "
+        
+        # Extract the most likely entities
+        entities = sorted(query_intent.entities, key=lambda x: x.confidence, reverse=True)
+        primary_entity = entities[0] if entities else None
+        
+        intent = query_intent.intent_type
+        
+        # Build a question based on intent and primary entity
+        if intent == IntentType.COUNT and primary_entity:
+            # Try to find a plausible table name from schema mapping
+            table_name = primary_entity.name
+            clarification += f"Did you mean to ask 'how many {table_name} are there'?"
+        
+        elif intent == IntentType.SELECT and primary_entity:
+            table_name = primary_entity.name
+            clarification += f"Are you trying to list all '{table_name}'?"
+            
+        elif intent in [IntentType.SUM, IntentType.AVERAGE, IntentType.MAX, IntentType.MIN] and primary_entity:
+            # Find the most likely aggregation function
+            agg_type = intent.value.lower()
+            table_name = primary_entity.name
+            clarification += f"Are you asking for the '{agg_type}' of something in '{table_name}'?"
+            
+        elif primary_entity:
+            # Generic fallback if intent is less clear but an entity was found
+            entity_name = primary_entity.name
+            clarification += f"Is your question related to '{entity_name}'?"
+            
+        else:
+            # Very low confidence fallback
+            clarification += "Could you please rephrase your question?"
+            
+        return clarification
+
     def _extract_semantic_features(self, query: str, query_vector: np.ndarray) -> Dict[str, Any]:
         """Extract semantic features"""
         return {

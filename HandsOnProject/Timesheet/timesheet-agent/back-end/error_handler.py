@@ -637,8 +637,8 @@ class EnhancedErrorHandler:
         if response.suggestions:
             message_parts.append("💡 Suggestions:")
             for i, suggestion in enumerate(response.suggestions[:3], 1):
-                message_parts.append(f"   {i}. {suggestion.suggestion}")
-                if suggestion.example:
+                message_parts.append(f"   {i}. {suggestion.description}")
+                if hasattr(suggestion, 'example') and suggestion.example:
                     message_parts.append(f"      Example: {suggestion.example}")
             message_parts.append("")
         

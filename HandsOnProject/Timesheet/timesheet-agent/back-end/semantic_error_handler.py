@@ -20,7 +20,7 @@ import difflib
 
 # Import existing components
 from vector_schema_store import VectorSchemaStore, TableMatch, ColumnMatch
-from semantic_intent_engine import SemanticIntentEngine, QueryIntent, EntityType
+from improved_semantic_intent_engine import ImprovedSemanticIntentEngine, QueryIntent, EntityType
 from adaptive_learning_engine import AdaptiveLearningEngine, ErrorPattern
 
 # Configure logging
@@ -121,7 +121,7 @@ class SemanticErrorHandler:
     
     def __init__(self,
                  vector_store: VectorSchemaStore,
-                 intent_engine: SemanticIntentEngine,
+                 intent_engine: ImprovedSemanticIntentEngine,
                  learning_engine: AdaptiveLearningEngine,
                  error_data_path: str = "vector_data/error_patterns",
                  embedding_model: str = "all-MiniLM-L6-v2"):
@@ -130,7 +130,7 @@ class SemanticErrorHandler:
         
         Args:
             vector_store: VectorSchemaStore instance for schema context
-            intent_engine: SemanticIntentEngine for query understanding
+            intent_engine: ImprovedSemanticIntentEngine for query understanding
             learning_engine: AdaptiveLearningEngine for pattern learning
             error_data_path: Path to store error patterns
             embedding_model: Sentence transformer model name
