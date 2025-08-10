@@ -14,6 +14,7 @@ from typing import List, Dict, Any, Optional, Tuple
 from dataclasses import dataclass
 import logging
 from datetime import datetime
+import re
 
 from vector_schema_store import (
     VectorSchemaStore, SchemaVector, TableMatch, ColumnMatch, 
@@ -23,6 +24,81 @@ from vector_schema_store import (
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+# --- Helper functions for intelligent description generation ---
+
+def _split_camel_case(name: str) -> List[str]:
+    """Splits camelCase or PascalCase into words."""
+    # Handles cases like 'MyVariableName' -> ['My', 'Variable', 'Name']
+    # and 'HTTPRequestHandler' -> ['HTTP', 'Request', 'Handler']
+    s1 = re.sub('(.)([A-Z][a-z]+)', r'\1 \2', name)
+    return re.sub('([a-z0-9])([A-Z])', r'\1 \2', s1).split()
+
+def _generate_intelligent_description(name: str, element_type: str, context: Optional[Dict] = None) -> str:
+    """Generates a more sophisticated, human-readable description for a schema element."""
+    context = context or {}
+    words = _split_camel_case(name)
+    
+    # Clean common suffixes from the base name for better descriptions
+    base_name_for_desc = name.replace("ID", "").replace("Id", "").replace("Seq", "")
+    readable_base = ' '.join(_split_camel_case(base_name_for_desc)).lower()
+
+    if element_type == "table":
+        plural_name = readable_base
+        if not plural_name.endswith('s'):
+            # Handle simple plurals, can be improved for irregular nouns if needed
+            plural_name += 's'
+        return f"Stores and represents information about {plural_name} within the system."
+
+    if element_type == "column":
+        table_name = context.get("table_name", "the table")
+        table_readable_name = ' '.join(_split_camel_case(table_name)).lower()
+        col_lower = name.lower()
+
+        # --- Rule-based description generation for columns ---
+
+        # 1. Primary Keys
+        if col_lower in [pk.lower() for pk in context.get("pk_names", [])]:
+            return f"A unique identifier for each {table_readable_name} record."
+
+        # 2. Foreign Keys
+        if context.get("is_fk"):
+            target_table = context.get('target_table', 'another table').split('.')[-1]
+            target_readable_name = ' '.join(_split_camel_case(target_table)).lower()
+            return f"A foreign key that links this record to the '{target_table}' table, identifying the associated {target_readable_name}."
+
+        # 3. Common Naming Patterns (more specific)
+        if "name" in col_lower:
+            return f"The name of the {readable_base}."
+        if "description" in col_lower or "comment" in col_lower:
+            return f"A textual description, comment, or note providing additional details about this record."
+        if col_lower.startswith("is_") or col_lower.startswith("has_"):
+            action = ' '.join(_split_camel_case(name.replace("is_", "").replace("has_", ""))).lower()
+            return f"A boolean flag (true/false) indicating if the record {action}."
+        if "status" in col_lower:
+            return f"Indicates the current status or state of the {readable_base} (e.g., 'Active', 'Pending', 'Completed')."
+        if "type" in col_lower:
+            return f"Specifies the type or category of the {readable_base}."
+        if "date" in col_lower or "time" in col_lower:
+            if "start" in col_lower:
+                return f"The date and/or time when the {readable_base} begins."
+            if "end" in col_lower:
+                return f"The date and/or time when the {readable_base} ends."
+            if "created" in col_lower or "processed" in col_lower:
+                return f"The timestamp when this record was created or processed."
+            return f"A date and/or time value associated with the {readable_base}."
+        if "hours" in col_lower or "total" in col_lower or "count" in col_lower or "number" in col_lower:
+             return f"A numeric value representing the {readable_base}."
+        if "amount" in col_lower or "billable" in col_lower:
+            return f"A financial value representing the {readable_base}."
+        if "path" in col_lower or "file" in col_lower:
+            return f"The file path or name associated with this record."
+
+        # 4. Default fallback
+        return f"Stores data for the '{readable_base}' attribute of a {table_readable_name}."
+
+    return f"Data element: {name}"
 
 
 @dataclass
@@ -98,6 +174,40 @@ class SchemaIngestionEngine:
                 'sensitivity': 'medium'
             }
         }
+
+    def _enrich_schema_with_descriptions(self, schema_metadata: List[Dict]) -> List[Dict]:
+        """
+        Pre-processes schema metadata to add intelligent descriptions if they are missing.
+        This makes the schema more understandable for the LLM.
+        """
+        logger.info("Enriching schema with intelligent descriptions...")
+        for table_info in schema_metadata:
+            table_name = table_info.get("table")
+            # Only generate if description is missing or a generic default
+            if not table_info.get("description") or "Data table" in table_info.get("description") or "information table" in table_info.get("description"):
+                table_info["description"] = _generate_intelligent_description(table_name, "table")
+
+            pk_names = table_info.get("primary_keys", [])
+            
+            # Create a map of foreign keys for easy lookup
+            fk_map = {}
+            for rel in table_info.get("relationships", []):
+                fk_map[rel["source_column"]] = rel.get("target_table", "unknown")
+
+            for column in table_info.get("columns", []):
+                # Only generate if description is missing or a generic default
+                col_desc = column.get("description", "")
+                if not col_desc or "Data field" in col_desc or "Name field" in col_desc or "description field" in col_desc:
+                    col_name = column["name"]
+                    context = {"table_name": table_name, "pk_names": pk_names}
+                    
+                    if col_name in fk_map:
+                        context["is_fk"] = True
+                        context["target_table"] = fk_map[col_name]
+                    
+                    column["description"] = _generate_intelligent_description(col_name, "column", context)
+        
+        return schema_metadata
     
     def ingest_schema_with_enhancement(self, 
                                      schema_metadata: List[Dict],
@@ -124,6 +234,9 @@ class SchemaIngestionEngine:
         )
         
         try:
+            # First, enrich the raw schema with generated descriptions for better context
+            schema_metadata = self._enrich_schema_with_descriptions(schema_metadata)
+
             logger.info(f"Starting enhanced schema ingestion for {len(schema_metadata)} tables")
             
             # Store business patterns
@@ -166,7 +279,7 @@ class SchemaIngestionEngine:
         for table_metadata in schema_metadata:
             try:
                 schema_name = table_metadata.get('schema', 'default')
-                table_name = table_metadata.get('table_name', '')
+                table_name = table_metadata.get('table', '') # Changed from table_name to table
                 
                 if not table_name:
                     continue
@@ -216,7 +329,7 @@ class SchemaIngestionEngine:
         for table_metadata in schema_metadata:
             try:
                 schema_name = table_metadata.get('schema', 'default')
-                table_name = table_metadata.get('table_name', '')
+                table_name = table_metadata.get('table', '') # Changed from table_name to table
                 columns = table_metadata.get('columns', [])
                 
                 # Get table business context for column enhancement
@@ -308,7 +421,7 @@ class SchemaIngestionEngine:
             # Enhance existing vectors with cross-domain context
             for table_metadata in schema_metadata:
                 schema_name = table_metadata.get('schema', 'default')
-                table_name = table_metadata.get('table_name', '')
+                table_name = table_metadata.get('table', '') # Changed from table_name to table
                 
                 # Get existing table vector
                 table_element_id = self.vector_store._generate_element_id("table", schema_name, table_name)
@@ -355,7 +468,7 @@ class SchemaIngestionEngine:
     def _extract_column_business_context(self, column: Dict, table_name: str, table_context: Dict) -> Dict[str, Any]:
         """Extract comprehensive business context for a column."""
         column_name = column.get('name', '').lower()
-        data_type = column.get('data_type', '').lower()
+        data_type = column.get('type', '').lower() # Changed from data_type to type
         
         return {
             'business_meaning': self._infer_column_business_meaning(column_name, data_type),
@@ -406,7 +519,7 @@ class SchemaIngestionEngine:
     def _create_enhanced_column_embedding_text(self, column: Dict, table_name: str, business_context: Dict) -> str:
         """Create rich embedding text for column with business context."""
         column_name = column.get('name', '')
-        data_type = column.get('data_type', '')
+        data_type = column.get('type', '') # Changed from data_type to type
         
         text_parts = [
             f"Column: {column_name}",
@@ -457,7 +570,7 @@ class SchemaIngestionEngine:
         usage_patterns = business_context.get('usage_patterns', [])
         tags.extend([f"usage_{pattern}" for pattern in usage_patterns])
         
-        return tags
+        return list(set(tags))
     
     def _generate_column_semantic_tags(self, column: Dict, business_context: Dict) -> List[str]:
         """Generate semantic tags for column vectors."""
@@ -487,7 +600,7 @@ class SchemaIngestionEngine:
         if not column.get('nullable', True):
             tags.append('required')
         
-        return tags
+        return list(set(tags))
     
     # Business context analysis methods
     def _infer_business_domain(self, table_name: str, table_metadata: Dict) -> str:
@@ -520,12 +633,12 @@ class SchemaIngestionEngine:
         column_names = [col.get('name', '').lower() for col in columns]
         
         # Junction/Bridge table (many-to-many relationships)
-        id_columns = [col for col in column_names if col.endswith('_id')]
-        if len(id_columns) >= 2 and len(columns) <= 4:
+        id_columns = [col for col in column_names if col.endswith('_id') or col.endswith('id')]
+        if len(id_columns) >= 2 and len(columns) <= 5:
             return 'junction'
         
         # Lookup/Reference table
-        if len(columns) <= 3 and any(col in column_names for col in ['name', 'code', 'description']):
+        if len(columns) <= 3 and any(col in column_names for col in ['name', 'code', 'description', 'type']):
             return 'lookup'
         
         # Log/Audit table
@@ -533,7 +646,7 @@ class SchemaIngestionEngine:
             return 'log'
         
         # Transaction table
-        if any(pattern in table_lower for pattern in ['transaction', 'entry', 'record']):
+        if any(pattern in table_lower for pattern in ['transaction', 'entry', 'record', 'request']):
             return 'transaction'
         
         # Master/Entity table
@@ -547,11 +660,11 @@ class SchemaIngestionEngine:
         table_lower = table_name.lower()
         
         # High priority patterns
-        if any(pattern in table_lower for pattern in ['employee', 'customer', 'project', 'order', 'invoice']):
+        if any(pattern in table_lower for pattern in ['employee', 'customer', 'project', 'order', 'invoice', 'client']):
             return 'high'
         
         # Low priority patterns
-        if any(pattern in table_lower for pattern in ['log', 'audit', 'temp', 'backup', 'cache']):
+        if any(pattern in table_lower for pattern in ['log', 'audit', 'temp', 'backup', 'cache', 'processedfiles']):
             return 'low'
         
         # Check domain priority
@@ -567,11 +680,11 @@ class SchemaIngestionEngine:
         columns = [col.get('name', '').lower() for col in table_metadata.get('columns', [])]
         
         # OLTP patterns
-        if any(col.endswith('_id') for col in columns):
+        if any(col.endswith('_id') or col.endswith('id') for col in columns):
             patterns.append('transactional')
         
         # Reporting patterns
-        if any(pattern in table_lower for pattern in ['report', 'summary', 'aggregate']):
+        if any(pattern in table_lower for pattern in ['report', 'summary', 'aggregate', 'forecast']):
             patterns.append('reporting')
         
         # Audit patterns
@@ -579,14 +692,14 @@ class SchemaIngestionEngine:
             patterns.append('audit')
         
         # Master data patterns
-        if any(pattern in table_lower for pattern in ['master', 'reference', 'lookup']):
+        if any(pattern in table_lower for pattern in ['master', 'reference', 'lookup', 'type']):
             patterns.append('master_data')
         
         # Time-series patterns
-        if any(col in columns for col in ['created_date', 'updated_date', 'timestamp']):
+        if any(col in columns for col in ['created_date', 'updated_date', 'timestamp', 'date']):
             patterns.append('time_series')
         
-        return patterns if patterns else ['general']
+        return list(set(patterns)) if patterns else ['general']
     
     def _assess_data_sensitivity(self, table_metadata: Dict) -> str:
         """Assess data sensitivity level of a table."""
@@ -628,7 +741,7 @@ class SchemaIngestionEngine:
         column_lower = column_name.lower()
         
         # Identity columns
-        if column_lower in ['id', 'key'] or column_lower.endswith('_id'):
+        if column_lower.endswith('id'):
             return 'identifier'
         
         # Name columns
@@ -640,11 +753,11 @@ class SchemaIngestionEngine:
             return 'temporal_field'
         
         # Status/state columns
-        if any(pattern in column_lower for pattern in ['status', 'state', 'flag', 'active']):
+        if any(pattern in column_lower for pattern in ['status', 'state', 'flag', 'active', 'type']):
             return 'status_field'
         
         # Measurement columns
-        if any(pattern in column_lower for pattern in ['amount', 'count', 'quantity', 'hours', 'rate']):
+        if any(pattern in column_lower for pattern in ['amount', 'count', 'quantity', 'hours', 'rate', 'total', 'number']):
             return 'measurement_field'
         
         # Contact information
@@ -762,7 +875,7 @@ class SchemaIngestionEngine:
         if any(pattern in column_lower for pattern in ['name', 'title', 'status']) and 'id' not in column_lower:
             rules.append('required_field')
         
-        return rules
+        return list(set(rules))
     
     def _find_column_semantic_relationships(self, column_name: str, table_name: str) -> List[str]:
         """Find semantic relationships for a column."""
@@ -782,7 +895,7 @@ class SchemaIngestionEngine:
         if 'status' in column_lower or 'state' in column_lower:
             relationships.append('status_field')
         
-        return relationships
+        return list(set(relationships))
     
     def _analyze_cross_domain_relationships(self, schema_metadata: List[Dict]) -> Dict[str, Dict[str, Any]]:
         """Analyze cross-domain relationships between tables."""
@@ -792,7 +905,7 @@ class SchemaIngestionEngine:
         table_domains = {}
         for table_metadata in schema_metadata:
             schema_name = table_metadata.get('schema', 'default')
-            table_name = table_metadata.get('table_name', '')
+            table_name = table_metadata.get('table', '') # Changed from table_name to table
             full_name = f"{schema_name}.{table_name}"
             domain = self._infer_business_domain(table_name, table_metadata)
             table_domains[full_name] = domain
@@ -800,7 +913,7 @@ class SchemaIngestionEngine:
         # Analyze relationships across domains
         for table_metadata in schema_metadata:
             schema_name = table_metadata.get('schema', 'default')
-            table_name = table_metadata.get('table_name', '')
+            table_name = table_metadata.get('table', '') # Changed from table_name to table
             full_name = f"{schema_name}.{table_name}"
             table_domain = table_domains.get(full_name, 'general')
             

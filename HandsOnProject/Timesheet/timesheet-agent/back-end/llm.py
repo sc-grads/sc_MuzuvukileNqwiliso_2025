@@ -708,83 +708,26 @@ def create_simple_query_for_leave_types() -> str:
 def get_model_specific_prompt_template(model_name: str) -> str:
     """Get optimized prompt template based on the specific model being used"""
     
+    # Ultra-simple prompt for speed
+    base_prompt = """SQL for: "{nl_query}"
+
+Tables: {schema_text}
+Joins: {relationships_text}
+
+Return SQL only:"""
+    
     if "mistral" in model_name.lower():
-        # Simplified Mistral prompt for speed
-        return """<s>[INST] Generate a simple SQL Server query.
-
-TABLES AND COLUMNS:
-{schema_text}
-
-QUERY: {nl_query}
-
-RULES:
-- Use ONLY tables and columns shown above
-- Use [schema].[table] format
-- Use TOP not LIMIT
-- Keep it simple
-- Return only SQL, no explanations
-
-[/INST]
-
-"""
+        # Mistral-specific prompt
+        return base_prompt
     
     elif "llama2" in model_name.lower():
-        # Simplified Llama2 prompt
-        return """### System: Generate SQL Server queries.
-
-### Human: 
-TABLES: {schema_text}
-QUERY: {nl_query}
-
-Rules: Use only existing tables/columns, [schema].[table] format, TOP not LIMIT, keep simple.
-
-### Assistant: """
-    
-    elif "codellama" in model_name.lower():
-        # CodeLlama optimized prompt - code-focused with advanced features
-        return """// Task: Generate advanced SQL Server T-SQL query with complex features
-// Database Schema:
-{schema_text}
-
-// User Request: {nl_query}
-// Context: {context_str}
-
-{conversation_section}
-
-{feedback_section}
-
-/* Advanced T-SQL Features Available:
- * - Complex Aggregations: GROUP BY, HAVING, ROLLUP, CUBE, GROUPING SETS
- * - Window Functions: ROW_NUMBER(), RANK(), DENSE_RANK(), LAG(), LEAD(), SUM() OVER()
- * - Subqueries: Correlated and non-correlated, EXISTS, IN, scalar subqueries
- * - CTEs: WITH clause for complex multi-step queries
- * - Conditional Logic: CASE WHEN, IIF(), COALESCE(), NULLIF()
- * - Advanced Joins: Optimized join order, proper ON conditions
- */
-
-/* Requirements:
- * - Use only existing schema tables/columns
- * - SQL Server T-SQL syntax with [brackets]
- * - Functions: {sql_server_functions}
- * - Apply advanced features when appropriate
- * - Use TOP not LIMIT
- * - Optimize join order based on relationships
- * - Return query only
- */
-
--- Advanced SQL Query:
-"""
+        # Llama2-specific prompt
+        return f"### System: You are an expert SQL developer. Generate a SQL Server query based on the provided schema and user request.\n\n### Human:\n{base_prompt}\n\n### Assistant:"
     
     else:
-        # Default simplified prompt
-        return """Generate SQL Server query.
+        # Default prompt
+        return base_prompt
 
-TABLES: {schema_text}
-REQUEST: {nl_query}
-
-Rules: Use only existing tables/columns, [schema].[table] format, TOP not LIMIT, simple queries only.
-
-SQL:"""
 
 def validate_schema_references(sql_query: str, schema_metadata: List[Dict]) -> Tuple[bool, List[str]]:
     """Validate that SQL query only references existing tables and columns"""
@@ -861,36 +804,31 @@ def generate_targeted_llm_sql(nl_query: str, schema_metadata: List[Dict], intent
     """
     Generate SQL using LLM with targeted prompts based on intent.
     """
-    # Simplified schema representation for the prompt
-    schema_text_parts = []
-    for table in schema_metadata[:5]:  # Limit to the first 5 tables for brevity
-        columns = [f"[{col['name']}]" for col in table['columns'][:5]]  # Limit to 5 columns
-        table_text = f"[{table['schema']}].[{table['table']}]: {', '.join(columns)}"
-        schema_text_parts.append(table_text)
-    schema_text = "\n".join(schema_text_parts)
+    # Ultra-minimal schema representation for speed
+    schema_parts = []
+    rel_parts = []
+    
+    # Only include relevant tables (limit to 5 most important)
+    relevant_tables = schema_metadata[:5]
+    
+    for table in relevant_tables:
+        # Just table name and key columns
+        key_cols = [col['name'] for col in table['columns'][:3]]  # First 3 columns only
+        schema_parts.append(f"{table['table']}: {', '.join(key_cols)}")
+        
+        # Only essential relationships
+        for rel in table.get('relationships', [])[:2]:  # Max 2 relationships per table
+            rel_parts.append(f"{table['table']}.{rel['source_column']}={rel['target_table'].split('.')[-1]}.{rel['target_column']}")
+    
+    schema_text = "; ".join(schema_parts)
+    relationships_text = "; ".join(rel_parts) if rel_parts else "Use ID columns for joins"
 
-    # Construct a targeted prompt based on the intent
-    prompt_template = """<s>[INST] Generate a SQL Server query based on the user's request and the provided schema.
-
-CONTEXT: The user wants to {intent}.
-
-SCHEMA:
-{schema_text}
-
-USER QUERY: "{nl_query}"
-
-RULES:
-- Use ONLY tables and columns from the schema provided.
-- Always use the [schema].[table] format.
-- Use TOP 10 for all SELECT queries to limit results.
-- Return only the SQL query, with no explanations or comments.
-
-[/INST]
-"""
+    # Get ultra-simple prompt
+    prompt_template = get_model_specific_prompt_template(llm_manager.current_model)
     
     prompt = prompt_template.format(
-        intent=intent,
         schema_text=schema_text,
+        relationships_text=relationships_text,
         nl_query=nl_query
     )
 
@@ -944,7 +882,7 @@ def generate_sql_query(nl_query, schema_metadata, column_map, entities, vector_s
     if not entities.get("is_database_related", False):
         return "This query is not related to the database. Please ask about data present in the connected database."
 
-    # Simple schema processing - only essential info
+    # Enhanced schema processing with relationship details
     schema_text_parts = []
     
     # Get suggested tables from entities, limit to 3 most relevant
@@ -964,11 +902,21 @@ def generate_sql_query(nl_query, schema_metadata, column_map, entities, vector_s
     
     for m in relevant_tables:
         # Simple table description
-        columns = [f"[{col['name']}]" for col in m['columns'][:5]]  # Only first 5 columns
-        table_text = f"[{m['schema']}].[{m['table']}]: {', '.join(columns)}"
+        table_desc = m.get('description', f"Table {m['schema']}.{m['table']}")
+        columns = [f"[{col['name']}] ({col.get('description', col['type'])})" for col in m['columns'][:5]]
+        table_text = f"Table [{m['schema']}].[{m['table']}]: {table_desc}\nColumns: {', '.join(columns)}"
+        
+        # Add relationship info
+        relationships = m.get('relationships', [])
+        if relationships:
+            rel_texts = []
+            for rel in relationships:
+                rel_texts.append(f"  - Connects to [{rel['target_table']}] on {m['table']}.{rel['source_column']} = {rel['target_table']}.{rel['target_column']}")
+            table_text += "\nRelationships:\n" + "\n".join(rel_texts)
+            
         schema_text_parts.append(table_text)
     
-    schema_text = "\n".join(schema_text_parts)
+    schema_text = "\n\n".join(schema_text_parts)
 
     # Simple context - no complex analysis
     context_str = ""
