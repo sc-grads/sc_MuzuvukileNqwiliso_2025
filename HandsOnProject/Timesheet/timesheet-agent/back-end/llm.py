@@ -708,83 +708,26 @@ def create_simple_query_for_leave_types() -> str:
 def get_model_specific_prompt_template(model_name: str) -> str:
     """Get optimized prompt template based on the specific model being used"""
     
+    # Ultra-simple prompt for speed
+    base_prompt = """SQL for: "{nl_query}"
+
+Tables: {schema_text}
+Joins: {relationships_text}
+
+Return SQL only:"""
+    
     if "mistral" in model_name.lower():
-        # Simplified Mistral prompt for speed
-        return """<s>[INST] Generate a simple SQL Server query.
-
-TABLES AND COLUMNS:
-{schema_text}
-
-QUERY: {nl_query}
-
-RULES:
-- Use ONLY tables and columns shown above
-- Use [schema].[table] format
-- Use TOP not LIMIT
-- Keep it simple
-- Return only SQL, no explanations
-
-[/INST]
-
-"""
+        # Mistral-specific prompt
+        return base_prompt
     
     elif "llama2" in model_name.lower():
-        # Simplified Llama2 prompt
-        return """### System: Generate SQL Server queries.
-
-### Human: 
-TABLES: {schema_text}
-QUERY: {nl_query}
-
-Rules: Use only existing tables/columns, [schema].[table] format, TOP not LIMIT, keep simple.
-
-### Assistant: """
-    
-    elif "codellama" in model_name.lower():
-        # CodeLlama optimized prompt - code-focused with advanced features
-        return """// Task: Generate advanced SQL Server T-SQL query with complex features
-// Database Schema:
-{schema_text}
-
-// User Request: {nl_query}
-// Context: {context_str}
-
-{conversation_section}
-
-{feedback_section}
-
-/* Advanced T-SQL Features Available:
- * - Complex Aggregations: GROUP BY, HAVING, ROLLUP, CUBE, GROUPING SETS
- * - Window Functions: ROW_NUMBER(), RANK(), DENSE_RANK(), LAG(), LEAD(), SUM() OVER()
- * - Subqueries: Correlated and non-correlated, EXISTS, IN, scalar subqueries
- * - CTEs: WITH clause for complex multi-step queries
- * - Conditional Logic: CASE WHEN, IIF(), COALESCE(), NULLIF()
- * - Advanced Joins: Optimized join order, proper ON conditions
- */
-
-/* Requirements:
- * - Use only existing schema tables/columns
- * - SQL Server T-SQL syntax with [brackets]
- * - Functions: {sql_server_functions}
- * - Apply advanced features when appropriate
- * - Use TOP not LIMIT
- * - Optimize join order based on relationships
- * - Return query only
- */
-
--- Advanced SQL Query:
-"""
+        # Llama2-specific prompt
+        return f"### System: You are an expert SQL developer. Generate a SQL Server query based on the provided schema and user request.\n\n### Human:\n{base_prompt}\n\n### Assistant:"
     
     else:
-        # Default simplified prompt
-        return """Generate SQL Server query.
+        # Default prompt
+        return base_prompt
 
-TABLES: {schema_text}
-REQUEST: {nl_query}
-
-Rules: Use only existing tables/columns, [schema].[table] format, TOP not LIMIT, simple queries only.
-
-SQL:"""
 
 def validate_schema_references(sql_query: str, schema_metadata: List[Dict]) -> Tuple[bool, List[str]]:
     """Validate that SQL query only references existing tables and columns"""
@@ -857,13 +800,89 @@ def validate_schema_references(sql_query: str, schema_metadata: List[Dict]) -> T
     
     return len(errors) == 0, errors
 
+def generate_targeted_llm_sql(nl_query: str, schema_metadata: List[Dict], intent: str, entities: Dict) -> str:
+    """
+    Generate SQL using LLM with targeted prompts based on intent.
+    """
+    # Ultra-minimal schema representation for speed
+    schema_parts = []
+    rel_parts = []
+    
+    # Only include relevant tables (limit to 5 most important)
+    relevant_tables = schema_metadata[:5]
+    
+    for table in relevant_tables:
+        # Just table name and key columns
+        key_cols = [col['name'] for col in table['columns'][:3]]  # First 3 columns only
+        schema_parts.append(f"{table['table']}: {', '.join(key_cols)}")
+        
+        # Only essential relationships
+        for rel in table.get('relationships', [])[:2]:  # Max 2 relationships per table
+            rel_parts.append(f"{table['table']}.{rel['source_column']}={rel['target_table'].split('.')[-1]}.{rel['target_column']}")
+    
+    schema_text = "; ".join(schema_parts)
+    relationships_text = "; ".join(rel_parts) if rel_parts else "Use ID columns for joins"
+
+    # Get ultra-simple prompt
+    prompt_template = get_model_specific_prompt_template(llm_manager.current_model)
+    
+    prompt = prompt_template.format(
+        schema_text=schema_text,
+        relationships_text=relationships_text,
+        nl_query=nl_query
+    )
+
+    try:
+        # Use the centralized LLM manager to invoke the model
+        response = llm_manager.invoke(prompt)
+        
+        # Clean up the response to get only the SQL
+        sql_query = response.strip().replace("`", "").replace(";", "")
+        if "SELECT" not in sql_query.upper():
+            # Fallback to simple query if LLM fails
+            if schema_metadata:
+                first_table = schema_metadata[0]
+                return f"SELECT TOP 10 * FROM [{first_table['schema']}].[{first_table['table']}]"
+            return "Error: LLM failed to generate valid SQL"
+        return sql_query
+
+    except Exception as e:
+        logger.error(f"Error generating SQL with LLM: {e}")
+        # Fallback to simple query
+        if schema_metadata:
+            first_table = schema_metadata[0]
+            return f"SELECT TOP 10 * FROM [{first_table['schema']}].[{first_table['table']}]"
+        return "Error: SQL generation failed"
+
+def validate_generated_sql(sql_query: str, schema_metadata: List[Dict]) -> tuple[bool, str]:
+    """
+    Quick validation of generated SQL.
+    """
+    if not sql_query or not sql_query.strip():
+        return False, "Query is empty"
+    
+    if sql_query.startswith("Error:"):
+        return False, sql_query
+    
+    if "SELECT" not in sql_query.upper():
+        return False, "Only SELECT queries are allowed"
+    
+    # Basic check for blocked keywords to prevent system table access
+    blocked_keywords = ['sys.', 'information_schema.', 'master.', 'msdb.']
+    sql_lower = sql_query.lower()
+    for blocked in blocked_keywords:
+        if blocked in sql_lower:
+            return False, f"System table access is blocked: {blocked}"
+            
+    return True, "Valid"
+
 def generate_sql_query(nl_query, schema_metadata, column_map, entities, vector_store=None, previous_sql_query=None, error_feedback=None, enhanced_data=None, conversation_context=None):
     """Enhanced SQL query generation with improved accuracy, validation, and conversation context support."""
     
     if not entities.get("is_database_related", False):
         return "This query is not related to the database. Please ask about data present in the connected database."
 
-    # Simple schema processing - only essential info
+    # Enhanced schema processing with relationship details
     schema_text_parts = []
     
     # Get suggested tables from entities, limit to 3 most relevant
@@ -883,11 +902,21 @@ def generate_sql_query(nl_query, schema_metadata, column_map, entities, vector_s
     
     for m in relevant_tables:
         # Simple table description
-        columns = [f"[{col['name']}]" for col in m['columns'][:5]]  # Only first 5 columns
-        table_text = f"[{m['schema']}].[{m['table']}]: {', '.join(columns)}"
+        table_desc = m.get('description', f"Table {m['schema']}.{m['table']}")
+        columns = [f"[{col['name']}] ({col.get('description', col['type'])})" for col in m['columns'][:5]]
+        table_text = f"Table [{m['schema']}].[{m['table']}]: {table_desc}\nColumns: {', '.join(columns)}"
+        
+        # Add relationship info
+        relationships = m.get('relationships', [])
+        if relationships:
+            rel_texts = []
+            for rel in relationships:
+                rel_texts.append(f"  - Connects to [{rel['target_table']}] on {m['table']}.{rel['source_column']} = {rel['target_table']}.{rel['target_column']}")
+            table_text += "\nRelationships:\n" + "\n".join(rel_texts)
+            
         schema_text_parts.append(table_text)
     
-    schema_text = "\n".join(schema_text_parts)
+    schema_text = "\n\n".join(schema_text_parts)
 
     # Simple context - no complex analysis
     context_str = ""
@@ -916,13 +945,24 @@ def generate_sql_query(nl_query, schema_metadata, column_map, entities, vector_s
         logger.info(f"Generating SQL for query: {nl_query}")
         logger.info(f"Using model: {llm_manager.current_model}")
         
-        # Try fast pattern-based generation first for simple queries
-        from fast_sql_generator import generate_fast_sql, validate_fast_sql
+        # Generate SQL directly with LLM using targeted prompts
+        logger.info("Generating SQL using LLM with targeted prompts...")
         
-        # Always try fast generation first
-        logger.info("Attempting fast pattern-based SQL generation...")
-        fast_sql = generate_fast_sql(nl_query, schema_metadata)
-        is_valid, validation_msg = validate_fast_sql(fast_sql, schema_metadata)
+        # Determine intent for better prompting
+        query_lower = nl_query.lower().strip()
+        intent = "execute a query"  # Default intent
+        if any(word in query_lower for word in ['list', 'show', 'display', 'get']):
+            intent = "list records"
+        elif any(word in query_lower for word in ['count', 'how many', 'number of']):
+            intent = "count records"
+        elif any(word in query_lower for word in ['project', 'client', 'employee']):
+            intent = "find specific information"
+        
+        # Generate SQL using targeted LLM approach
+        fast_sql = generate_targeted_llm_sql(nl_query, schema_metadata, intent, entities)
+        
+        # Validate the generated SQL
+        is_valid, validation_msg = validate_generated_sql(fast_sql, schema_metadata)
         
         if is_valid:
             logger.info(f"Fast generation successful: {fast_sql}")

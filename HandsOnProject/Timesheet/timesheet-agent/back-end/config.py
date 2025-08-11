@@ -51,7 +51,7 @@ def get_current_database():
 
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 LLM_MODEL = os.getenv("LLM_MODEL", "mistral:7b")
-VECTOR_STORE_DIR = os.getenv("VECTOR_STORE_DIR", "../vector_data")
+VECTOR_STORE_DIR = os.getenv("VECTOR_STORE_DIR", "./vector_data")
 VECTOR_COLLECTION = os.getenv("VECTOR_COLLECTION", "schema_embeddings")
 FLASK_PORT = int(os.getenv("FLASK_PORT", "5000"))
 USE_LIVE_DB = os.getenv("USE_LIVE_DB", "False").lower() == "true"

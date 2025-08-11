@@ -16,7 +16,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from semantic_error_handler import SemanticErrorHandler, ErrorType
 from vector_schema_store import VectorSchemaStore
-from semantic_intent_engine import SemanticIntentEngine
+from improved_semantic_intent_engine import ImprovedSemanticIntentEngine
 from adaptive_learning_engine import AdaptiveLearningEngine
 
 

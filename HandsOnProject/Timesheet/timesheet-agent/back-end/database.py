@@ -21,6 +21,67 @@ from collections import defaultdict
 import threading
 import time
 
+# --- Intelligent Description Generation Logic ---
+
+def _split_camel_case(name: str) -> List[str]:
+    """Splits camelCase or PascalCase into words."""
+    s1 = re.sub('(.)([A-Z][a-z]+)', r'\1 \2', name)
+    return re.sub('([a-z0-9])([A-Z])', r'\1 \2', s1).split()
+
+def _generate_intelligent_description(name: str, element_type: str, context: Optional[Dict] = None) -> str:
+    """Generates a sophisticated, human-readable description for a schema element."""
+    context = context or {}
+    words = _split_camel_case(name)
+    
+    base_name_for_desc = name.replace("ID", "").replace("Id", "").replace("Seq", "")
+    readable_base = ' '.join(_split_camel_case(base_name_for_desc)).lower()
+
+    if element_type == "table":
+        plural_name = readable_base
+        if not plural_name.endswith('s'):
+            plural_name += 's'
+        return f"Stores and represents information about {plural_name} within the system."
+
+    if element_type == "column":
+        table_name = context.get("table_name", "the table")
+        table_readable_name = ' '.join(_split_camel_case(table_name)).lower()
+        col_lower = name.lower()
+
+        if col_lower in [pk.lower() for pk in context.get("pk_names", [])]:
+            return f"A unique identifier for each {table_readable_name} record."
+
+        if context.get("is_fk"):
+            target_table = context.get('target_table', 'another table').split('.')[-1]
+            target_readable_name = ' '.join(_split_camel_case(target_table)).lower()
+            return f"A foreign key that links this record to the '{target_table}' table, identifying the associated {target_readable_name}."
+
+        if "name" in col_lower:
+            return f"The name of the {readable_base}."
+        if "description" in col_lower or "comment" in col_lower:
+            return f"A textual description, comment, or note providing additional details about this record."
+        if col_lower.startswith("is_") or col_lower.startswith("has_"):
+            action = ' '.join(_split_camel_case(name.replace("is_", "").replace("has_", ""))).lower()
+            return f"A boolean flag (true/false) indicating if the record {action}."
+        if "status" in col_lower:
+            return f"Indicates the current status or state of the {readable_base} (e.g., 'Active', 'Pending', 'Completed')."
+        if "type" in col_lower:
+            return f"Specifies the type or category of the {readable_base}."
+        if "date" in col_lower or "time" in col_lower:
+            if "start" in col_lower: return f"The date and/or time when the {readable_base} begins."
+            if "end" in col_lower: return f"The date and/or time when the {readable_base} ends."
+            if "created" in col_lower or "processed" in col_lower: return f"The timestamp when this record was created or processed."
+            return f"A date and/or time value associated with the {readable_base}."
+        if "hours" in col_lower or "total" in col_lower or "count" in col_lower or "number" in col_lower:
+             return f"A numeric value representing the {readable_base}."
+        if "amount" in col_lower or "billable" in col_lower:
+            return f"A financial value representing the {readable_base}."
+        if "path" in col_lower or "file" in col_lower:
+            return f"The file path or name associated with this record."
+
+        return f"Stores data for the '{readable_base}' attribute of a {table_readable_name}."
+
+    return f"Data element: {name}"
+
 # Disable ChromaDB telemetry
 os.environ["CHROMA_TELEMETRY_ENABLED"] = "false"
 os.environ["ANONYMIZED_TELEMETRY"] = "false"
@@ -49,12 +110,23 @@ def initialize_vector_store():
     try:
         # Try with a smaller embedding model first
         try:
+            # Suppress HTTP request logs temporarily
+            import logging
+            logging.getLogger('httpx').setLevel(logging.CRITICAL)
+            
             embeddings = OllamaEmbeddings(model="nomic-embed-text", base_url=OLLAMA_BASE_URL)
             print(f"Using nomic-embed-text for embeddings (memory efficient)")
-        except:
-            # Fallback to the main model
+            
+            # Reset logging level
+            logging.getLogger('httpx').setLevel(logging.ERROR)
+            
+        except Exception:
+            # Reset logging level in case of error
+            logging.getLogger('httpx').setLevel(logging.ERROR)
+            
+            # Fallback to the main model (suppress the 404 error)
             embeddings = OllamaEmbeddings(model=LLM_MODEL, base_url=OLLAMA_BASE_URL)
-            print(f"Using {LLM_MODEL} for embeddings")
+            print(f"Using {LLM_MODEL} for embeddings (fallback)")
         
         # Check if existing FAISS index exists
         faiss_index_path = os.path.join(VECTOR_STORE_DIR, "faiss_index")
@@ -347,16 +419,24 @@ def get_schema_metadata():
                         col_pattern = business_patterns.get(full_col_name, {})
                         business_desc = f"Business context: {col_pattern['term']} - {col_pattern['description']}" if col_pattern else ""
                         
+                        # --- Integration of Intelligent Description Generation ---
+                        fk_map = {fk['constrained_columns'][0]: fk for fk in fks}
+                        col_context = {
+                            "table_name": table_name,
+                            "pk_names": pks.get('constrained_columns', []),
+                            "is_fk": col['name'] in fk_map
+                        }
+                        if col_context["is_fk"]:
+                            fk_info = fk_map[col['name']]
+                            col_context['target_table'] = f"{fk_info['referred_schema']}.{fk_info['referred_table']}"
+
                         col_info = {
                             "name": col['name'],
                             "type": str(col["type"]).lower(),
                             "nullable": col.get("nullable", True),
                             "default": str(col["default"]).strip("()") if col.get("default") else None,
                             "primary_key": col['name'] in pks.get('constrained_columns', []),
-                            "description": generate_fast_column_description({
-                                "name": col['name'], 
-                                "type": str(col["type"]).lower()
-                            }),
+                            "description": _generate_intelligent_description(col['name'], "column", col_context),
                             "business_description": business_desc
                         }
                         col_details.append(col_info)
@@ -371,7 +451,8 @@ def get_schema_metadata():
                             "target_column": fk['referred_columns'][0]
                         })
 
-                    fast_description = generate_fast_description(schema, table_name, col_details)
+                    # Use the intelligent generator for the table description as well
+                    table_description = _generate_intelligent_description(table_name, "table")
                     
                     table_key = full_table_name
                     lazy_generator.queue_description(table_key, schema, table_name, col_details, fk_info)
@@ -379,7 +460,7 @@ def get_schema_metadata():
                     table_metadata = {
                         "schema": schema,
                         "table": table_name,
-                        "description": f"{fast_description} {table_business_desc}".strip(),
+                        "description": f"{table_description} {table_business_desc}".strip(),
                         "columns": col_details,
                         "relationships": fk_info,
                         "primary_keys": pks.get('constrained_columns', []),
@@ -444,8 +525,8 @@ def get_schema_metadata():
                 json.dump(cache_data, f, indent=2)
             with open(column_map_file, "w") as f:
                 json.dump(column_map, f, indent=2)
-            with open(enhanced_cache_file, "w") as f:
-                json.dump(enhanced_data, f, indent=2)
+            # with open(enhanced_cache_file, "w") as f:
+            #     json.dump(enhanced_data, f, indent=2)
             
             print(f"Hybrid cache saved successfully")
             

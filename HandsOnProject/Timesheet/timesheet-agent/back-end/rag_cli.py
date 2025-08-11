@@ -68,6 +68,13 @@ def main(refresh_schema=False, database=None):
                     'sql_query': rag_result.sql_query,
                     'tables_used': rag_result.metadata.get('tables_used', [])
                 }
+
+                # Display the tables the agent chose to use
+                if rag_result.metadata and rag_result.metadata.get('tables_used'):
+                    print("\n Agent selected the following tables:")
+                    for table in rag_result.metadata['tables_used']:
+                        print(f"   - {table}")
+
                 print("\n Generated SQL Query:")
                 print(f"   {rag_result.sql_query}")
 
@@ -106,9 +113,11 @@ def main(refresh_schema=False, database=None):
                 if rag_result.recovery_plan:
                     print("\n Recovery Suggestions:")
                     for i, suggestion in enumerate(rag_result.recovery_plan.suggestions[:3], 1):
-                        print(f"   {i}. {suggestion.suggestion}")
-                        if suggestion.example_sql:
-                            print(f"      Example SQL: {suggestion.example_sql}")
+                        print(f"   {i}. {suggestion.description}")
+                        if hasattr(suggestion, 'example') and suggestion.example:
+                            print(f"      Example: {suggestion.example}")
+                        if hasattr(suggestion, 'corrected_sql') and suggestion.corrected_sql:
+                            print(f"      Corrected SQL: {suggestion.corrected_sql}")
 
                 # Pass rag_result.metadata as entities to save_query
                 save_query(nl_query, rag_result.sql_query, timestamp, False, rag_result.error_message, rag_result.metadata, None, 0)

@@ -567,6 +567,92 @@ class VectorSchemaStore:
             if vector.element_type == element_type
         ]
     
+    def get_all_tables(self) -> List[TableMatch]:
+        """
+        Get all tables as TableMatch objects.
+        
+        Returns:
+            List of TableMatch objects for all stored tables
+        """
+        table_matches = []
+        table_vectors = self.get_all_vectors_by_type("table")
+        
+        for vector in table_vectors:
+            table_match = TableMatch(
+                table_name=vector.element_name,
+                schema_name=vector.schema_name,
+                similarity_score=1.0,  # Default similarity for all tables
+                context_relevance=self._calculate_business_priority(vector),
+                business_priority=self._calculate_business_priority(vector),
+                metadata=vector.metadata
+            )
+            table_matches.append(table_match)
+        
+        # Sort by business priority
+        table_matches.sort(key=lambda x: x.business_priority, reverse=True)
+        return table_matches
+    
+    def get_primary_key_for_table(self, table_name: str) -> Optional[str]:
+        """
+        Get the primary key column name for a table.
+        
+        Args:
+            table_name: Name of the table
+            
+        Returns:
+            Primary key column name or None if not found
+        """
+        # Look through column vectors for this table to find primary key
+        column_vectors = self.get_all_vectors_by_type("column")
+        
+        for vector in column_vectors:
+            if vector.metadata.get('table_name') == table_name:
+                # Check if this column is marked as primary key
+                if (vector.metadata.get('is_primary_key', False) or 
+                    'primary' in vector.semantic_tags or
+                    vector.element_name.lower().endswith('id') and 
+                    vector.element_name.lower().startswith(table_name.lower())):
+                    return vector.element_name
+        
+        # Fallback: look for common primary key patterns
+        for vector in column_vectors:
+            if vector.metadata.get('table_name') == table_name:
+                col_name_lower = vector.element_name.lower()
+                if (col_name_lower == 'id' or 
+                    col_name_lower == f'{table_name.lower()}id' or
+                    col_name_lower == f'{table_name.lower()}_id'):
+                    return vector.element_name
+        
+        return None
+    
+    def get_columns_for_table(self, table_name: str) -> List[ColumnMatch]:
+        """
+        Get all columns for a specific table as ColumnMatch objects.
+        
+        Args:
+            table_name: Name of the table
+            
+        Returns:
+            List of ColumnMatch objects for the table
+        """
+        column_matches = []
+        column_vectors = self.get_all_vectors_by_type("column")
+        
+        for vector in column_vectors:
+            if vector.metadata.get('table_name') == table_name:
+                column_match = ColumnMatch(
+                    column_name=vector.element_name,
+                    table_name=table_name,
+                    schema_name=vector.schema_name,
+                    similarity_score=1.0,  # Default similarity
+                    data_type=vector.metadata.get('data_type', 'unknown'),
+                    context_relevance=self._calculate_business_priority(vector),
+                    metadata=vector.metadata
+                )
+                column_matches.append(column_match)
+        
+        return column_matches
+    
     def get_schema_statistics(self) -> Dict[str, Any]:
         """
         Get statistics about the stored schema vectors.

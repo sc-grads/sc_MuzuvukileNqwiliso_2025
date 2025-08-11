@@ -18,7 +18,7 @@ from sentence_transformers import SentenceTransformer
 
 # Import existing components
 from vector_schema_store import VectorSchemaStore, SchemaVector
-from semantic_intent_engine import QueryIntent, IntentType, EntityType, ComplexityLevel
+from improved_semantic_intent_engine import QueryIntent, IntentType, EntityType, ComplexityLevel
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

@@ -15,11 +15,11 @@ from datetime import datetime
 import re
 
 # Import existing components
-from semantic_intent_engine import (
-    SemanticIntentEngine, QueryIntent, Entity, EntityType, IntentType,
+from improved_semantic_intent_engine import (
+    ImprovedSemanticIntentEngine, QueryIntent, Entity, EntityType, IntentType,
     ComplexityLevel, AggregationType, TemporalContext, SchemaMapping
 )
-from query_intent_classifier import QueryIntentClassifier, QueryType
+# from query_intent_classifier import QueryIntentClassifier, QueryType  # Not needed
 from vector_schema_store import (
     VectorSchemaStore, TableMatch, ColumnMatch, RelationshipGraph
 )
@@ -98,17 +98,17 @@ class SemanticQueryBuilder:
     
     def __init__(self, 
                  vector_store: VectorSchemaStore,
-                 intent_engine: SemanticIntentEngine):
+                 intent_engine: ImprovedSemanticIntentEngine):
         """
         Initialize the SemanticQueryBuilder.
         
         Args:
             vector_store: VectorSchemaStore for schema context
-            intent_engine: SemanticIntentEngine for query understanding
+            intent_engine: ImprovedSemanticIntentEngine for query understanding
         """
         self.vector_store = vector_store
         self.intent_engine = intent_engine
-        self.query_classifier = QueryIntentClassifier()
+        # self.query_classifier = QueryIntentClassifier()  # Not needed with new approach
         
         # SQL generation patterns learned from successful queries
         self.learned_patterns = {}
@@ -137,24 +137,36 @@ class SemanticQueryBuilder:
         Returns:
             SQLQuery object with generated SQL and metadata
         """
-        logger.info(f"Building SQL query for intent: {query_intent.intent_type.value}")
-        
-        # Use pattern-based generation similar to the original fast_sql_generator
-        sql = self._generate_pattern_based_sql(query_intent, conversation_context)
-        
-        if not sql:
-            # Fallback to the original vector-based approach
-            sql = self._generate_vector_based_sql(query_intent, conversation_context)
-        
+        # First, attempt to build the query using the deterministic, vector-based approach
+        sql_query = self._generate_vector_based_sql(query_intent, conversation_context)
+
+        # If vector-based approach fails, fall back to the LLM-based pattern generation
+        if not sql_query or "Error" in sql_query:
+            logger.warning("Vector-based SQL generation failed. Falling back to pattern-based generation.")
+            sql_query = self._generate_pattern_based_sql(query_intent, conversation_context)
+
+        # If both methods fail, return an error
+        if not sql_query or "Error" in sql_query:
+            return SQLQuery(
+                sql="Error: Unable to generate a valid SQL query.",
+                confidence=0.1,
+                clauses=[],
+                tables_used=[],
+                columns_used=[],
+                joins=[],
+                complexity_score=0,
+                generation_metadata={'error': 'All generation methods failed.'}
+            )
+            
         # Parse the generated SQL to extract metadata
-        tables_used = self._extract_tables_from_sql(sql)
-        columns_used = self._extract_columns_from_sql(sql)
+        tables_used = self._extract_tables_from_sql(sql_query)
+        columns_used = self._extract_columns_from_sql(sql_query)
         
         # Calculate confidence based on pattern matching success
-        confidence = 0.9 if "Error" not in sql else 0.3
+        confidence = 0.9 if "Error" not in sql_query else 0.3
         
-        sql_query = SQLQuery(
-            sql=sql,
+        return SQLQuery(
+            sql=sql_query,
             confidence=confidence,
             clauses=[],  # Simplified for pattern-based approach
             tables_used=tables_used,
@@ -163,13 +175,10 @@ class SemanticQueryBuilder:
             complexity_score=0.5,
             generation_metadata={
                 "intent_type": query_intent.intent_type.value,
-                "generation_method": "pattern_based",
+                "generation_method": "vector_based_fallback_pattern",
                 "generation_timestamp": datetime.now().isoformat()
             }
         )
-        
-        logger.info(f"SQL query generated with confidence: {confidence:.3f}")
-        return sql_query
     
     def _generate_pattern_based_sql(self, query_intent: QueryIntent, conversation_context: Optional[Dict[str, Any]] = None) -> str:
         """
@@ -936,14 +945,14 @@ WHERE e.id NOT IN (
         
         # Add semantic scores
         for table_name, semantic_score in semantic_matches.items():
-            combined_scores[table_name] = semantic_score * 0.6  # 60% weight for semantics
+            combined_scores[table_name] = semantic_score * 0.4  # 40% weight for semantics
         
         # Add keyword scores
         for table_name, keyword_score in keyword_matches.items():
             if table_name in combined_scores:
-                combined_scores[table_name] += keyword_score * 0.4  # 40% weight for keywords
+                combined_scores[table_name] += keyword_score * 0.6  # 60% weight for keywords
             else:
-                combined_scores[table_name] = keyword_score * 0.4
+                combined_scores[table_name] = keyword_score * 0.6
         
         # Find best match
         if combined_scores:
@@ -1100,60 +1109,76 @@ WHERE e.id NOT IN (
         return columns
     
     def _generate_vector_based_sql(self, query_intent: QueryIntent, conversation_context: Optional[Dict[str, Any]] = None) -> str:
-        """Fallback to original vector-based approach."""
-        # This is the original complex approach - keep as fallback
+        """
+        Generate SQL using a holistic approach that considers all parts of the query together.
+        This new implementation replaces the old, clause-by-clause method.
+        """
         try:
-            # Initialize SQL clauses
-            clauses = []
-            tables_used = []
-            columns_used = []
-            joins = []
+            # 1. Identify all potentially relevant columns from the initial intent
+            initial_columns = self._select_columns_from_intent(query_intent, self.vector_store.get_all_tables())
+
+            # 2. Determine the final set of tables based on the columns needed for SELECT, WHERE, and GROUP BY
+            final_tables = self._determine_final_tables(query_intent, initial_columns)
             
-            # Step 1: Determine relevant tables using vector similarity
-            relevant_tables = self._select_tables_from_intent(query_intent)
-            tables_used.extend([table.table_name for table in relevant_tables])
-            
-            # Step 2: Determine relevant columns using vector similarity
-            relevant_columns = self._select_columns_from_intent(query_intent, relevant_tables)
-            columns_used.extend([f"{col.table_name}.{col.column_name}" for col in relevant_columns])
-            
-            # Step 3: Build SELECT clause based on intent
-            select_clause = self._build_select_clause(query_intent, relevant_columns)
-            clauses.append(select_clause)
-            
-            # Step 4: Build FROM clause with primary table
-            from_clause = self._build_from_clause(relevant_tables)
-            clauses.append(from_clause)
-            
-            # Step 5: Build JOIN clauses if multiple tables are needed
-            if len(relevant_tables) > 1:
-                join_clauses, join_conditions = self._build_join_clauses(relevant_tables, query_intent)
+            # 3. Determine the final set of columns based on the final tables
+            final_columns = [col for col in initial_columns if col.table_name in [t.table_name for t in final_tables]]
+
+            # 4. Build the JOIN clauses first, as this determines table aliases and availability
+            join_clauses, join_conditions = self._build_join_clauses(final_tables, query_intent)
+
+            # 5. Build the other clauses using the context of the final tables and joins
+            select_clause = self._build_select_clause(query_intent, final_columns)
+            from_clause = self._build_from_clause(final_tables)
+            where_clause = self._build_where_clause(query_intent, final_columns, final_tables)
+            group_by_clause = self._build_group_by_clause(query_intent, final_columns)
+            order_by_clause = self._build_order_by_clause(query_intent, final_columns)
+
+            # 6. Assemble the final query
+            clauses = [select_clause, from_clause]
+            if join_clauses:
                 clauses.extend(join_clauses)
-                joins.extend(join_conditions)
-            
-            # Step 6: Build WHERE clause from entities (but filter out query words)
-            where_clause = self._build_where_clause(query_intent, relevant_columns)
             if where_clause:
                 clauses.append(where_clause)
-            
-            # Step 7: Build GROUP BY clause if aggregation is needed
-            if query_intent.aggregation_type:
-                group_by_clause = self._build_group_by_clause(query_intent, relevant_columns)
-                if group_by_clause:
-                    clauses.append(group_by_clause)
-            
-            # Step 8: Build ORDER BY clause based on intent
-            order_by_clause = self._build_order_by_clause(query_intent, relevant_columns)
+            if group_by_clause:
+                clauses.append(group_by_clause)
             if order_by_clause:
                 clauses.append(order_by_clause)
             
-            # Step 9: Combine clauses into final SQL
             sql = self._combine_clauses(clauses)
             return sql
-            
+
         except Exception as e:
-            logger.error(f"Vector-based SQL generation failed: {e}")
-            return "Error: Unable to generate SQL"
+            logger.error(f"Holistic vector-based SQL generation failed: {e}")
+            return "Error: Unable to generate SQL from vector-based approach"
+
+    def _determine_final_tables(self, query_intent: QueryIntent, columns: List[ColumnMatch]) -> List[TableMatch]:
+        """Determines the final set of tables required to build the query."""
+        table_names = set()
+
+        # Add tables from columns needed for SELECT
+        for col in columns:
+            table_names.add(col.table_name)
+
+        # Add tables from entities in WHERE clause
+        for entity in query_intent.entities:
+            if entity.schema_mapping and entity.schema_mapping.table:
+                table_names.add(entity.schema_mapping.table)
+
+        # Add tables from GROUP BY clause
+        if query_intent.aggregation_type and query_intent.aggregation_type.group_by_columns:
+            for group_col_name in query_intent.aggregation_type.group_by_columns:
+                for col in columns:
+                    if col.column_name == group_col_name:
+                        table_names.add(col.table_name)
+        
+        # Convert table names back to TableMatch objects
+        all_tables = self.vector_store.get_all_tables()
+        final_tables = [table for table in all_tables if table.table_name in table_names]
+
+        if not final_tables:
+            return self._select_tables_from_intent(query_intent)
+
+        return final_tables
     
     def _select_tables_from_intent(self, query_intent: QueryIntent) -> List[TableMatch]:
         """
@@ -1541,10 +1566,14 @@ WHERE e.id NOT IN (
             if ((edge.source_table == table1.table_name and edge.target_table == table2.table_name) or
                 (edge.source_table == table2.table_name and edge.target_table == table1.table_name)):
                 
-                # Extract join columns from relationship metadata
-                left_col = edge.metadata.get('source_column', 'id')
-                right_col = edge.metadata.get('target_column', f"{table1.table_name}_id")
-                
+                # Determine which table is which in the relationship
+                if edge.source_table == table1.table_name:
+                    left_col = edge.source_column
+                    right_col = edge.target_column
+                else:
+                    left_col = edge.target_column
+                    right_col = edge.source_column
+
                 return JoinCondition(
                     left_table=table1.table_name,
                     right_table=table2.table_name,
@@ -1554,61 +1583,40 @@ WHERE e.id NOT IN (
                     confidence=edge.confidence
                 )
         
-        # Improved fallback: Look for realistic foreign key patterns
-        # Common patterns for employee/project/department relationships
-        if table1.table_name == "employees" and table2.table_name == "projects":
-            return JoinCondition(
-                left_table="employees",
-                right_table="projects", 
-                left_column="id",
-                right_column="employee_id",
-                join_type=JoinType.INNER,
-                confidence=0.8
-            )
-        elif table1.table_name == "projects" and table2.table_name == "employees":
-            return JoinCondition(
-                left_table="employees",
-                right_table="projects",
-                left_column="id", 
-                right_column="employee_id",
-                join_type=JoinType.INNER,
-                confidence=0.8
-            )
-        elif table1.table_name == "employees" and table2.table_name == "departments":
-            return JoinCondition(
-                left_table="employees",
-                right_table="departments",
-                left_column="department_id",
-                right_column="id", 
-                join_type=JoinType.INNER,
-                confidence=0.8
-            )
-        elif table1.table_name == "departments" and table2.table_name == "employees":
-            return JoinCondition(
-                left_table="employees", 
-                right_table="departments",
-                left_column="department_id",
-                right_column="id",
-                join_type=JoinType.INNER,
-                confidence=0.8
-            )
+        # If no explicit relationship, infer based on common naming conventions
+        # (e.g., table1.id = table2.table1_id)
         
-        # Generic fallback patterns
-        common_patterns = [
-            ("id", f"{table2.table_name.rstrip('s')}_id"),  # employees.id = projects.employee_id
-            (f"{table1.table_name.rstrip('s')}_id", "id")   # projects.employee_id = employees.id
-        ]
+        # Try to find a column in table2 that references table1's PK
+        table1_pk = self.vector_store.get_primary_key_for_table(table1.table_name)
+        if table1_pk:
+            # e.g. Employee.EmployeeID -> Timesheet.EmployeeID
+            for col in self.vector_store.get_columns_for_table(table2.table_name):
+                if col.column_name == table1_pk:
+                    return JoinCondition(
+                        left_table=table1.table_name,
+                        right_table=table2.table_name,
+                        left_column=table1_pk,
+                        right_column=col.column_name,
+                        join_type=JoinType.INNER,
+                        confidence=0.75 # High confidence for direct name match
+                    )
+
+        # Try to find a column in table1 that references table2's PK
+        table2_pk = self.vector_store.get_primary_key_for_table(table2.table_name)
+        if table2_pk:
+            # e.g. Project.ClientID -> Client.ClientID
+            for col in self.vector_store.get_columns_for_table(table1.table_name):
+                if col.column_name == table2_pk:
+                    return JoinCondition(
+                        left_table=table1.table_name,
+                        right_table=table2.table_name,
+                        left_column=col.column_name,
+                        right_column=table2_pk,
+                        join_type=JoinType.INNER,
+                        confidence=0.75 # High confidence for direct name match
+                    )
         
-        for left_pattern, right_pattern in common_patterns:
-            return JoinCondition(
-                left_table=table1.table_name,
-                right_table=table2.table_name,
-                left_column=left_pattern,
-                right_column=right_pattern,
-                join_type=JoinType.INNER,
-                confidence=0.6  # Medium confidence for pattern-based joins
-            )
-        
+        logger.warning(f"No explicit or inferred join condition found between {table1.table_name} and {table2.table_name}")
         return None
     
     def _determine_join_type(self, query_intent: QueryIntent, join_condition: JoinCondition) -> JoinType:
@@ -1634,7 +1642,7 @@ WHERE e.id NOT IN (
         # Default fallback
         return JoinType.INNER
     
-    def _build_where_clause(self, query_intent: QueryIntent, columns: List[ColumnMatch]) -> Optional[SQLClause]:
+    def _build_where_clause(self, query_intent: QueryIntent, columns: List[ColumnMatch], all_tables: List[TableMatch]) -> Optional[SQLClause]:
         """
         Build WHERE clause from extracted entities.
         
@@ -2144,87 +2152,49 @@ WHERE e.id NOT IN (
         return complexity
 
 
+from improved_semantic_intent_engine import ImprovedSemanticIntentEngine
+from vector_schema_store import VectorSchemaStore
+
 class DynamicSQLGenerator:
     """
-    Main SQL generator class that orchestrates vector-guided SQL creation.
-    
-    This class uses semantic understanding to generate SQL queries without
-    relying on hardcoded patterns or templates.
+    Top-level class for dynamic SQL generation.
+    This class orchestrates the SQL generation process by using the
+    SemanticQueryBuilder and other components.
     """
     
     def __init__(self, 
                  vector_store: VectorSchemaStore,
-                 intent_engine: SemanticIntentEngine):
+                 intent_engine: ImprovedSemanticIntentEngine):
         """
         Initialize the DynamicSQLGenerator.
         
         Args:
             vector_store: VectorSchemaStore for schema context
-            intent_engine: SemanticIntentEngine for query understanding
+            intent_engine: ImprovedSemanticIntentEngine for query understanding
         """
         self.vector_store = vector_store
         self.intent_engine = intent_engine
-        self.query_builder = SemanticQueryBuilder(vector_store, intent_engine)
-        
-        # Track generation statistics
-        self.generation_stats = {
-            "total_queries": 0,
-            "successful_queries": 0,
-            "average_confidence": 0.0,
-            "complexity_distribution": {}
-        }
+        self.query_builder = SemanticQueryBuilder(
+            vector_store=self.vector_store,
+            intent_engine=self.intent_engine
+        )
         
         logger.info("DynamicSQLGenerator initialized")
     
-    def generate_sql(self, query_intent: QueryIntent, conversation_context: Optional[Dict[str, Any]] = None) -> SQLQuery:
+    def generate_sql(self, 
+                     query_intent: QueryIntent, 
+                     predicted_features: Any,  # Replace with actual Feature object
+                     conversation_context: Optional[Dict[str, Any]] = None) -> SQLQuery:
         """
-        Generate a SQL query from a QueryIntent object.
+        Generate a complete SQL query.
         
         Args:
-            query_intent: The QueryIntent object from the semantic engine.
-            conversation_context: Optional context from the previous turn.
+            query_intent: QueryIntent object
+            predicted_features: Predicted SQL features
+            conversation_context: Optional conversation context
             
         Returns:
-            A SQLQuery object containing the generated SQL and metadata.
+            SQLQuery object
         """
+        # Use the query builder to construct the SQL
         return self.query_builder.build_sql_query(query_intent, conversation_context)
-    
-    def _update_generation_stats(self, sql_query: SQLQuery):
-        """Update generation statistics."""
-        self.generation_stats["total_queries"] += 1
-        
-        if sql_query.confidence > 0.7:
-            self.generation_stats["successful_queries"] += 1
-        
-        # Update average confidence
-        total = self.generation_stats["total_queries"]
-        current_avg = self.generation_stats["average_confidence"]
-        new_avg = ((current_avg * (total - 1)) + sql_query.confidence) / total
-        self.generation_stats["average_confidence"] = new_avg
-        
-        # Update complexity distribution
-        complexity_key = f"complexity_{sql_query.complexity_score:.1f}"
-        self.generation_stats["complexity_distribution"][complexity_key] = \
-            self.generation_stats["complexity_distribution"].get(complexity_key, 0) + 1
-    
-    def get_generation_stats(self) -> Dict[str, Any]:
-        """Get current generation statistics."""
-        return self.generation_stats.copy()
-    
-    def learn_from_query(self, nl_query: str, sql_query: str, success: bool, feedback: str = None):
-        """
-        Learn from query execution results to improve future generation.
-        
-        Args:
-            nl_query: Original natural language query
-            sql_query: Generated SQL query
-            success: Whether the query executed successfully
-            feedback: Optional feedback about the query
-        """
-        # This would be implemented to store successful patterns
-        # and learn from failures for continuous improvement
-        logger.info(f"Learning from query result: success={success}")
-        
-        # Store in vector store for future reference
-        if hasattr(self.vector_store, 'learn_from_query'):
-            self.vector_store.learn_from_query(nl_query, sql_query, success)
