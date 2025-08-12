@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.InteropServices;
 
 class Program
 {
@@ -84,11 +85,59 @@ class Program
                 Console.WriteLine("You entered two");
                 break;
             default:
-                                Console.WriteLine("You entered a number other than one or two.");
+                Console.WriteLine("You entered a number other than one or two.");
                 break;
         }
 
-            Console.WriteLine("Press any key to exit...");
+        Console.WriteLine("Please enter a number between 1 and 10: ");
+        int number2; 
+        bool inNumber = int.TryParse(Console.ReadLine(), out number2);
+        if (inNumber && number2 >= 1 && number2 <= 10)
+        {
+            Console.WriteLine("You entered a valid number: " + number2);
+        }
+        else
+        {
+            Console.WriteLine("You did not enter a valid number.");
+        }
+
+        var random = new Random();
+        int randomNumber = random.Next(1, 11);
+
+        Console.WriteLine("Enter a number between 1 and 10");
+
+        int number3;
+        int.TryParse(Console.ReadLine(), out number3);
+        number3 = (number3 >= 1 && number3 <= 10) ? number3 : 0;
+
+        if (number3 < 1 || number3 > 10)
+        {
+            Console.WriteLine("You did not enter a valid number.");
+        }
+        else
+        {
+            while (number3 != randomNumber)
+            {
+                Console.WriteLine("Enter a number between 1 and 10");
+
+                int.TryParse(Console.ReadLine(), out number3);
+                number3 = (number3 >= 1 && number3 <= 10) ? number3 : 0;
+
+                if (number3 < 1 || number3 > 10)
+                {
+                    Console.WriteLine("You did not enter a valid number.");
+                    continue;
+                }
+                else if (number3 == randomNumber)
+                {
+                    break;
+                }
+            }
+
+            Console.WriteLine("You guessed the number!");
+        }
+
+        Console.WriteLine("Press any key to exit...");
         Console.ReadKey();
     }
 
