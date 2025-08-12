@@ -1,10 +1,15 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using c_sharp.Calculator;
 
 class Program
 {
     static void Main(string[] args)
     {
+
+        Calculator calculator = new Calculator();
+        calculator.SimpleCalculator();
+
         bool hasDegree = false;
         bool hasExperience = true;
 
