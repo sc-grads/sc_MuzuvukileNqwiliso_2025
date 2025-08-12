@@ -14,7 +14,7 @@ from config import USE_LIVE_DB, get_current_database
 # Import RAG components
 from vector_schema_store import VectorSchemaStore
 from improved_semantic_intent_engine import ImprovedSemanticIntentEngine, QueryIntent
-from dynamic_sql_generator import DynamicSQLGenerator, SQLQuery
+from llm import generate_sql_query
 from adaptive_learning_engine import AdaptiveLearningEngine
 from semantic_error_handler import SemanticErrorHandler, ErrorType, RecoveryPlan
 from vector_config import VectorConfig
@@ -140,12 +140,6 @@ class RAGSQLAgent:
         # Initialize query intent classifier
         # self.query_classifier = QueryIntentClassifier()  # Not needed with ImprovedSemanticIntentEngine
         
-        # Initialize dynamic SQL generator
-        self.sql_generator = DynamicSQLGenerator(
-            vector_store=self.vector_store,
-            intent_engine=self.intent_engine
-        )
-        
         # Initialize adaptive learning engine (if enabled)
         if self.enable_learning:
             self.learning_engine = AdaptiveLearningEngine(
@@ -188,7 +182,7 @@ class RAGSQLAgent:
                 logger.info(f"Schema metadata type: {type(schema_metadata)}")
                 if isinstance(schema_metadata, list) and len(schema_metadata) > 0:
                     logger.info(f"First item type: {type(schema_metadata[0])}")
-                    logger.info(f"First item: {schema_metadata[0]}")
+                    # logger.info(f"First item: {schema_metadata[0]}")
                 
                 # Ingest schema into our vector store
                 self.vector_store.ingest_schema(schema_metadata)
@@ -234,6 +228,24 @@ class RAGSQLAgent:
         try:
             # Step 1: Analyze query intent
             query_intent = self.intent_engine.analyze_query(full_query)
+
+            # Handle cases where intent analysis fails
+            if query_intent is None:
+                logger.warning("Intent analysis failed. Could not determine a clear intent from the query.")
+                return RAGQueryResult(
+                    success=False,
+                    sql_query=None,
+                    results=None,
+                    columns=None,
+                    confidence=0.0,
+                    processing_time=time.time() - start_time,
+                    error_message="Could not understand the query's intent. Please try rephrasing your question.",
+                    recovery_plan=None,
+                    metadata={'error_type': 'intent_analysis_failed'},
+                    needs_clarification=True,
+                    clarification_question="I'm sorry, I wasn't able to understand your request. Could you please rephrase it?"
+                )
+
             logger.info(f"Query intent: {query_intent.intent_type.value} (confidence: {query_intent.confidence:.3f})")
 
             # Step 1.5: Check confidence and ask for clarification if needed
@@ -256,22 +268,6 @@ class RAGSQLAgent:
                     clarification_question=clarification_question
                 )
 
-            # Step 2: Predict SQL features dynamically using DynamicFeaturePredictor
-            schema_result = get_schema_metadata()
-            if isinstance(schema_result, tuple):
-                schema_metadata = schema_result[0]
-            else:
-                schema_metadata = schema_result
-            
-            from dynamic_feature_predictor import DynamicFeaturePredictor
-            
-            feature_predictor = DynamicFeaturePredictor(self.vector_store, schema_metadata)
-            predicted_features = feature_predictor.predict_sql_features(query_intent, full_query)
-            
-            logger.info(f"Predicted tables: {predicted_features.tables}")
-            logger.info(f"Predicted complexity: {predicted_features.complexity}")
-            logger.info(f"Prediction confidence: {predicted_features.confidence:.3f}")
-
             # Step 3: Check for learned patterns (if learning is enabled)
             if self.learning_engine:
                 recommendation = self.learning_engine.get_pattern_recommendation(
@@ -285,19 +281,73 @@ class RAGSQLAgent:
                             sql=recommended_sql,
                             confidence=recommendation_confidence,
                             # Simplified metadata for learned patterns
-                            clauses=[], tables_used=predicted_features.tables, columns_used=predicted_features.columns, joins=[],
+                            clauses=[], tables_used=[], columns_used=[], joins=[],
                             complexity_score=0.5, # Placeholder
                             generation_metadata={'source': 'learned_pattern'}
                         )
                     else:
-                        # Step 4: Generate SQL using predicted features
-                        sql_query_obj = self.sql_generator.generate_sql(query_intent, predicted_features, conversation_context)
+                        # Step 4: Generate SQL using the LLM
+                        schema_result = get_schema_metadata()
+                        if isinstance(schema_result, tuple):
+                            schema_metadata, column_map, _, enhanced_data = schema_result
+                        else:
+                            schema_metadata, column_map, enhanced_data = schema_result, {}, None
+
+                        sql_query_str = generate_sql_query(
+                            nl_query=full_query,
+                            schema_metadata=schema_metadata,
+                            column_map=column_map,
+                            entities={
+                                "is_database_related": True,
+                                "intent": query_intent.intent_type.value,
+                                "suggested_tables": [table.name for table in query_intent.entities if table.entity_type.value == 'TABLE'],
+                            },
+                            conversation_context=conversation_context,
+                            enhanced_data=enhanced_data
+                        )
+                        sql_query_obj = type('SQLQuery', (object,), {'sql': sql_query_str, 'confidence': query_intent.confidence, 'generation_metadata': {}, 'tables_used': []})()
                 else:
-                    # Step 4: Generate SQL using predicted features
-                    sql_query_obj = self.sql_generator.generate_sql(query_intent, predicted_features, conversation_context)
+                    # Step 4: Generate SQL using the LLM
+                    schema_result = get_schema_metadata()
+                    if isinstance(schema_result, tuple):
+                        schema_metadata, column_map, _, enhanced_data = schema_result
+                    else:
+                        schema_metadata, column_map, enhanced_data = schema_result, {}, None
+
+                    sql_query_str = generate_sql_query(
+                        nl_query=full_query,
+                        schema_metadata=schema_metadata,
+                        column_map=column_map,
+                        entities={
+                            "is_database_related": True,
+                            "intent": query_intent.intent_type.value,
+                            "suggested_tables": [table.name for table in query_intent.entities if table.entity_type.value == 'TABLE'],
+                        },
+                        conversation_context=conversation_context,
+                        enhanced_data=enhanced_data
+                    )
+                    sql_query_obj = type('SQLQuery', (object,), {'sql': sql_query_str, 'confidence': query_intent.confidence, 'generation_metadata': {}, 'tables_used': []})()
             else:
-                # Step 4: Generate SQL using predicted features (default path)
-                sql_query_obj = self.sql_generator.generate_sql(query_intent, predicted_features, conversation_context)
+                # Step 4: Generate SQL using the LLM (default path)
+                schema_result = get_schema_metadata()
+                if isinstance(schema_result, tuple):
+                    schema_metadata, column_map, _, enhanced_data = schema_result
+                else:
+                    schema_metadata, column_map, enhanced_data = schema_result, {}, None
+
+                sql_query_str = generate_sql_query(
+                    nl_query=full_query,
+                    schema_metadata=schema_metadata,
+                    column_map=column_map,
+                    entities={
+                        "is_database_related": True,
+                        "intent": query_intent.intent_type.value,
+                        "suggested_tables": [table.name for table in query_intent.entities if table.entity_type.value == 'TABLE'],
+                    },
+                    conversation_context=conversation_context,
+                    enhanced_data=enhanced_data
+                )
+                sql_query_obj = type('SQLQuery', (object,), {'sql': sql_query_str, 'confidence': query_intent.confidence, 'generation_metadata': {}, 'tables_used': []})()
             
             logger.info(f"Generated SQL: {sql_query_obj.sql}")
             

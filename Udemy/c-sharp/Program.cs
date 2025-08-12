@@ -1,98 +1,150 @@
 ﻿using System;
+using System.Runtime.InteropServices;
+using c_sharp.Calculator;
 
 class Program
 {
     static void Main(string[] args)
     {
-        //PrintUserName();
 
-        // Below is the method to ask a user for their name
-        //userinput();
-        // Below is the method to perform a simple calculator operation
-        //Calculator();
+        Calculator calculator = new Calculator();
+        calculator.SimpleCalculator();
 
-        //Console.WriteLine("Enter something!");
-        //int num1 = 0;
-        //Console.WriteLine($"Number :- {num1}");
+        bool hasDegree = false;
+        bool hasExperience = true;
 
-        //Console.WriteLine("Enter a whole number: ");
-        //int number = int.Parse(Console.ReadLine());
-        //Console.WriteLine($"You entered: {number}");
+        // AND both conditions must be true
+        // OR at least one condition must be true
+        // NOT negates the condition
+        // XOR exclusive OR, one must be true but not both
 
-        //Console.WriteLine("Enter your first descimal no : ");
-        //double firumber = double.Parse(Console.ReadLine());
-        //Console.WriteLine("Enter your second descimal no :");
-        //double secondnumber = double.Parse(Console.ReadLine());
-        //double sum = firumber + secondnumber;
-        //Console.WriteLine($"Sum: {sum}");
+        Console.WriteLine("This is going to display true -> {0}",!hasDegree);
+        Console.WriteLine("This is going to display false -> {0}",hasDegree);
 
-        int intNum = 0;
-        double doubleNum = 12.45;
-        intNum = Convert.ToInt32(doubleNum); 
-        Console.WriteLine(intNum);
-
-        Console.ReadKey();
-    }
-
-    static void userinput()
-    {
-       
-    }
-
-    static void PrintUserName()
-    {
-        string name = "User";
-        Console.WriteLine("Please enter your name:");
-        string userName = Console.ReadLine();
-        Console.WriteLine($"Hello, {name}!");
-    }
-
-    static void Calculator()
-    {
-
-        int num1, num2;
-        double result = 0;
-        char operation;
-        
-        Console.WriteLine("Enter first number:");
-        num1 = Convert.ToInt32(Console.ReadLine());
-        Console.WriteLine("Enter an operator (+, -, *, /):");
-        operation = Console.ReadKey().KeyChar;
-        Console.WriteLine(); // To move to the next line after reading the operator
-        Console.WriteLine("Enter second number:");
-        num2 = Convert.ToInt32(Console.ReadLine());
-
-        if (operation == '+')
+        if (hasDegree || hasExperience)
         {
-            result = num1 + num2;
-            Console.WriteLine($"Result: {result}");
+            Console.WriteLine("You are qualified for the job.");
+        }else
+        {
+            Console.WriteLine("You are not qualified for the job.");
         }
-        else if (operation == '-')
+
+       Console.WriteLine("Please enter your age: ");
+        int age;
+        Console.WriteLine();
+        if(!int.TryParse(Console.ReadLine(), out age))
         {
-            result = num1 - num2;
-            Console.WriteLine($"Result: {result}");
+            Console.WriteLine("Invalid input. Please enter a valid age.");
+            return;
         }
-        else if (operation == '*')
+        Console.WriteLine("You entered: " + age);
+        if (age >= 18 && age < 65)
         {
-            result = num1 * num2;
-            Console.WriteLine($"Result: {result}");
+            Console.WriteLine("You are eligible to work.");
         }
-        else if (operation == '/')
+        else if (age < 18)
         {
-            if (num2 != 0)
+            Console.WriteLine("You are too young to work.");
+        }
+        else if (age >= 65)
+        {
+            Console.WriteLine("You are not eligible to work.");
+        }else
+        {
+            Console.WriteLine("Invalid age.");
+        }
+
+
+        Console.WriteLine("Do you like games?");
+        if (Console.ReadLine().ToLower() == "yes")
+        {
+            string gameName;
+            Console.WriteLine("What is your favorite game?");
+            gameName = Console.ReadLine().ToLower();
+            if (gameName == "God of War")
             {
-                result = num1 / num2;
-                Console.WriteLine($"Result: {result}");
+                Console.WriteLine("You like God of War too!");
+            }
+            else if (gameName == "Call of Duty")
+            {
+                Console.WriteLine("You like The Call of Duty too!");
             }
             else
             {
-                Console.WriteLine("Error: Division by zero is not allowed.");
+                Console.WriteLine("You like " + gameName + " too!");
             }
         }
         else
         {
-            Console.WriteLine("Error: Invalid operator.");
+            Console.WriteLine("You don't like games.");
         }
+        Console.WriteLine("Please enter a number between 1 and 2: ");
+        int number;
+        number = int.Parse(Console.ReadLine());
+        switch (number)
+        {
+            case 1:
+                Console.WriteLine("You entered one.");
+                break;
+            case 2:
+                Console.WriteLine("You entered two");
+                break;
+            default:
+                Console.WriteLine("You entered a number other than one or two.");
+                break;
+        }
+
+        Console.WriteLine("Please enter a number between 1 and 10: ");
+        int number2; 
+        bool inNumber = int.TryParse(Console.ReadLine(), out number2);
+        if (inNumber && number2 >= 1 && number2 <= 10)
+        {
+            Console.WriteLine("You entered a valid number: " + number2);
+        }
+        else
+        {
+            Console.WriteLine("You did not enter a valid number.");
+        }
+
+        var random = new Random();
+        int randomNumber = random.Next(1, 11);
+
+        Console.WriteLine("Enter a number between 1 and 10");
+
+        int number3;
+        int.TryParse(Console.ReadLine(), out number3);
+        number3 = (number3 >= 1 && number3 <= 10) ? number3 : 0;
+
+        if (number3 < 1 || number3 > 10)
+        {
+            Console.WriteLine("You did not enter a valid number.");
+        }
+        else
+        {
+            while (number3 != randomNumber)
+            {
+                Console.WriteLine("Enter a number between 1 and 10");
+
+                int.TryParse(Console.ReadLine(), out number3);
+                number3 = (number3 >= 1 && number3 <= 10) ? number3 : 0;
+
+                if (number3 < 1 || number3 > 10)
+                {
+                    Console.WriteLine("You did not enter a valid number.");
+                    continue;
+                }
+                else if (number3 == randomNumber)
+                {
+                    break;
+                }
+            }
+
+            Console.WriteLine("You guessed the number!");
+        }
+
+        Console.WriteLine("Press any key to exit...");
+        Console.ReadKey();
     }
+
 
 }
