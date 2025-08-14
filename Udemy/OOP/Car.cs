@@ -17,6 +17,7 @@ namespace OOP
         private string _model;
         private string _make;
         private int _year;
+        public static int NumberOfCars { get; private set; } = 0;
 
         public string Model {
             get
@@ -80,6 +81,7 @@ namespace OOP
             Make = make;
             Year = year;
             this.isLuxury = isLuxury;
+            NumberOfCars++;
         }
 
         public void Drive()
