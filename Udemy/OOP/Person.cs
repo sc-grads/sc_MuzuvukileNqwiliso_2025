@@ -71,7 +71,15 @@ namespace OOP
             PhoneNumber = 0;
         }
 
+        public void userInfo(string fullname, int age, string address, long phoneNumber)
+        {
+            FullName = fullname;
+            Age = age;
+            Address = address;
+            PhoneNumber = phoneNumber;
 
+            Console.WriteLine($"Name: {FullName}, Age: {Age}, Address: {Address}, Phone Number: {PhoneNumber}");
+        }
     }
 
 
