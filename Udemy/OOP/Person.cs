@@ -1,0 +1,78 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace OOP
+{
+    internal class Person
+    {
+
+        // This is a constructor
+        // It is called when an instance of the class is created
+        // It initializes the properties of the class
+        // The constructor has the same name as the class
+        // It does not have a return type
+        // It can take parameters to initialize the properties
+        // Example: public Car(string make, string model, int year)
+
+       public string FullName { get; set; }
+        public int Age { get; set; }
+        public string Address { get; set; }
+
+        public long PhoneNumber { get; set; }
+
+        // Constructor with parameters
+        public Person(string fullName, int age, string address, long phoneNumber)
+        {
+            FullName = fullName;
+            Age = age;
+            Address = address;
+            PhoneNumber = phoneNumber;
+        }
+
+        public Person(string fullName, int age)
+        {
+            FullName = fullName;
+            Age = age;
+        }
+
+        // Constructor with one parameter
+        public Person(string fullName)
+        {
+            FullName = fullName;
+        }
+
+   
+
+        public Person(string fullName, long phoneNumber)
+        {
+            FullName = fullName;
+            PhoneNumber = phoneNumber;
+        }
+
+
+        public Person(long phoneNumber, string address)
+        {
+            PhoneNumber = phoneNumber;
+            Address = address;
+        }
+
+
+
+        // Default constructor
+
+        public Person()
+        {
+            FullName = "Unknown";
+            Age = 0;
+            Address = "Unknown";
+            PhoneNumber = 0;
+        }
+
+
+    }
+
+
+}
