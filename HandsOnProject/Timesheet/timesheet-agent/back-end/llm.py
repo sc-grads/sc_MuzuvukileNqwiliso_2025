@@ -22,11 +22,6 @@ logger = logging.getLogger(__name__)
 
 
 class OllamaManager:
-    """
-    Manages the connection to the Ollama service, including model initialization,
-    health checks, model fallback, and performance optimizations like caching.
-    """
-
     def __init__(self, health_check_interval: int = 300, cache_size: int = 128):
         self.primary_model = LLM_MODEL
         self.fallback_models = self._get_fallback_models()
@@ -37,12 +32,9 @@ class OllamaManager:
         self.health_check_interval = health_check_interval
         self.cache_size = cache_size
         self._initialize_llm()
-
-        # Decorate the _execute_invoke method with lru_cache
         self._cached_invoke = lru_cache(maxsize=self.cache_size)(self._execute_invoke)
 
     def _get_fallback_models(self) -> List[str]:
-        """Defines a list of fallback models based on the primary model."""
         if "mistral" in self.primary_model.lower():
             return ["llama2:7b", "codellama:7b"]
         elif "llama2" in self.primary_model.lower():
@@ -51,7 +43,6 @@ class OllamaManager:
             return ["mistral:7b", "llama2:7b"]
 
     def _initialize_llm(self):
-        """Initializes or re-initializes the ChatOllama instance."""
         try:
             ChatOllama.model_rebuild()
             self.llm_instance = ChatOllama(
@@ -66,53 +57,40 @@ class OllamaManager:
             self.llm_instance = None
 
     def check_ollama_health(self) -> bool:
-        """
-        Checks if the Ollama service is healthy by sending a test generation request.
-        """
         try:
             test_response = requests.post(
                 f"{self.base_url}/api/generate",
                 json={"model": self.current_model, "prompt": "SELECT 1", "stream": False},
                 timeout=30
             )
-            if test_response.status_code == 200:
-                return True
-            logger.warning(f"Ollama health check for model {self.current_model} failed with status {test_response.status_code}")
-            return False
+            return test_response.status_code == 200
         except requests.exceptions.RequestException as e:
             logger.error(f"Ollama health check failed: {e}")
             return False
 
     def _attempt_model_fallback(self) -> bool:
-        """Attempts to switch to a fallback model if the current one fails."""
         for fallback_model in self.fallback_models:
             logger.info(f"Attempting fallback to model: {fallback_model}")
             self.current_model = fallback_model
             self._initialize_llm()
             if self.llm_instance and self.check_ollama_health():
-                logger.info(f"Successfully switched to fallback model: {fallback_model}")
+                logger.info(f"Switched to fallback model: {fallback_model}")
                 return True
-        logger.error("All fallback models failed. Resetting to primary model.")
         self.current_model = self.primary_model
         self._initialize_llm()
         return False
 
     def _execute_invoke(self, prompt: str) -> str:
-        """
-        The core logic for invoking the LLM, including health checks and retries.
-        This method is wrapped by the lru_cache for caching.
-        """
         if time.time() - self.last_health_check > self.health_check_interval:
             if not self.check_ollama_health():
-                logger.warning("Health check failed, attempting model fallback.")
                 if not self._attempt_model_fallback():
-                    raise ConnectionError("Ollama service is unavailable and all fallback models failed.")
+                    raise ConnectionError("All models failed.")
             self.last_health_check = time.time()
 
         if not self.llm_instance:
             self._initialize_llm()
             if not self.llm_instance:
-                raise ConnectionError("LLM instance is not available.")
+                raise ConnectionError("LLM instance unavailable.")
 
         max_retries = 2
         for attempt in range(max_retries):
@@ -120,22 +98,19 @@ class OllamaManager:
                 response = self.llm_instance.invoke(prompt)
                 return response.content.strip()
             except Exception as e:
-                logger.error(f"LLM invocation attempt {attempt + 1} failed: {e}")
                 if attempt < max_retries - 1:
-                    if not self._attempt_model_fallback():
-                        time.sleep(2 ** attempt)
+                    self._attempt_model_fallback()
+                    time.sleep(2 ** attempt)
                 else:
-                    raise Exception(f"All LLM invocation attempts failed. Last error: {e}")
+                    raise Exception(f"LLM failed: {e}")
         return ""
 
     def invoke(self, prompt: str, use_cache: bool = True) -> str:
-        """Invokes the LLM with optional caching."""
         if use_cache:
             return self._cached_invoke(prompt)
         return self._execute_invoke(prompt)
 
     def get_model_info(self) -> Dict[str, any]:
-        """Returns information about the current model and cache status."""
         cache_info = self._cached_invoke.cache_info()
         return {
             "current_model": self.current_model,
@@ -153,8 +128,6 @@ class OllamaManager:
         }
 
     def clear_cache(self):
-        """Clears the LRU cache."""
-        logger.info("Clearing LLM prompt cache.")
         self._cached_invoke.cache_clear()
 
 
@@ -162,180 +135,198 @@ llm_manager = OllamaManager()
 
 
 def _extract_sql_from_response(response: str) -> str:
-    """
-    Robustly extracts a SQL query from the LLM's response.
-    """
-    sql_section_match = re.search(r"\*\*SQL:\*\*", response, re.IGNORECASE)
-    search_area = response[sql_section_match.end():] if sql_section_match else response
-    
-    sql_match = re.search(r"```(?:sql)?\s*(.*?)\s*```", search_area, re.DOTALL)
-    clean_sql = sql_match.group(1) if sql_match else search_area
-    
-    clean_sql = clean_sql.strip().replace("`", "").replace(";", "")
-    
-    parsed = sqlparse.parse(clean_sql)
-    if not parsed:
-        logger.warning("Could not parse any SQL from the LLM response.")
-        return ""
+    sql_block_match = re.search(r"```(?:sql)?\s*(.*?)\s*```", response, re.DOTALL | re.IGNORECASE)
+    if sql_block_match:
+        candidate = sql_block_match.group(1).strip()
+    else:
+        sql_section_match = re.search(r"\*\*SQL:\*\*", response, re.IGNORECASE)
+        candidate = response[sql_section_match.end():].strip() if sql_section_match else response
 
-    for statement in parsed:
-        if statement.get_type() in ("SELECT", "WITH"):
-            return str(statement).strip()
-
-    logger.warning("No valid SELECT or WITH statement found in the LLM response.")
+    candidate = candidate.strip().strip("`").strip()
+    match = re.search(r"((WITH\s+[\s\S]+?\)\s*)?SELECT\b[\s\S]+)", candidate, re.IGNORECASE)
+    if match:
+        return match.group(1).rstrip().rstrip(";")
+    logger.warning("No valid SQL found in response.")
     return ""
 
 
+# -------------------------
+# Fully dynamic example generator
+# -------------------------
 def _create_dynamic_example(schema_metadata: List[Dict]) -> str:
-    """
-    Creates a realistic, dynamic few-shot example based on the relevant schema.
-    """
     if not schema_metadata:
-        return "" # No context to build an example
+        return ""
 
-    # Prioritize tables with relationships for better JOIN examples
-    schema_metadata.sort(key=lambda t: len(t.get('relationships', [])), reverse=True)
+    examples = []
 
-    # Scenario 1: A table with a relationship exists (ideal for a JOIN example)
-    for table1 in schema_metadata:
-        if table1.get('relationships'):
-            rel = table1['relationships'][0]
-            target_table_name = rel['target_table']
-            
-            table2 = next((t for t in schema_metadata if f"{t['schema']}.{t['table']}" == target_table_name), None)
-            if not table2: continue
+    def find_table(min_cols=1, has_numeric=False, has_date=False, has_name=False):
+        for t in schema_metadata:
+            if len(t['columns']) >= min_cols:
+                cols = t['columns']
+                if has_numeric and not any(any(x in c['type'].lower() for x in ['int', 'decimal', 'numeric']) for c in cols):
+                    continue
+                if has_date and not any('date' in c['type'].lower() or 'time' in c['type'].lower() for c in cols):
+                    continue
+                if has_name and not any('name' in c['name'].lower() for c in cols):
+                    continue
+                return t
+        return None
 
-            s1, t1, c1 = table1['schema'], table1['table'], table1['columns'][0]['name']
-            s2, t2, c2 = table2['schema'], table2['table'], table2['columns'][0]['name']
-            source_join_key = rel['source_column']
-            target_join_key = rel['target_column']
-
-            return f"""User Request: "Find all `{t1}` records and their related `{t2}`."
-
+    tbl_simple = find_table(min_cols=2)
+    if tbl_simple:
+        c1, c2 = tbl_simple['columns'][0]['name'], tbl_simple['columns'][1]['name']
+        examples.append(f"""User Request: "Show some rows from {tbl_simple['table']}."
 Plan:
-1. I need to join `[{s1}].[{t1}]` with `[{s2}].[{t2}]`.
-2. The schema indicates they join on `[{s1}].[{t1}].[{source_join_key}]` and `[{s2}].[{t2}].[{target_join_key}]`.
-3. I will select the first 10 results to keep the output small.
+1. Select a sample of rows.
+2. Return two representative columns.
+
+**SQL:**
+```sql
+SELECT TOP 10
+    [{c1}],
+    [{c2}]
+FROM
+    [{tbl_simple['schema']}].[{tbl_simple['table']}];
+```""")
+
+    tbl_with_rel = next((t for t in schema_metadata if t.get('relationships')), None)
+    if tbl_with_rel:
+        rel = tbl_with_rel['relationships'][0]
+        target_tbl = next((tt for tt in schema_metadata if f"{tt['schema']}.{tt['table']}" == rel['target_table']), None)
+        if target_tbl:
+            examples.append(f"""User Request: "Show related data between {tbl_with_rel['table']} and {target_tbl['table']}."
+Plan:
+1. Join the two tables using the defined relationship.
 
 **SQL:**
 ```sql
 SELECT TOP 10
     t1.*,
-    t2.[{c2}]
+    t2.[{target_tbl['columns'][0]['name']}]
 FROM
-    [{s1}].[{t1}] AS t1
+    [{tbl_with_rel['schema']}].[{tbl_with_rel['table']}] AS t1
 JOIN
-    [{s2}].[{t2}] AS t2 ON t1.[{source_join_key}] = t2.[{target_join_key}];
-```"""
+    [{target_tbl['schema']}].[{target_tbl['table']}] AS t2
+    ON t1.[{rel['source_column']}] = t2.[{rel['target_column']}];
+```""")
 
-    # Scenario 2: No relationships, but multiple tables (less ideal JOIN)
-    if len(schema_metadata) >= 2:
-        table1, table2 = schema_metadata[0], schema_metadata[1]
-        s1, t1, c1 = table1['schema'], table1['table'], table1['columns'][0]['name']
-        s2, t2 = table2['schema'], table2['table']
-        # Make a plausible guess for a join key, like 'ID' or the first column name
-        join_key = next((c['name'] for c in table1['columns'] if 'ID' in c['name'].upper()), c1)
-
-        return f"""User Request: "Find all `{t1}` records related to `{t2}`."
-
+    tbl_with_num_date = find_table(min_cols=2, has_numeric=True, has_date=True)
+    if tbl_with_num_date:
+        date_col = next(c['name'] for c in tbl_with_num_date['columns'] if 'date' in c['type'].lower() or 'time' in c['type'].lower())
+        num_col = next(c['name'] for c in tbl_with_num_date['columns'] if any(x in c['type'].lower() for x in ['int', 'decimal', 'numeric']))
+        examples.append(f"""User Request: "Total {num_col} for April 2024."
 Plan:
-1. I need to join `[{s1}].[{t1}]` with `[{s2}].[{t2}]`.
-2. I will assume they join on a common key like `[{join_key}]`.
-3. I will select the first 10 results.
+1. Filter by April 2024.
+2. Sum the numeric column.
 
 **SQL:**
 ```sql
-SELECT TOP 10
-    t1.*
+SELECT
+    SUM([{num_col}]) AS TotalValue
 FROM
-    [{s1}].[{t1}] AS t1
-JOIN
-    [{s2}].[{t2}] AS t2 ON t1.[{join_key}] = t2.[{join_key}];
-```"""
+    [{tbl_with_num_date['schema']}].[{tbl_with_num_date['table']}]
+WHERE
+    [{date_col}] >= '2024-04-01'
+    AND [{date_col}] <= '2024-04-30';
+```""")
 
-    # Scenario 3: Only one table provided
-    table1 = schema_metadata[0]
-    schema, table_name = table1['schema'], table1['table']
-    col1, col2 = table1['columns'][0]['name'], table1['columns'][1]['name']
-    return f"""User Request: "Show me all records from `{table_name}`."
-
+    tbl_name = find_table(has_name=True)
+    if tbl_name and tbl_with_rel:
+        name_col = next(c['name'] for c in tbl_name['columns'] if 'name' in c['name'].lower())
+        examples.append(f"""User Request: "Show related rows for a specific name."
 Plan:
-1. I will select the first 10 records from the `[{schema}].[{table_name}]` table.
-2. I will select the columns `[{col1}]` and `[{col2}]`.
+1. Use a CTE to filter by name.
+2. Join the CTE to another table.
 
 **SQL:**
 ```sql
-SELECT TOP 10
-    [{col1}],
-    [{col2}]
-FROM
-    [{schema}].[{table_name}];
-```"""
+WITH filtered AS (
+    SELECT [{tbl_name['columns'][0]['name']}] AS ID
+    FROM [{tbl_name['schema']}].[{tbl_name['table']}]
+    WHERE [{name_col}] = 'Example Name'
+)
+SELECT t.*
+FROM [{tbl_with_rel['schema']}].[{tbl_with_rel['table']}] t
+JOIN filtered f ON t.[{tbl_with_rel['columns'][0]['name']}] = f.ID;
+```""")
+
+    return "\n\n".join(examples)
 
 
 def get_model_specific_prompt_template(dynamic_example: str) -> str:
-    """
-    Gets an advanced, robust prompt template that is dynamically customized
-    with a relevant few-shot example.
-    """
-    return f"""You are an expert SQL Server developer. Your task is to write a single, correct SQL query based on the user's request and the provided database schema.
+    return f"""You are an expert SQL Server developer.
+Your task: produce ONE correct, safe SQL query in T-SQL (SQL Server) 
+that answers the user's request using the provided database schema.
 
-First, think step-by-step to create a plan.
-Second, write the final SQL query based on your plan.
+## Rules:
+1. Output two sections: **Plan:** (short reasoning) and **SQL:** (final query in code block).
+2. Always use schema-qualified names: [Schema].[Table].
+3. Only SELECT/ WITH + SELECT statements. No modifications.
+4. Use TOP N for sampling.
+5. Use YYYY-MM-DD for dates.
+6. Match exact strings unless told otherwise.
+7. Use explicit JOINs when combining tables.
+8. Use columns from schema; if unsure, pick most likely.
+9. Keep query readable.
+10. Only one final query.
 
-**IMPORTANT RULE: You MUST use the schema name provided for each table (e.g., `[SchemaName].[TableName]`).**
+---
 
-**Schema Information:**
+## Schema:
 {{schema_text}}
 
 ---
 
-**Example of how to structure your response:**
+## Example Queries:
 {dynamic_example}
 
 ---
 
-**User Request:**
+## User Request:
 "{{nl_query}}"
 
-**Plan:**
+Plan:
 """
 
 
 def _prepare_llm_prompt(nl_query: str, schema_metadata: List[Dict], previous_sql: Optional[str] = None, error_feedback: Optional[str] = None) -> str:
-    """Prepares the full prompt for the LLM, including a dynamic few-shot example."""
-    schema_text_parts = []
-    relevant_tables = schema_metadata[:5]
+    lowered = nl_query.lower()
 
+    def is_relevant(tbl):
+        if tbl['table'].lower() in lowered:
+            return True
+        if any(col['name'].lower() in lowered for col in tbl.get('columns', [])):
+            return True
+        return False
+
+    relevant_tables = [t for t in schema_metadata if is_relevant(t)]
+    if not relevant_tables:
+        relevant_tables = schema_metadata
+
+    schema_text_parts = []
     for m in relevant_tables:
         table_desc = m.get('description', f"Table {m['schema']}.{m['table']}")
-        columns = [f"[{col['name']}] ({col.get('description', col['type'])})" for col in m['columns'][:7]]
-        table_text = f"Table [{m['schema']}].[{m['table']}]: {table_desc}\nColumns: {', '.join(columns)}"
-        
-        relationships = m.get('relationships', [])
-        if relationships:
-            rel_texts = [f"  - Connects to [{rel['target_table']}] via {m['table']}.{rel['source_column']} = {rel['target_table']}.{rel['target_column']}" for rel in relationships]
-            table_text += "\nRelationships:\n" + "\n".join(rel_texts)
+        cols_text = ", ".join(f"[{col['name']}] ({col.get('type','')})" for col in m['columns'])
+        table_text = f"Table [{m['schema']}].[{m['table']}]: {table_desc}\nColumns: {cols_text}"
+        if m.get('relationships'):
+            rel_lines = [f"  - Connects to [{rel['target_table']}] via {m['table']}.{rel['source_column']} = {rel['target_table']}.{rel['target_column']}" for rel in m['relationships']]
+            table_text += "\nRelationships:\n" + "\n".join(rel_lines)
         schema_text_parts.append(table_text)
 
     schema_text = "\n\n".join(schema_text_parts)
 
     if previous_sql and error_feedback:
-        nl_query += f"\n\nThe previous query attempt failed. Please fix it.\nPrevious SQL: {previous_sql}\nError: {error_feedback}"
+        nl_query += f"\n\nThe previous query failed. Fix it.\nPrevious SQL:\n{previous_sql}\nError:\n{error_feedback}"
 
-    # Generate a dynamic example based on the provided schema context
     dynamic_example = _create_dynamic_example(relevant_tables)
     prompt_template = get_model_specific_prompt_template(dynamic_example)
-    
+
     return prompt_template.format(schema_text=schema_text, nl_query=nl_query)
 
 
 def generate_sql_query(nl_query: str, schema_metadata: List[Dict], **kwargs) -> str:
-    """
-    Generates a SQL query from a natural language query, validates it, and returns it.
-    """
     if not kwargs.get("entities", {}).get("is_database_related", False):
-        return "This query is not related to the database. Please ask about data in the connected database."
+        return "This query is not related to the database."
 
     prompt = _prepare_llm_prompt(
         nl_query,
@@ -345,43 +336,27 @@ def generate_sql_query(nl_query: str, schema_metadata: List[Dict], **kwargs) -> 
     )
 
     try:
-        logger.info(f"Generating SQL for query: '{nl_query}' using model: {llm_manager.current_model}")
         llm_response = llm_manager.invoke(prompt, use_cache=True)
         sql_query = _extract_sql_from_response(llm_response)
 
         if not sql_query:
-            logger.error("LLM failed to return a valid SQL query.")
-            return "Error: Failed to generate a valid SQL query from the model's response."
+            return "Error: Failed to extract SQL."
 
-        logger.info(f"Validating generated SQL: {sql_query}")
         validation_result = comprehensive_validate_query(sql_query, schema_metadata)
-
         if validation_result["should_block"]:
             errors = "; ".join(validation_result["errors"])
             warnings = "; ".join(validation_result["warnings"])
-            error_message = f"Generated query is invalid or unsafe and was blocked. Errors: {errors}. Warnings: {warnings}"
-            logger.error(error_message)
-            return f"Error: {error_message}"
+            return f"Error: Query blocked. Errors: {errors}. Warnings: {warnings}"
 
-        if not validation_result["is_valid"]:
-            warnings = "; ".join(validation_result["warnings"])
-            logger.warning(f"Generated query has warnings: {warnings}")
-
-        logger.info(f"Successfully generated and validated SQL: {validation_result['query']}")
         return validation_result["query"]
 
     except Exception as e:
-        logger.error(f"An unexpected error occurred during SQL generation: {e}", exc_info=True)
-        return f"Error: An unexpected error occurred: {e}"
+        return f"Error: {e}"
 
 
 def comprehensive_validate_query(sql_query: str, schema_metadata: List[Dict]) -> Dict[str, any]:
-    """
-    Performs comprehensive validation of a SQL query.
-    """
     validator = create_validator_from_schema(schema_metadata)
     validation_result = validator.validate_query(sql_query)
-
     return {
         "is_valid": validation_result.is_valid,
         "query": validation_result.query,
@@ -396,7 +371,6 @@ def comprehensive_validate_query(sql_query: str, schema_metadata: List[Dict]) ->
 
 
 def _should_block_query(validation_result) -> bool:
-    """Determines if a query should be blocked based on validation results."""
     is_high_or_critical_risk = validation_result.security_risk in [SecurityRisk.HIGH, SecurityRisk.CRITICAL]
     return (
         not validation_result.is_valid or
