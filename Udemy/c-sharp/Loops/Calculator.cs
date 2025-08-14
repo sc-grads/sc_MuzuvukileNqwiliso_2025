@@ -28,7 +28,7 @@ namespace c_sharp.Loops
             int average = 0;
             average = sum / counter;
             Console.WriteLine("Your students average is {0}", average);
-            Console.ReadKey();
+            Console.ReadKey(true);
         }
     }
 }
