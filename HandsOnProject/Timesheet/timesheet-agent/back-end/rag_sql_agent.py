@@ -19,6 +19,7 @@ from adaptive_learning_engine import AdaptiveLearningEngine
 from semantic_error_handler import SemanticErrorHandler, ErrorType, RecoveryPlan
 from vector_config import VectorConfig
 from sentence_transformers import SentenceTransformer
+from nl_response_generator import generate_natural_language_response
 # from query_intent_classifier import QueryIntentClassifier, QueryType  # Not needed
 
 # Configure logging
@@ -38,6 +39,7 @@ class RAGQueryResult:
     error_message: Optional[str]
     recovery_plan: Optional[RecoveryPlan]
     metadata: Dict[str, Any]
+    natural_language_response: Optional[str] = None
     needs_clarification: bool = False
     clarification_question: Optional[str] = None
 
@@ -380,6 +382,14 @@ class RAGSQLAgent:
                 # Update statistics
                 self._update_success_stats(sql_query_obj.confidence, processing_time)
                 
+                # Generate natural language response
+                natural_language_response = generate_natural_language_response(
+                    natural_language_query,
+                    sql_query_obj.sql,
+                    results,
+                    columns
+                )
+                
                 return RAGQueryResult(
                     success=True,
                     sql_query=sql_query_obj.sql,
@@ -395,7 +405,8 @@ class RAGSQLAgent:
                         'generation_method': sql_query_obj.generation_metadata.get('source', 'dynamic'),
                         'database': get_current_database(),
                         'tables_used': sql_query_obj.tables_used
-                    }
+                    },
+                    natural_language_response=natural_language_response
                 )
             
             else:

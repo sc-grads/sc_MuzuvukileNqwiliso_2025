@@ -99,8 +99,12 @@ def main(refresh_schema=False, database=None):
                         print("   Query executed, but no results returned (e.g., DDL/DML or no rows).")
                         save_query(nl_query, rag_result.sql_query, timestamp, True, "No results returned (DDL/DML)", rag_result.metadata, "SQL executed (no rows/DDL/DML)", 0)
                 else:
-                    print("ℹ️  Live DB execution is DISABLED. SQL generated successfully.")
+                    print("ℹLive DB execution is DISABLED. SQL generated successfully.")
                     save_query(nl_query, rag_result.sql_query, timestamp, True, "Live DB execution disabled", rag_result.metadata, "SQL generated (execution disabled)", 0)
+
+                if rag_result.natural_language_response:
+                    print("\n Agent's Response:")
+                    print(f"   {rag_result.natural_language_response}")
 
                 print(f"\n Query completed successfully! Confidence: {rag_result.confidence:.2f}")
             else:
