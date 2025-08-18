@@ -5,7 +5,7 @@ namespace Collections
 
 {
 
-    public class Student {
+    class Student {
 
         public string Name { get; set; } = String.Empty;
         public int Id { get; set; }
