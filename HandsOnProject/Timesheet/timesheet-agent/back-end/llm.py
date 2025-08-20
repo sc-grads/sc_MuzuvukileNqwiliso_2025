@@ -303,10 +303,17 @@ def _prepare_llm_prompt(nl_query: str, schema_metadata: List[Dict], previous_sql
     if not relevant_tables:
         relevant_tables = schema_metadata
 
+    # Cap the number of tables and columns included to keep prompt small and fast
+    MAX_TABLES = 6
+    MAX_COLS_PER_TABLE = 16
+    relevant_tables = relevant_tables[:MAX_TABLES]
+
     schema_text_parts = []
     for m in relevant_tables:
         table_desc = m.get('description', f"Table {m['schema']}.{m['table']}")
-        cols_text = ", ".join(f"[{col['name']}] ({col.get('type','')})" for col in m['columns'])
+        cols_text = ", ".join(
+            f"[{col['name']}] ({col.get('type','')})" for col in m['columns'][:MAX_COLS_PER_TABLE]
+        )
         table_text = f"Table [{m['schema']}].[{m['table']}]: {table_desc}\nColumns: {cols_text}"
         if m.get('relationships'):
             rel_lines = [f"  - Connects to [{rel['target_table']}] via {m['table']}.{rel['source_column']} = {rel['target_table']}.{rel['target_column']}" for rel in m['relationships']]
