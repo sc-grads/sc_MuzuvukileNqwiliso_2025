@@ -39,14 +39,18 @@ def generate_natural_language_response(
         sample_results = results
 
     for row in sample_results:
-        results_summary += f"- {dict(zip(columns, row))}\n"
+        # Row is already a dict mapping column name to value; include only known columns
+        # and cast complex types (e.g., Decimal) to string for stable prompting
+        formatted_row = {col: (str(row.get(col)) if row.get(col) is not None else None) for col in columns}
+        results_summary += f"- {formatted_row}\n"
 
     # Construct the prompt for the LLM
     prompt = (
         f"The user asked: '{natural_language_query}'\n"
         f"We executed the SQL query: '{sql_query}'\n"
         f"The results are summarized as follows:\n{results_summary}\n\n"
-        f"Please provide a concise, natural language response to the user's original question based on these results."
+        f"Please provide a concise, faithful natural-language answer based ONLY on these rows."
+        f" Do not use placeholders; use the actual values shown."
     )
 
     try:

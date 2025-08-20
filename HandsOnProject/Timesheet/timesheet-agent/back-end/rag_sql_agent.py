@@ -45,6 +45,19 @@ class RAGQueryResult:
 
 
 @dataclass
+class SQLQuery:
+    """Container for generated SQL and related metadata."""
+    sql: str
+    confidence: float
+    clauses: List[str]
+    tables_used: List[str]
+    columns_used: List[str]
+    joins: List[str]
+    complexity_score: float
+    generation_metadata: Dict[str, Any]
+
+
+@dataclass
 class RAGSystemStats:
     """Statistics about the RAG system performance"""
     total_queries_processed: int
@@ -67,7 +80,7 @@ class RAGSQLAgent:
     """
     
     def __init__(self, 
-                 vector_store_path: str = "vector_data/rag_system",
+                 vector_store_path: str = "vector_data",
                  enable_learning: bool = True,
                  enable_error_recovery: bool = True,
                  config_overrides: Dict[str, Any] = None):
@@ -102,6 +115,10 @@ class RAGSQLAgent:
         self._initialize_components()
         
         # Load schema into vector store
+        # Cache for schema metadata to avoid repeated expensive loads per query
+        self.schema_metadata: Optional[List[Dict[str, Any]]] = None
+        self.column_map: Optional[Dict[str, List[str]]] = None
+        self.enhanced_data: Optional[Dict[str, Any]] = None
         self._initialize_schema()
         
         logger.info("RAG SQL Agent initialized successfully")
@@ -109,6 +126,11 @@ class RAGSQLAgent:
     def shutdown(self):
         """Perform graceful shutdown of agent components."""
         logger.info("Shutting down RAG SQL Agent...")
+        # Persist system state before shutting down
+        try:
+            self.save_system_state()
+        except Exception as e:
+            logger.warning(f"Failed to save system state on shutdown: {e}")
         lazy_generator.stop()
         logger.info("RAG SQL Agent shutdown complete.")
     
@@ -188,9 +210,18 @@ class RAGSQLAgent:
                 
                 # Ingest schema into our vector store
                 self.vector_store.ingest_schema(schema_metadata)
+                # Persist schema vectors immediately so folders are populated
+                try:
+                    self.vector_store.save_to_disk()
+                except Exception as e:
+                    logger.warning(f"Failed to save vector store after schema ingest: {e}")
                 
                 # Update statistics
                 self.stats.vector_store_size = len(self.vector_store.schema_vectors)
+                # Cache for reuse
+                self.schema_metadata = schema_metadata
+                self.column_map = column_map
+                self.enhanced_data = enhanced_data
                 
                 logger.info(f"Loaded {len(schema_metadata)} tables into vector store")
             else:
@@ -288,12 +319,12 @@ class RAGSQLAgent:
                             generation_metadata={'source': 'learned_pattern'}
                         )
                     else:
-                        # Step 4: Generate SQL using the LLM
-                        schema_result = get_schema_metadata()
-                        if isinstance(schema_result, tuple):
-                            schema_metadata, column_map, _, enhanced_data = schema_result
-                        else:
-                            schema_metadata, column_map, enhanced_data = schema_result, {}, None
+                        # Step 4: Generate SQL using the LLM (use cached schema)
+                        if not self.schema_metadata:
+                            self._initialize_schema()
+                        schema_metadata = self.schema_metadata or []
+                        column_map = self.column_map or {}
+                        enhanced_data = self.enhanced_data
 
                         sql_query_str = generate_sql_query(
                             nl_query=full_query,
@@ -309,12 +340,12 @@ class RAGSQLAgent:
                         )
                         sql_query_obj = type('SQLQuery', (object,), {'sql': sql_query_str, 'confidence': query_intent.confidence, 'generation_metadata': {}, 'tables_used': []})()
                 else:
-                    # Step 4: Generate SQL using the LLM
-                    schema_result = get_schema_metadata()
-                    if isinstance(schema_result, tuple):
-                        schema_metadata, column_map, _, enhanced_data = schema_result
-                    else:
-                        schema_metadata, column_map, enhanced_data = schema_result, {}, None
+                    # Step 4: Generate SQL using the LLM (use cached schema)
+                    if not self.schema_metadata:
+                        self._initialize_schema()
+                    schema_metadata = self.schema_metadata or []
+                    column_map = self.column_map or {}
+                    enhanced_data = self.enhanced_data
 
                     sql_query_str = generate_sql_query(
                         nl_query=full_query,
@@ -330,12 +361,12 @@ class RAGSQLAgent:
                     )
                     sql_query_obj = type('SQLQuery', (object,), {'sql': sql_query_str, 'confidence': query_intent.confidence, 'generation_metadata': {}, 'tables_used': []})()
             else:
-                # Step 4: Generate SQL using the LLM (default path)
-                schema_result = get_schema_metadata()
-                if isinstance(schema_result, tuple):
-                    schema_metadata, column_map, _, enhanced_data = schema_result
-                else:
-                    schema_metadata, column_map, enhanced_data = schema_result, {}, None
+                # Step 4: Generate SQL using the LLM (default path, use cached schema)
+                if not self.schema_metadata:
+                    self._initialize_schema()
+                schema_metadata = self.schema_metadata or []
+                column_map = self.column_map or {}
+                enhanced_data = self.enhanced_data
 
                 sql_query_str = generate_sql_query(
                     nl_query=full_query,
@@ -390,6 +421,11 @@ class RAGSQLAgent:
                     columns
                 )
                 
+                # Auto-save learned patterns and vectors after successful processing
+                try:
+                    self.save_system_state()
+                except Exception as e:
+                    logger.warning(f"Auto-save failed after successful query: {e}")
                 return RAGQueryResult(
                     success=True,
                     sql_query=sql_query_obj.sql,
@@ -481,6 +517,11 @@ class RAGSQLAgent:
             except Exception as recovery_error:
                 logger.error(f"Error recovery failed: {recovery_error}")
         
+        # Auto-save learned error patterns and vectors after handling an error
+        try:
+            self.save_system_state()
+        except Exception as e:
+            logger.warning(f"Auto-save failed after error handling: {e}")
         return RAGQueryResult(
             success=False,
             sql_query=failed_sql,
