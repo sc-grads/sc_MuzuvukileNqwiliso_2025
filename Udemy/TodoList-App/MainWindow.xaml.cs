@@ -9,7 +9,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace MyFirstApp
+namespace TodoList_App
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
@@ -21,17 +21,7 @@ namespace MyFirstApp
             InitializeComponent();
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            MessageBox.Show("Hello, World!", "Greeting", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-
-        private void Button_Click_1(object sender, RoutedEventArgs e)
-        {
-            MessageBox.Show("This is a second button click event.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-
-        private void Button_Click_2(object sender, RoutedEventArgs e)
+        private void AddButton_Click(object sender, RoutedEventArgs e)
         {
 
         }
