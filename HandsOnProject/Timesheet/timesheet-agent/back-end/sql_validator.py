@@ -97,10 +97,16 @@ class QueryPerformanceEstimator:
         if 'SELECT' in sql_upper:
             base_time += self.base_times['simple_select']
         
-        # Check for WHERE clause
+        # Check for WHERE clause - but be less aggressive for small result sets
         if 'WHERE' not in sql_upper:
-            multiplier *= self.multipliers['no_where_clause']
-            warnings.append("Query lacks WHERE clause - may scan entire table(s)")
+            # Only apply heavy penalty if no TOP clause is present
+            if 'TOP' not in sql_upper:
+                multiplier *= self.multipliers['no_where_clause']
+                warnings.append("Query lacks WHERE clause - may scan entire table(s)")
+            else:
+                # Lighter penalty if TOP clause limits results
+                multiplier *= 2.0
+                warnings.append("Query lacks WHERE clause but has TOP limit")
         
         # Count JOINs
         join_count = len(re.findall(r'\bJOIN\b', sql_upper))
@@ -152,16 +158,16 @@ class QueryPerformanceEstimator:
         # Calculate estimated time
         estimated_time = base_time * multiplier
         
-        # Determine performance risk
-        if estimated_time < 1.0:
+        # Determine performance risk - be more lenient
+        if estimated_time < 2.0:
             risk = PerformanceRisk.LOW
-        elif estimated_time < 5.0:
+        elif estimated_time < 10.0:
             risk = PerformanceRisk.MEDIUM
-        elif estimated_time < 30.0:
+        elif estimated_time < 60.0:  # Increased from 30 to 60 seconds
             risk = PerformanceRisk.HIGH
         else:
             risk = PerformanceRisk.CRITICAL
-            warnings.append("Query estimated to take over 30 seconds - consider optimization")
+            warnings.append("Query estimated to take over 60 seconds - consider optimization")
         
         return estimated_time, risk, warnings
 

@@ -384,6 +384,17 @@ class RAGSQLAgent:
             
             logger.info(f"Generated SQL: {sql_query_obj.sql}")
             
+            # Check if SQL generation resulted in validation error
+            if sql_query_obj.sql.startswith("VALIDATION_ERROR:"):
+                error_message = sql_query_obj.sql.replace("VALIDATION_ERROR:", "").strip()
+                return self._handle_query_error(
+                    natural_language_query,
+                    "",  # No SQL was generated
+                    error_message,
+                    query_intent,
+                    start_time
+                )
+            
             # Step 4: Execute query (if live DB is enabled)
             results = None
             columns = None
@@ -391,7 +402,15 @@ class RAGSQLAgent:
             
             if USE_LIVE_DB:
                 try:
+                    # Add query timeout for performance
+                    query_start_time = time.time()
                     results, columns, db_error = execute_query(sql_query_obj.sql)
+                    query_execution_time = time.time() - query_start_time
+                    
+                    # Log performance metrics
+                    if query_execution_time > 10.0:  # Log slow queries
+                        logger.warning(f"Slow query execution: {query_execution_time:.2f}s for query: {natural_language_query[:100]}...")
+                    
                 except Exception as e:
                     db_error = str(e)
             

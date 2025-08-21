@@ -262,13 +262,14 @@ that answers the user's request using the provided database schema.
 1. Output two sections: **Plan:** (short reasoning) and **SQL:** (final query in code block).
 2. Always use schema-qualified names: [Schema].[Table].
 3. Only SELECT/ WITH + SELECT statements. No modifications.
-4. Use TOP N for sampling.
+4. ALWAYS use TOP N for sampling (default TOP 100 unless user specifies otherwise).
 5. Use YYYY-MM-DD for dates.
 6. Match exact strings unless told otherwise.
 7. Use explicit JOINs when combining tables.
 8. Use columns from schema; if unsure, pick most likely.
-9. Keep query readable.
-10. Only one final query.
+9. Keep query readable and performant.
+10. Add WHERE clauses when possible to filter results.
+11. Only one final query.
 
 ---
 
@@ -352,10 +353,24 @@ def generate_sql_query(nl_query: str, schema_metadata: List[Dict], **kwargs) -> 
         validation_result = comprehensive_validate_query(sql_query, schema_metadata)
         if validation_result["should_block"]:
             errors = "; ".join(validation_result["errors"])
-            warnings = "; ".join(validation_result["warnings"])
-            return f"Error: Query blocked. Errors: {errors}. Warnings: {warnings}"
+            # Don't return error message as SQL - return proper error indication
+            logger.warning(f"Query blocked due to validation errors: {errors}")
+            return f"VALIDATION_ERROR: {errors}"
 
-        return validation_result["query"]
+        # Add performance optimizations for slow queries
+        from query_optimizer import optimize_sql_query, estimate_query_cost
+        
+        optimized_query = _optimize_query_performance(validation_result["query"], validation_result)
+        
+        # Apply additional optimizations
+        final_query = optimize_sql_query(optimized_query, validation_result)
+        
+        # Log cost estimate for monitoring
+        cost_estimate = estimate_query_cost(final_query)
+        if cost_estimate['cost_level'] == 'high':
+            logger.warning(f"High-cost query detected: {cost_estimate['estimated_cost']:.1f}")
+            
+        return final_query
 
     except Exception as e:
         return f"Error: {e}"
@@ -378,10 +393,39 @@ def comprehensive_validate_query(sql_query: str, schema_metadata: List[Dict]) ->
 
 
 def _should_block_query(validation_result) -> bool:
-    is_high_or_critical_risk = validation_result.security_risk in [SecurityRisk.HIGH, SecurityRisk.CRITICAL]
+    # Only block queries for actual errors, not warnings
+    is_critical_security_risk = validation_result.security_risk == SecurityRisk.CRITICAL
+    has_actual_errors = len(validation_result.errors) > 0
+    
     return (
         not validation_result.is_valid or
         validation_result.complexity == QueryComplexity.DANGEROUS or
-        is_high_or_critical_risk or
-        validation_result.performance_risk == PerformanceRisk.CRITICAL
+        is_critical_security_risk or
+        has_actual_errors
     )
+
+
+def _optimize_query_performance(sql_query: str, validation_result: Dict[str, any]) -> str:
+    """Optimize query performance based on validation results"""
+    optimized_query = sql_query
+    
+    # Add TOP clause if missing and query might return large result set
+    if validation_result["performance_risk"]["level"] in ["high", "critical"]:
+        if "TOP" not in sql_query.upper() and "SELECT" in sql_query.upper():
+            # Add TOP 1000 to limit results for performance
+            optimized_query = re.sub(
+                r'(SELECT)\s+', 
+                r'\1 TOP 1000 ', 
+                optimized_query, 
+                count=1, 
+                flags=re.IGNORECASE
+            )
+            logger.info("Added TOP 1000 clause for performance optimization")
+    
+    # Add query timeout hint for complex queries
+    if validation_result["complexity"]["level"] in ["complex", "very_complex"]:
+        if "OPTION" not in optimized_query.upper():
+            optimized_query += " OPTION (QUERY_TIMEOUT 30)"
+            logger.info("Added query timeout for complex query")
+    
+    return optimized_query

@@ -1,0 +1,43 @@
+﻿			
+
+Hello John,
+Please contact us at support@example.com or sales@my-shop.org.
+Regards,
+Admin <admin123@company.net>
+
+Phone Numbers:
++1-202-555-0145 //^[+]\d{1}[-]\d{3}[-]\d{3}[-]\d{4}
+(202) 555-0199 //[(+]\d{3}\D\s\d{3}-\d{4}
+202.555.0178
+2025550187
+
+Dates & Times:
+2025-08-21
+21/08/2025
+08-21-2025
+Thursday, August 21, 2025
+14:37:22
+2:37 PM
+
+URLs:
+https://www.google.com
+http://example.org/index.html
+ftp://files.server.net/downloads/file.zip
+www.noscheme.com/page
+
+Log Entries:
+[2025-08-21 14:37:22] INFO: User login successful (user_id=492)
+[2025-08-21 14:38:01] ERROR: Invalid password attempt (username=jdoe)
+[2025-08-21 14:39:17] WARN: Disk space low: 92% used
+
+
+CSV:
+id,name,age,email
+1,John Doe,34,john.doe@example.com
+2,Jane Smith,28,jane.smith@example.org
+3,Bob Stone,45,bob@stone.net
+
+Random Sentences:
+The quick brown fox jumps over 13 lazy dogs.
+Temperature outside: 22.5°C.
+Order #458392 has been shipped to Cape Town, South Africa.
