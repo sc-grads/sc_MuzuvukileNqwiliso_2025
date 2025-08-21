@@ -1,0 +1,60 @@
+﻿===============================
+ REGEX CHEAT SHEET
+===============================
+
+1. Literals
+- `dog` → matches "dog"
+
+2. Metacharacters
+- `.` any character except newline
+- `^` start of string/line
+- `$` end of string/line
+- `\` escape special char
+- `|` OR
+
+3. Character Classes
+- `[abc]` a, b, or c
+- `[^abc]` not a, b, or c
+- `[a-z]` lowercase letters
+- `[A-Z]` uppercase letters
+- `[0-9]` digits
+- `[a-zA-Z0-9_]` letters/digits/underscore
+
+4. Predefined Classes
+- `\d` digit
+- `\D` non-digit
+- `\w` word char
+- `\W` non-word char
+- `\s` whitespace
+- `\S` non-whitespace
+
+5. Quantifiers
+- `*` 0 or more
+- `+` 1 or more
+- `?` 0 or 1
+- `{n}` exactly n
+- `{n,}` n or more
+- `{n,m}` between n and m
+
+6. Grouping
+- `(abc)` capturing group
+- `(?:abc)` non-capturing group
+- `\1`, `\2` backreferences
+
+7. Lookarounds
+- `X(?=Y)` positive lookahead
+- `X(?!Y)` negative lookahead
+- `(?<=Y)X` positive lookbehind
+- `(?<!Y)X` negative lookbehind
+
+8. Anchors
+- `\b` word boundary
+- `\B` not word boundary
+- `\A` start of string
+- `\Z` end of string
+
+9. Flags
+- `i` case-insensitive
+- `m` multiline
+- `s` dotall
+- `g` global (find all)
