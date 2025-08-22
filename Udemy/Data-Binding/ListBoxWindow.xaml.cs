@@ -49,5 +49,14 @@ namespace Data_Binding
                 }
             }
         }
+
+        //private void PeopleListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        //{
+        //    var person = (Person)PeopleListBox.SelectedItem;
+        //    var fullname = person?.Name ?? "No one"; // null-coalescing operator
+        //    var age = person?.Age.ToString() ?? "N/A";  
+
+       
+        //}
     }
 }

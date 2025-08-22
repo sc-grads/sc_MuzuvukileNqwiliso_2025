@@ -16,7 +16,7 @@
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
         <ListBox x:Name="PeopleListBox" 
-               SelectionMode="Multiple" >
+               SelectionMode="Multiple">
             <ListBox.ItemTemplate>
                 <DataTemplate>
                     <StackPanel Orientation="Horizontal">
