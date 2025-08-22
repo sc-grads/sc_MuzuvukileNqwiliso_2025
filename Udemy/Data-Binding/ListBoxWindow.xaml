@@ -9,15 +9,26 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="50"/>
+            <RowDefinition Height="5"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
         <ListBox x:Name="PeopleListBox" 
-                 ItemsSource="{Binding People}" 
-                 DisplayMemberPath="Name" 
-                 SelectedItem="{Binding SelectedPerson, Mode=TwoWay}" 
-                 Margin="10" SelectionChanged="PeopleListBox_SelectionChanged">
+               SelectionMode="Multiple" >
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="{Binding Name, StringFormat='Name:{0}'}" Margin="5"/>
+                        <TextBlock Text="{Binding Age, StringFormat='Age:{0}'}" Margin="5"/>
+                    </StackPanel>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
         </ListBox>
+        <Button Grid.Row="1" 
+                Content="Selected People" 
+                Click="AddPersonButton_Click" 
+                Margin="5" x:Name="btnSelectedPeople" />
     </Grid>
 </Window>

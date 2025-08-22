@@ -25,7 +25,9 @@ namespace Data_Binding
         {
             new Person { Name = "Alice", Age = 25 },
             new Person { Name = "Bob", Age = 30 },
-            new Person { Name = "Charlie", Age = 35 }
+            new Person { Name = "Charlie", Age = 35 },
+            new Person { Name = "Diana", Age = 28 },
+            new Person { Name = "Ethan", Age = 22 },
         };
 
         public ListBoxWindow()
@@ -34,9 +36,18 @@ namespace Data_Binding
             PeopleListBox.ItemsSource = people;
         }
 
-        private void PeopleListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void AddPersonButton_Click(object sender, RoutedEventArgs e)
         {
-
+            var people = PeopleListBox.SelectedItems;
+            foreach (var person in people)
+            {
+                //var p = (Person)person;
+                if (person is Person p) // the is casting of the object to Person type == if the person is the object of Person type
+                {
+                    MessageBox.Show($"Name: {p.Name}, Age: {p.Age}", "Selected Person",
+                                    MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
         }
     }
 }
