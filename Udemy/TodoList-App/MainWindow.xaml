@@ -17,7 +17,7 @@
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
-        <TextBlock Text="Enter task..." FontSize="16" FontWeight="Normal" Grid.Row="2" Foreground="#FF121212" Background="#FFE9E8E8" Padding="10,10,10,10"/>
+        <TextBox Name="TodoTextInput"  IsEnabled="True" IsReadOnly="False" Grid.Row="2" Foreground="#FF121212" Background="#FFE9E8E8" Padding="10,10,10,10"/>
         <Button x:Name="AddButton" Content="Add Task" Grid.Row="4" Click="AddButton_Click" Height="30" Background="#FF215FE5" Foreground="#FFE9D7D7" FontWeight="Bold" FontFamily="Lucida Console"/>
         <ScrollViewer Background="#FF306BC9" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
             <StackPanel x:Name="TaskList" Grid.Row="0" Margin="0,0,0,10">
