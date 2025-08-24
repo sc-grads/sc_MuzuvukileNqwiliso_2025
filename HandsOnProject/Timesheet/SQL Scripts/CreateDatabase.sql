@@ -187,14 +187,37 @@ BEGIN
     -- Description Table
     IF OBJECT_ID('Timesheet.Description', 'U') IS NULL
     BEGIN
-        CREATE TABLE Timesheet.Description (
-            DescriptionID INT PRIMARY KEY DEFAULT NEXT VALUE FOR Timesheet.DescriptionSeq,
-            DescriptionType VARCHAR(10) CHECK (DescriptionType IN ('Activity', 'Leave')),
-            SourceID INT NOT NULL,
-            DescriptionName VARCHAR(100) NOT NULL
-        );
+		CREATE TABLE Timesheet.Description (
+		DescriptionID INT PRIMARY KEY DEFAULT NEXT VALUE FOR Timesheet.DescriptionSeq,
+		DescriptionType VARCHAR(10) NOT NULL CHECK (DescriptionType IN ('Activity', 'Leave')),
+		DescriptionName VARCHAR(100) NOT NULL
+		);
         PRINT 'Description table created.';
     END;
+
+	IF OBJECT_ID('Timesheet.DescriptionActivity', 'U') IS NULL
+	-- Bridge to Activity
+	BEGIN
+	CREATE TABLE Timesheet.DescriptionActivity (
+		DescriptionID INT PRIMARY KEY,
+		ActivityID INT NOT NULL,
+		FOREIGN KEY (DescriptionID) REFERENCES Timesheet.Description(DescriptionID),
+		FOREIGN KEY (ActivityID) REFERENCES Timesheet.Activity(ActivityID)
+	);
+	 PRINT 'DescriptionActivity table created.';
+	END;
+
+	IF OBJECT_ID('Timesheet.DescriptionLeave', 'U') IS NULL
+	BEGIN
+	-- Bridge to LeaveType
+	CREATE TABLE Timesheet.DescriptionLeave (
+		DescriptionID INT PRIMARY KEY,
+		LeaveTypeID INT NOT NULL,
+		FOREIGN KEY (DescriptionID) REFERENCES Timesheet.Description(DescriptionID),
+		FOREIGN KEY (LeaveTypeID) REFERENCES Timesheet.LeaveType(LeaveTypeID)
+	);
+	 PRINT 'DescriptionLeave table created.';
+	END;
 
     -- Timesheet Table
     CREATE TABLE Timesheet.Timesheet (
@@ -1232,6 +1255,75 @@ BEGIN
         DELETE;
 END;
 GO
+
+-- INSERT THE Description Table
+
+CREATE OR ALTER PROCEDURE Timesheet.SyncDescriptions
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -------------------------------------------------
+    -- Insert new Activities into Description
+    -------------------------------------------------
+    INSERT INTO Timesheet.Description (DescriptionType, DescriptionName)
+    SELECT 'Activity', A.ActivityName
+    FROM Timesheet.Activity A
+    WHERE NOT EXISTS (
+        SELECT 1 
+        FROM Timesheet.DescriptionActivity DA
+        JOIN Timesheet.Description D ON DA.DescriptionID = D.DescriptionID
+        WHERE D.DescriptionType = 'Activity'
+          AND DA.ActivityID = A.ActivityID
+    );
+
+    -------------------------------------------------
+    -- Insert bridge entries for Activities
+    -------------------------------------------------
+    INSERT INTO Timesheet.DescriptionActivity (DescriptionID, ActivityID)
+    SELECT D.DescriptionID, A.ActivityID
+    FROM Timesheet.Activity A
+    JOIN Timesheet.Description D 
+        ON D.DescriptionType = 'Activity'
+       AND D.DescriptionName = A.ActivityName
+    WHERE NOT EXISTS (
+        SELECT 1 
+        FROM Timesheet.DescriptionActivity DA
+        WHERE DA.ActivityID = A.ActivityID
+    );
+
+    -------------------------------------------------
+    -- Insert new LeaveTypes into Description
+    -------------------------------------------------
+    INSERT INTO Timesheet.Description (DescriptionType, DescriptionName)
+    SELECT 'Leave', L.LeaveTypeName
+    FROM Timesheet.LeaveType L
+    WHERE NOT EXISTS (
+        SELECT 1 
+        FROM Timesheet.DescriptionLeave DL
+        JOIN Timesheet.Description D ON DL.DescriptionID = D.DescriptionID
+        WHERE D.DescriptionType = 'Leave'
+          AND DL.LeaveTypeID = L.LeaveTypeID
+    );
+
+    -------------------------------------------------
+    -- Insert bridge entries for LeaveTypes
+    -------------------------------------------------
+    INSERT INTO Timesheet.DescriptionLeave (DescriptionID, LeaveTypeID)
+    SELECT D.DescriptionID, L.LeaveTypeID
+    FROM Timesheet.LeaveType L
+    JOIN Timesheet.Description D 
+        ON D.DescriptionType = 'Leave'
+       AND D.DescriptionName = L.LeaveTypeName
+    WHERE NOT EXISTS (
+        SELECT 1 
+        FROM Timesheet.DescriptionLeave DL
+        WHERE DL.LeaveTypeID = L.LeaveTypeID
+    );
+
+END;
+GO
+
 
 -- Reset procedures
 CREATE OR ALTER PROCEDURE Timesheet.ResetEmployee
