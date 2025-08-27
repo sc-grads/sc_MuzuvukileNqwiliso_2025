@@ -1,0 +1,49 @@
+﻿<UserControl
+    x:Class="XAML_Practice.View.UserControls.CustomTextBox"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:XAML_Practice.View.UserControls"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    d:DesignHeight="40"
+    d:DesignWidth="250"
+    mc:Ignorable="d">
+
+    <Grid>
+        <!--  The main TextBox  -->
+        <TextBox
+            x:Name="txtControl"
+            Margin="0"
+            Padding="10,0,30,0"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Stretch"
+            VerticalContentAlignment="Center"
+            BorderThickness="1"
+            FontSize="16"
+            FontWeight="Normal"
+            TextChanged="txtControl_TextChanged" />
+
+        <!--  Placeholder  -->
+        <TextBlock
+            x:Name="tbPlaceholder"
+            Margin="13,0,0,0"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Center"
+            FontSize="16"
+            Foreground="DarkGray"
+            IsHitTestVisible="False"
+            Text="{Binding Placeholder}" />
+
+        <!--  Clear button  -->
+        <Button
+            x:Name="btnClear"
+            Width="30"
+            HorizontalAlignment="Right"
+            VerticalAlignment="Center"
+            Background="Transparent"
+            BorderThickness="0"
+            Click="clearControl"
+            Content="X"
+            Foreground="LightGray" />
+    </Grid>
+</UserControl>
