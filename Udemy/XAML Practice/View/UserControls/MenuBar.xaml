@@ -1,0 +1,49 @@
+﻿<UserControl x:Class="XAML_Practice.View.UserControls.MenuBar"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:XAML_Practice.View.UserControls"
+             mc:Ignorable="d" 
+             Height="70" d:DesignWidth="800">
+
+    <Grid>
+        <!-- Define two rows: menu at top (30px) and filler row (40px) -->
+        <Grid.RowDefinitions>
+            <RowDefinition Height="30"/>
+            <RowDefinition Height="40"/>
+        </Grid.RowDefinitions>
+
+        <!-- Top menu -->
+        <Menu Grid.Row="0">
+            <MenuItem Header="File" FontSize="16">
+                <MenuItem Header="Exit" Click="exitBtn_Click"/>
+            </MenuItem>
+            <MenuItem Header="Edit" FontSize="16"/>
+        </Menu>
+
+        <!-- Bottom grid fills full row -->
+        <Grid Grid.Row="1">
+            <Grid.RowDefinitions>
+                <RowDefinition/>
+                <!-- Fill full height -->
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <!-- Fill full width -->
+            </Grid.ColumnDefinitions>
+
+            <!-- StackPanel stretches to fill -->
+            <StackPanel Orientation="Horizontal" 
+                        HorizontalAlignment="Stretch" 
+                        VerticalAlignment="Stretch">
+                <Button Content="Search" 
+                        HorizontalAlignment="Center" 
+                        VerticalAlignment="Stretch"
+                        Padding="10,0,10,0"/>
+
+                <TextBox  Margin="5,0,0,0" BorderThickness="2" Width="200"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</UserControl>

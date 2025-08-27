@@ -1,0 +1,54 @@
+﻿<Window x:Class="StudentRegistration.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Student Registration" Height="450" Width="600"
+        WindowStartupLocation="CenterScreen">
+
+    <Grid Margin="20" Background="#FF9D2525">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="150"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Labels & Inputs -->
+        <Label Content="Student ID:" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Margin="0,5"/>
+        <TextBox x:Name="txtStudentId" Grid.Row="0" Grid.Column="1" Height="30" Margin="0,5"/>
+
+        <Label Content="Name:" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Margin="0,5"/>
+        <TextBox x:Name="txtName" Grid.Row="1" Grid.Column="1" Height="30" Margin="0,5"/>
+
+        <Label Content="Surname:" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Margin="0,5"/>
+        <TextBox x:Name="txtSurname" Grid.Row="2" Grid.Column="1" Height="30" Margin="0,5"/>
+
+        <Label Content="Address:" Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Margin="0,5"/>
+        <TextBox x:Name="txtAddress" Grid.Row="3" Grid.Column="1" Height="30" Margin="0,5"/>
+
+        <Label Content="City:" Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" Margin="0,5"/>
+        <TextBox x:Name="txtCity" Grid.Row="4" Grid.Column="1" Height="30" Margin="0,5"/>
+
+        <Label Content="Cellphone:" Grid.Row="5" Grid.Column="0" VerticalAlignment="Center" Margin="0,5"/>
+        <TextBox x:Name="txtCellphone" Grid.Row="5" Grid.Column="1" Height="30" Margin="0,5"/>
+
+        <!-- Buttons -->
+        <StackPanel Grid.Row="6" Grid.ColumnSpan="2" Orientation="Horizontal" 
+                    HorizontalAlignment="Center" Margin="0,20,0,0">
+            <Button Content="Register" Width="100" Height="35" Margin="5,0"
+                    Click="RegisterButton_Click" Background="#FF3EAF15" Foreground="White"/>
+            <Button Content="Update" Width="100" Height="35" Margin="5,0"
+                    Click="UpdateButton_Click" Background="#FFAA8800" Foreground="White"/>
+            <Button Content="Delete" Width="100" Height="35" Margin="5,0"
+                    Click="DeleteButton_Click" Background="#FF072F6F" Foreground="White"/>
+            <Button Content="ReadData" Width="100" Height="35" Margin="5,0"
+        Click="ReadButton_Click" Background="#F2426F6F" Foreground="White"/>
+        </StackPanel>
+    </Grid>
+</Window>
