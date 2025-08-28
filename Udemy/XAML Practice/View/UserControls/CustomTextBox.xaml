@@ -21,6 +21,7 @@
             BorderThickness="1"
             FontSize="16"
             FontWeight="Normal"
+            Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}"
             TextChanged="txtControl_TextChanged" />
 
         <!--  Placeholder  -->

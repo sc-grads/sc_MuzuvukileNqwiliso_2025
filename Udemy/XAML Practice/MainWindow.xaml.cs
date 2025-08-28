@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -14,18 +15,38 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using XAML_Practice.View.UserControls;
+
 
 namespace XAML_Practice
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class MainWindow : Window, INotifyPropertyChanged
     {
+
+        private string _name;
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        public string Name
+        {
+            get { return _name; }
+            set
+            {
+
+                _name = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Name"));
+            }
+        }
+
         public MainWindow()
         {
+            DataContext = this;
             InitializeComponent();
             this.SourceInitialized += MainWindow_SourceInitialized;
+         
         }
 
         private void MainWindow_SourceInitialized(object sender, EventArgs e)
