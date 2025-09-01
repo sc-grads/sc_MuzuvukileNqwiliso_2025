@@ -1,55 +1,51 @@
 ﻿
 
+using LINQ;
+
+int[] numbers = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+var varsityManager = new VarsityManger();
+varsityManager.DisplayVarsityHasMostStudents();
+varsityManager.DisplayStudentsUnder20();
+
+varsityManager.FemaleStudents();
+Console.WriteLine();
+varsityManager.MaleStdudents();
+
+Console.ReadKey();
+
+void OddNumber(int[] numbers)
+{
+    IEnumerable<int> oddNumbers = numbers.Where(n => n % 2 != 0);
+    IEnumerable<int> oddNumbersQuery = from number in numbers where number % 2 != 0 select number;
+    // from numbers select one number, then test if it's an odd number, if so, select it or return it store it on the ienumerable object varable
+    // from number in number where number % 2 != 0 select number;
+
+    Console.WriteLine("IEnumerable Object: ");
+    Console.WriteLine(oddNumbers);
+
+    Console.WriteLine("Odd Numbers:");
+
+    foreach (var number in oddNumbers)
+    {
+        Console.Write(number + " ");
+    }
+    Console.WriteLine();
+}
+
+void EvenNumbers(int[] numbers)
+{
+    IEnumerable<int> evenNumbers = numbers.Where(n => n % 2 == 0);
+    IEnumerable<int> evenNumbersQuery = from number in numbers where number % 2 == 0 select number;
+    Console.WriteLine("Even Numbers:");
+    foreach (var number in evenNumbers)
+    {
+        Console.Write(number + " ");
+    }
+}
+
+
 namespace LINQ
 {
-    internal class Program
-    {
-        static void Main(string[] args)
-        {
-            int[] numbers = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
-            var varsityManager = new VarsityManger();
-            varsityManager.DisplayVarsityHasMostStudents();
-            varsityManager.DisplayStudentsUnder20();
-
-            varsityManager.FemaleStudents();
-            Console.WriteLine();
-            varsityManager.MaleStdudents();
-
-            Console.ReadKey();
-        }
-
-        private static void OddNumber(int[] numbers)
-        {
-            IEnumerable<int> oddNumbers = numbers.Where(n => n % 2 != 0);
-            IEnumerable<int> oddNumbersQuery = from number in numbers where number % 2 != 0 select number;
-            // from numbers select one number, then test if it's an odd number, if so, select it or return it store it on the ienumerable object varable
-            // from number in number where number % 2 != 0 select number;
-
-            Console.WriteLine("IEnumerable Object: ");
-            Console.WriteLine(oddNumbers);
-
-            Console.WriteLine("Odd Numbers:");
-
-            foreach (var number in oddNumbers)
-            {
-                Console.Write(number+ " ");
-            }
-            Console.WriteLine();
-        }
-
-        private static void EvenNumbers(int[] numbers)
-        {
-            IEnumerable<int> evenNumbers = numbers.Where(n => n % 2 == 0);
-            IEnumerable<int> evenNumbersQuery = from number in numbers where number % 2 == 0 select number;
-            Console.WriteLine("Even Numbers:");
-            foreach (var number in evenNumbers)
-            {
-                Console.Write(number+" ");
-            }
-        }
-
-    }
-
     class VarsityManger
     {
         private readonly List<Varsity> Varsities;

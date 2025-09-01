@@ -1,0 +1,209 @@
+-- Simple Questions (Basic Lookups & Counts)
+
+-- 1. How many employees are in the system?
+SELECT COUNT(EmployeeID) AS NumberOfEmployees
+FROM Timesheet.Employee;
+
+-- 2. List all available clients.
+SELECT ClientName
+FROM Timesheet.Client;
+
+-- 3. Show me all projects for the client 'C. Steinweg'.
+SELECT p.ProjectName
+FROM Timesheet.Project AS p
+INNER JOIN Timesheet.Client AS c ON p.ClientID = c.ClientID
+WHERE c.ClientName = 'C. Steinweg';
+
+-- 4. What are the different types of leave available?
+SELECT LeaveTypeName
+FROM Timesheet.LeaveType;
+
+-- 5. Find all activities that are considered 'Non-Billable'.
+SELECT DISTINCT a.ActivityName
+FROM Timesheet.Activity AS a
+INNER JOIN Timesheet.DescriptionActivity AS da ON a.ActivityID = da.ActivityID
+INNER JOIN Timesheet.Description AS d ON da.DescriptionID = d.DescriptionID
+INNER JOIN Timesheet.Timesheet AS t ON d.DescriptionID = t.DescriptionID
+WHERE t.BillableStatus = 'Non-Billable';
+
+-- 6. Who is employee with ID 1000?
+SELECT EmployeeName
+FROM Timesheet.Employee
+WHERE EmployeeID = 1000;
+
+-- 7. Display the first 5 entries from the timesheet table.
+SELECT TOP 5 *
+FROM Timesheet.Timesheet;
+
+-- 8. How many projects are there in total?
+SELECT COUNT(ProjectID) AS TotalProjects
+FROM Timesheet.Project;
+
+-- 9. List all employees.
+SELECT EmployeeName
+FROM Timesheet.Employee;
+
+-- 10. What was the last file processed for Karabo Tsaoane?
+SELECT TOP 1 pf.FileName, pf.ProcessedDate
+FROM Timesheet.ProcessedFiles AS pf
+INNER JOIN Timesheet.Employee AS e ON pf.EmployeeID = e.EmployeeID
+WHERE e.EmployeeName = 'Karabo Tsaoane'
+ORDER BY pf.ProcessedDate DESC;
+
+-- Medium Questions (Joins, Filtering, Basic Aggregations)
+
+-- 11. Show me the total hours Karabo Tsaoane worked in April 2025.
+SELECT SUM(t.TotalHours) AS TotalHoursWorked
+FROM Timesheet.Timesheet AS t
+INNER JOIN Timesheet.Employee AS e ON t.EmployeeID = e.EmployeeID
+WHERE e.EmployeeName = 'Karabo Tsaoane'
+  AND MONTH(t.Date) = 4
+  AND YEAR(t.Date) = 2025;
+
+-- 12. What are the total billable hours logged for the 'Graduate Program' project?
+SELECT SUM(t.TotalHours) AS TotalBillableHours
+FROM Timesheet.Timesheet AS t
+INNER JOIN Timesheet.Project AS p ON t.ProjectID = p.ProjectID
+WHERE p.ProjectName = 'Graduate Program'
+  AND t.BillableStatus = 'Billable';
+
+-- 13. List all timesheet entries for the first week of March 2025.
+SELECT *
+FROM Timesheet.Timesheet
+WHERE YEAR(Date) = 2025
+  AND MONTH(Date) = 3
+  AND DATEPART(week, Date) = DATEPART(week, '2025-03-01');
+
+-- 14. Find all employees who have submitted a leave request for 'Annual Leave'.
+SELECT DISTINCT e.EmployeeName
+FROM Timesheet.Employee AS e
+INNER JOIN Timesheet.LeaveRequest AS lr ON e.EmployeeID = lr.EmployeeID
+INNER JOIN Timesheet.LeaveType AS lt ON lr.LeaveTypeID = lt.LeaveTypeID
+WHERE lt.LeaveTypeName = 'Annual Leave';
+
+-- 15. Show all timesheet entries where comments mention 'standup meeting'.
+SELECT *
+FROM Timesheet.Timesheet
+WHERE Comments LIKE '%standup meeting%';
+
+-- 16. What is the total number of hours worked per project?
+SELECT p.ProjectName, SUM(t.TotalHours) AS TotalHoursWorked
+FROM Timesheet.Timesheet AS t
+INNER JOIN Timesheet.Project AS p ON t.ProjectID = p.ProjectID
+GROUP BY p.ProjectName;
+
+-- 17. Display all projects and the name of the client they belong to.
+SELECT p.ProjectName, c.ClientName
+FROM Timesheet.Project AS p
+INNER JOIN Timesheet.Client AS c ON p.ClientID = c.ClientID;
+
+-- 18. List employees who have worked more than 40 hours in any single week.
+SELECT e.EmployeeName, YEAR(t.Date) AS Year, DATEPART(week, t.Date) AS Week, SUM(t.TotalHours) AS WeeklyHours
+FROM Timesheet.Timesheet AS t
+INNER JOIN Timesheet.Employee AS e ON t.EmployeeID = e.EmployeeID
+GROUP BY e.EmployeeName, YEAR(t.Date), DATEPART(week, t.Date)
+HAVING SUM(t.TotalHours) > 40;
+
+-- 19. Show the total hours logged for each billable status.
+SELECT BillableStatus, SUM(TotalHours) AS TotalHoursLogged
+FROM Timesheet.Timesheet
+GROUP BY BillableStatus;
+
+-- 20. Find all timesheet entries that do not have a start time recorded.
+SELECT *
+FROM Timesheet.Timesheet
+WHERE StartTime IS NULL;
+
+-- Hard Questions (Complex Joins, Grouped Aggregations, Analysis)
+
+-- 21. What is the average number of billable hours per employee for the last 4 month?
+SELECT e.EmployeeName, AVG(t.TotalHours) AS AverageBillableHours
+FROM Timesheet.Timesheet AS t
+INNER JOIN Timesheet.Employee AS e ON t.EmployeeID = e.EmployeeID
+WHERE t.BillableStatus = 'Billable'
+  AND t.Date >= DATEADD(month, -1, GETDATE())
+GROUP BY e.EmployeeName;
+
+-- 22. List the top 3 employees with the most billable hours in the current year.
+SELECT TOP 3 e.EmployeeName, SUM(t.TotalHours) AS TotalBillableHours
+FROM Timesheet.Timesheet AS t
+INNER JOIN Timesheet.Employee AS e ON t.EmployeeID = e.EmployeeID
+WHERE t.BillableStatus = 'Billable'
+  AND YEAR(t.Date) = YEAR(GETDATE())
+GROUP BY e.EmployeeName
+ORDER BY TotalBillableHours DESC;
+
+-- 23. For each client, what is the total number of hours logged across all their projects?
+SELECT c.ClientName, SUM(t.TotalHours) AS TotalHoursLogged
+FROM Timesheet.Timesheet AS t
+INNER JOIN Timesheet.Client AS c ON t.ClientID = c.ClientID
+GROUP BY c.ClientName;
+
+-- 24. Show a monthly breakdown of billable vs. non-billable hours for the 'Graduate Program' project.
+SELECT 
+    YEAR(t.Date) AS Year,
+    MONTH(t.Date) AS Month,
+    SUM(CASE WHEN t.BillableStatus = 'Billable' THEN t.TotalHours ELSE 0 END) AS BillableHours,
+    SUM(CASE WHEN t.BillableStatus = 'Non-Billable' THEN t.TotalHours ELSE 0 END) AS NonBillableHours
+FROM Timesheet.Timesheet AS t
+INNER JOIN Timesheet.Project AS p ON t.ProjectID = p.ProjectID
+WHERE p.ProjectName = 'Graduate Program'
+GROUP BY YEAR(t.Date), MONTH(t.Date)
+ORDER BY Year, Month;
+
+-- 25. Find employees who have taken more than 5 days of sick leave in the last quarter.
+SELECT e.EmployeeName, SUM(lr.NumberOfDays) AS TotalSickLeaveDays
+FROM Timesheet.LeaveRequest AS lr
+INNER JOIN Timesheet.Employee AS e ON lr.EmployeeID = e.EmployeeID
+INNER JOIN Timesheet.LeaveType AS lt ON lr.LeaveTypeID = lt.LeaveTypeID
+WHERE lt.LeaveTypeName = 'Sick Leave'
+  AND lr.StartDate >= DATEADD(quarter, -1, GETDATE())
+GROUP BY e.EmployeeName
+HAVING SUM(lr.NumberOfDays) > 5;
+
+-- 26. Which employee has the most diverse set of activities logged in their timesheets?
+SELECT TOP 1 e.EmployeeName, COUNT(DISTINCT da.ActivityID) AS NumberOfActivities
+FROM Timesheet.Timesheet AS t
+INNER JOIN Timesheet.Employee AS e ON t.EmployeeID = e.EmployeeID
+INNER JOIN Timesheet.Description AS d ON t.DescriptionID = d.DescriptionID
+INNER JOIN Timesheet.DescriptionActivity AS da ON d.DescriptionID = da.DescriptionID
+GROUP BY e.EmployeeName
+ORDER BY NumberOfActivities DESC;
+
+-- 27. Compare the total forecasted hours to the actual total hours worked for each employee for the last month.
+SELECT 
+    e.EmployeeName,
+    f.ForecastedHours,
+    SUM(t.TotalHours) AS ActualHoursWorked
+FROM Timesheet.Employee AS e
+LEFT JOIN Timesheet.Forecast AS f ON e.EmployeeID = f.EmployeeID AND f.ForecastMonth = CAST(GETDATE() AS DATE)
+LEFT JOIN Timesheet.Timesheet AS t ON e.EmployeeID = t.EmployeeID AND t.Date >= DATEADD(month, -1, GETDATE())
+GROUP BY e.EmployeeName, f.ForecastedHours;
+
+-- 28. List all projects that have zero billable hours logged against them.
+SELECT p.ProjectName
+FROM Timesheet.Project AS p
+LEFT JOIN Timesheet.Timesheet AS t ON p.ProjectID = t.ProjectID AND t.BillableStatus = 'Billable'
+GROUP BY p.ProjectName
+HAVING SUM(t.TotalHours) IS NULL OR SUM(t.TotalHours) = 0;
+
+-- 29. What is the most common activity logged on Mondays?
+SELECT TOP 1 a.ActivityName, COUNT(*) AS ActivityCount
+FROM Timesheet.Timesheet AS t
+JOIN Timesheet.DescriptionActivity AS da ON t.DescriptionID = da.DescriptionID
+JOIN Timesheet.Activity AS a ON da.ActivityID = a.ActivityID
+WHERE t.DayOfWeek = 'Monday'
+GROUP BY a.ActivityName
+ORDER BY ActivityCount DESC;
+
+-- 30. Show me the timeline of leave requests for Karabo Tsaoane, including the leave type and duration.
+SELECT 
+    lr.StartDate,
+    lr.EndDate,
+    lt.LeaveTypeName,
+    lr.NumberOfDays
+FROM Timesheet.LeaveRequest AS lr
+INNER JOIN Timesheet.Employee AS e ON lr.EmployeeID = e.EmployeeID
+INNER JOIN Timesheet.LeaveType AS lt ON lr.LeaveTypeID = lt.LeaveTypeID
+WHERE e.EmployeeName = 'Karabo Tsaoane'
+ORDER BY lr.StartDate;
