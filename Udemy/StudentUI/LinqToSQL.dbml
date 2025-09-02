@@ -1,0 +1,38 @@
+﻿<?xml version="1.0" encoding="utf-8"?><Database Name="ZooDB" Class="DataClasses1DataContext" xmlns="http://schemas.microsoft.com/linqtosql/dbml/2007">
+  <Connection Mode="AppSettings" ConnectionString="Data Source=.;Initial Catalog=ZooDB;Integrated Security=True;Encrypt=True;Trust Server Certificate=True" SettingsObjectName="StudentUI.Properties.Settings" SettingsPropertyName="ZooDBConnectionString" Provider="System.Data.SqlClient" />
+  <Table Name="dbo.Student" Member="Students">
+    <Type Name="Student">
+      <Column Name="StudentId" Type="System.Int32" DbType="Int NOT NULL" IsPrimaryKey="true" CanBeNull="false" />
+      <Column Name="Name" Type="System.String" DbType="VarChar(100) NOT NULL" CanBeNull="false" />
+      <Column Name="Age" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="Gender" Type="System.String" DbType="VarChar(10) NOT NULL" CanBeNull="false" />
+      <Column Name="UniId" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Association Name="Student_StudentLecture" Member="StudentLectures" ThisKey="StudentId" OtherKey="StudentId" Type="StudentLecture" />
+      <Association Name="University_Student" Member="University" ThisKey="UniId" OtherKey="UniId" Type="University" IsForeignKey="true" DeleteRule="CASCADE" DeleteOnNull="true" />
+    </Type>
+  </Table>
+  <Table Name="dbo.Lecture" Member="Lectures">
+    <Type Name="Lecture">
+      <Column Name="LectureId" Type="System.Int32" DbType="Int NOT NULL" IsPrimaryKey="true" CanBeNull="false" />
+      <Column Name="Name" Type="System.String" DbType="NVarChar(100) NOT NULL" CanBeNull="false" />
+      <Association Name="Lecture_StudentLecture" Member="StudentLectures" ThisKey="LectureId" OtherKey="LectureId" Type="StudentLecture" />
+    </Type>
+  </Table>
+  <Table Name="dbo.StudentLecture" Member="StudentLectures">
+    <Type Name="StudentLecture">
+      <Column Name="Id" Type="System.Int32" DbType="Int NOT NULL" IsPrimaryKey="true" CanBeNull="false" />
+      <Column Name="StudentId" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="LectureId" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Association Name="Lecture_StudentLecture" Member="Lecture" ThisKey="LectureId" OtherKey="LectureId" Type="Lecture" IsForeignKey="true" />
+      <Association Name="Student_StudentLecture" Member="Student" ThisKey="StudentId" OtherKey="StudentId" Type="Student" IsForeignKey="true" />
+    </Type>
+  </Table>
+  <Table Name="dbo.University" Member="Universities">
+    <Type Name="University">
+      <Column Name="UniId" Type="System.Int32" DbType="Int NOT NULL" IsPrimaryKey="true" CanBeNull="false" />
+      <Column Name="Name" Type="System.String" DbType="VarChar(100) NOT NULL" CanBeNull="false" />
+      <Column Name="Location" Type="System.String" DbType="VarChar(100) NOT NULL" CanBeNull="false" />
+      <Association Name="University_Student" Member="Students" ThisKey="UniId" OtherKey="UniId" Type="Student" />
+    </Type>
+  </Table>
+</Database>

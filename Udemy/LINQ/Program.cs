@@ -67,7 +67,7 @@ namespace LINQ
             Students.Add(new Student { Id = 5, Name = "Eva", Age = 19, Gender = "Female", VarsityId = 3 });
         }
 
-        public void  MaleStdudents()
+        public void MaleStdudents()
         {
             var maleStudents = from student in Students where string.Equals(student.Gender, "male", StringComparison.OrdinalIgnoreCase) select student;
             Console.WriteLine("Male Stduents : ");
@@ -100,9 +100,9 @@ namespace LINQ
                     Console.WriteLine($"{student.Name} is young, he has {student.Age} year old.");
                 else
                     Console.WriteLine($"{student.Name} is young, she has {student.Age} year old.");
-            
+
             }
-         }
+        }
 
 
         public void DisplayVarsityHasMostStudents()
@@ -128,9 +128,24 @@ namespace LINQ
                 Console.WriteLine($"{varsity.Name} has {maxCount} students");
             }
         }
+
+        public void SortStudentsByName()
+        {
+            var sortedStudents = from student in Students orderby student.Name select student;
+            Console.WriteLine("Students sorted by name:");
+            foreach (var student in sortedStudents)
+            {
+                Console.WriteLine(student.Name);
+            }
+        }
     }
 
-    class Student
+}
+
+
+
+
+class Student
     {
         public int Id { get; set; }
         public string Name { get; set; }
