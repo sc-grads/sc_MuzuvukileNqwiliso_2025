@@ -1,4 +1,6 @@
-﻿namespace Generics
+using Generics.Task_Manager;
+
+namespace Generics
 {
     internal class Program
     {
@@ -47,7 +49,17 @@
             {
                 Console.WriteLine($"Predicate matched: {number}");
             }
-          
+
+            Console.WriteLine();
+
+            // Task Manager Example
+            var emailTask = new EmailTask();
+            var reportTask = new ReportTask();
+            var taskProcessor = new TaskProcessor();
+
+            taskProcessor.ProcessTask(emailTask, "Hello from Email Task!");
+            taskProcessor.ProcessTask(reportTask, 123);
+
 
         }
 
