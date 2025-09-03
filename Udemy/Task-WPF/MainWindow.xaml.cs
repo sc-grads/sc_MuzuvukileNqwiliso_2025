@@ -28,12 +28,14 @@ namespace Task_WPF
             InitializeComponent();
         }
 
-        private void Onbtn(object sender, RoutedEventArgs e)
+        private async void Onbtn(object sender, RoutedEventArgs e)
         {
             Debug.WriteLine("Thread number : {0}", Thread.CurrentThread.ManagedThreadId);
             HttpClient httpClient = new HttpClient();
             var task = httpClient.GetStringAsync("https://www.google.com").Result;
             Debug.WriteLine("After GetStringAsync");
+            await Task.Delay(5000);
+            MessageBox.Show("Done!");
             btn.Content = "Done";
         }
     }
