@@ -713,7 +713,7 @@ END
 GO
 
 -- ProcessFiles Stored Procedure
-CREATE OR ALTER PROCEDURE Timesheet.usp_ProcessTimesheetFile
+CREATE OR  ALTER PROCEDURE [Timesheet].[usp_ProcessTimesheetFile]
 (
     @IsNewFile BIT,
     @EmployeeID INT,
@@ -721,7 +721,7 @@ CREATE OR ALTER PROCEDURE Timesheet.usp_ProcessTimesheetFile
     @FilePath NVARCHAR(500),
     @RowCount INT,
     @TimesheetMonth NVARCHAR(50),
-    @LastModified NVARCHAR(10),
+    @LastModified DATETIME,         
     @PreviousRowCount INT,
     @PreviousDataHash NVARCHAR(64),
     @CurrentDataHash NVARCHAR(64)
@@ -732,8 +732,7 @@ BEGIN
 
     DECLARE @CountDifference INT;
     DECLARE @Message NVARCHAR(1000);
-
-	 DECLARE @EmployeeName NVARCHAR(255);
+    DECLARE @EmployeeName NVARCHAR(255);
 
     SELECT @EmployeeName = EmployeeName
     FROM Timesheet.Employee
@@ -741,82 +740,59 @@ BEGIN
 
     IF @IsNewFile = 1
     BEGIN
-        SET @Message = 'New timesheet uploaded with ' + CAST(@RowCount AS NVARCHAR(10)) + 
-                      CASE WHEN @RowCount = 1 THEN ' row.' ELSE ' rows.' END;
+        SET @Message = 'New timesheet uploaded with ' + CAST(@RowCount AS NVARCHAR(10)) +
+                       CASE WHEN @RowCount = 1 THEN ' row.' ELSE ' rows.' END;
 
-        INSERT INTO Timesheet.AuditLog (
-            EmployeeName, FileName, [Month], TableName, Action, Message, ProcessedDate
-        )
-        VALUES (
-            @EmployeeName, @FileName, @TimesheetMonth, 'TimesheetStaging', 
-            'Insert', @Message, GETDATE()
-        );
+        INSERT INTO Timesheet.AuditLog (EmployeeName, FileName, [Month], TableName, Action, Message, ProcessedDate)
+        VALUES (@EmployeeName, @FileName, @TimesheetMonth, 'TimesheetStaging', 'Insert', @Message, GETDATE());
 
-       INSERT INTO Timesheet.ProcessedFiles (
-		FilePath, FileName, EmployeeID, [RowCount], LastModifiedDate, ProcessedDate, DataHash
-		)
-		VALUES (
-			@FilePath, @FileName, @EmployeeID, @RowCount,
-			CAST(@LastModified AS DATETIME), GETDATE(), @CurrentDataHash
-		);
-
+        INSERT INTO Timesheet.ProcessedFiles (FilePath, FileName, EmployeeID, [RowCount], LastModifiedDate, ProcessedDate, DataHash)
+        VALUES (@FilePath, @FileName, @EmployeeID, @RowCount, @LastModified, GETDATE(), @CurrentDataHash);
     END
     ELSE
     BEGIN
         IF @PreviousRowCount > @RowCount
         BEGIN
             SET @CountDifference = @PreviousRowCount - @RowCount;
-            SET @Message = 'Timesheet reduced by ' + CAST(@CountDifference AS NVARCHAR(10)) + 
+            SET @Message = 'Timesheet reduced by ' + CAST(@CountDifference AS NVARCHAR(10)) +
                            CASE WHEN @CountDifference = 1 THEN ' row removed.' ELSE ' rows removed.' END;
 
-            INSERT INTO Timesheet.AuditLog (
-                EmployeeName, FileName, [Month], TableName, Action, Message, ProcessedDate
-            )
-            VALUES (
-                @EmployeeName, @FileName, @TimesheetMonth, 'Timesheet', 
-                'Delete', @Message, GETDATE()
-            );
+            INSERT INTO Timesheet.AuditLog (EmployeeName, FileName, [Month], TableName, Action, Message, ProcessedDate)
+            VALUES (@EmployeeName, @FileName, @TimesheetMonth, 'Timesheet', 'Delete', @Message, GETDATE());
         END
         ELSE IF @PreviousRowCount < @RowCount
         BEGIN
             SET @CountDifference = @RowCount - @PreviousRowCount;
-            SET @Message = 'Timesheet increased by ' + CAST(@CountDifference AS NVARCHAR(10)) + 
+            SET @Message = 'Timesheet increased by ' + CAST(@CountDifference AS NVARCHAR(10)) +
                            CASE WHEN @CountDifference = 1 THEN ' new row added.' ELSE ' new rows added.' END;
 
-            INSERT INTO Timesheet.AuditLog (
-                EmployeeName, FileName, [Month], TableName, Action, Message, ProcessedDate
-            )
-            VALUES (
-                @EmployeeName, @FileName, @TimesheetMonth, 'Timesheet', 
-                'Insert', @Message, GETDATE()
-            );
+            INSERT INTO Timesheet.AuditLog (EmployeeName, FileName, [Month], TableName, Action, Message, ProcessedDate)
+            VALUES (@EmployeeName, @FileName, @TimesheetMonth, 'Timesheet', 'Insert', @Message, GETDATE());
         END
-        ELSE IF @RowCount = @PreviousRowCount 
-            AND (@CurrentDataHash != @PreviousDataHash 
-                 OR (@PreviousDataHash IS NULL AND @CurrentDataHash IS NOT NULL)
-                 OR (@PreviousDataHash IS NOT NULL AND @CurrentDataHash IS NULL))
+        ELSE IF @RowCount = @PreviousRowCount
+            AND (
+                @CurrentDataHash != @PreviousDataHash OR
+                (@PreviousDataHash IS NULL AND @CurrentDataHash IS NOT NULL) OR
+                (@PreviousDataHash IS NOT NULL AND @CurrentDataHash IS NULL)
+            )
         BEGIN
             SET @Message = 'Timesheet file was modified (content changed, row count remains the same).';
 
-            INSERT INTO Timesheet.AuditLog (
-                EmployeeName, FileName, [Month], TableName, Action, Message, ProcessedDate
-            )
-            VALUES (
-                @EmployeeName, @FileName, @TimesheetMonth, 'Timesheet', 
-                'Update', @Message, GETDATE()
-            );
+            INSERT INTO Timesheet.AuditLog (EmployeeName, FileName, [Month], TableName, Action, Message, ProcessedDate)
+            VALUES (@EmployeeName, @FileName, @TimesheetMonth, 'Timesheet', 'Update', @Message, GETDATE());
         END
 
-        -- Update latest snapshot
         UPDATE Timesheet.ProcessedFiles
-        SET 
+        SET
             [RowCount] = @RowCount,
-            LastModifiedDate = CAST(@LastModified AS DATETIME),
+            LastModifiedDate = @LastModified,
             ProcessedDate = GETDATE(),
             DataHash = @CurrentDataHash
         WHERE FilePath = @FilePath;
     END
 END;
+GO
+
 GO
 
 -- Insert LeaveRequest
@@ -1407,18 +1383,123 @@ BEGIN
 END;
 GO
 
+CREATE OR ALTER PROCEDURE Timesheet.ResetDescriptionActivity
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DELETE FROM Timesheet.DescriptionActivity;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE Timesheet.ResetDescriptionLeave
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DELETE FROM Timesheet.DescriptionLeave;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE Timesheet.ResetProcessedFiles
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DELETE FROM Timesheet.ProcessedFiles;
+    DBCC CHECKIDENT ('Timesheet.ProcessedFiles', RESEED, 0);
+END;
+GO
+
+CREATE OR ALTER PROCEDURE Timesheet.ResetAuditLog
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DELETE FROM Timesheet.AuditLog;
+    DBCC CHECKIDENT ('Timesheet.AuditLog', RESEED, 0);
+END;
+GO
+
+CREATE OR ALTER PROCEDURE Timesheet.ResetErrorLog
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DELETE FROM Timesheet.ErrorLog;
+    DBCC CHECKIDENT ('Timesheet.ErrorLog', RESEED, 0);
+END;
+GO
+
+CREATE OR ALTER PROCEDURE Timesheet.ResetTimesheetStaging
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DELETE FROM Timesheet.TimesheetStaging;
+    DBCC CHECKIDENT ('Timesheet.TimesheetStaging', RESEED, 0);
+END;
+GO
+
+CREATE OR ALTER PROCEDURE Timesheet.ResetStagingLeaveRequest
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DELETE FROM Timesheet.StagingLeaveRequest;
+    DBCC CHECKIDENT ('Timesheet.StagingLeaveRequest', RESEED, 0);
+END;
+GO
+
+CREATE OR ALTER PROCEDURE Timesheet.ResetStagingForecast
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DELETE FROM Timesheet.StagingForecast;
+    DBCC CHECKIDENT ('Timesheet.StagingForecast', RESEED, 0);
+END;
+GO
+
+CREATE OR ALTER PROCEDURE Timesheet.ResetProjectStaging
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DELETE FROM Timesheet.ProjectStaging;
+    DBCC CHECKIDENT ('Timesheet.ProjectStaging', RESEED, 0);
+END;
+GO
+
+CREATE OR ALTER PROCEDURE Timesheet.ResetActivityLeaveStaging
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DELETE FROM Timesheet.ActivityLeaveStaging;
+    DBCC CHECKIDENT ('Timesheet.ActivityLeaveStaging', RESEED, 0);
+END;
+GO
+
 CREATE OR ALTER PROCEDURE Timesheet.ResetAll
 AS
 BEGIN
     SET NOCOUNT ON;
+
+    -- Reset tables with foreign key dependencies first (child tables)
+    EXEC Timesheet.ResetTimesheet;
     EXEC Timesheet.ResetForecast;
     EXEC Timesheet.ResetLeave;
-    EXEC Timesheet.ResetTimesheet;
+    EXEC Timesheet.ResetProcessedFiles;
+    EXEC Timesheet.ResetDescriptionActivity;
+    EXEC Timesheet.ResetDescriptionLeave;
+    EXEC Timesheet.ResetProject;
+
+    -- Reset tables that are referenced by other tables (parent tables)
+    EXEC Timesheet.ResetDescription;
     EXEC Timesheet.ResetActivity;
     EXEC Timesheet.ResetLeaveType;
-    EXEC Timesheet.ResetProject;
     EXEC Timesheet.ResetClient;
-    EXEC Timesheet.ResetDescription;
     EXEC Timesheet.ResetEmployee;
+    
+    -- Reset staging and log tables
+    EXEC Timesheet.ResetAuditLog;
+    EXEC Timesheet.ResetErrorLog;
+    EXEC Timesheet.ResetTimesheetStaging;
+    EXEC Timesheet.ResetStagingLeaveRequest;
+    EXEC Timesheet.ResetStagingForecast;
+    EXEC Timesheet.ResetProjectStaging;
+    EXEC Timesheet.ResetActivityLeaveStaging;
 END;
 GO
+
