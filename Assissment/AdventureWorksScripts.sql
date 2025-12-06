@@ -213,3 +213,65 @@ ON A.AddressID = BEA.AddressID
 WHERE SP.SalesYTD > 0
 ORDER BY A.PostalCode ASC, SP.SalesYTD DESC;
 
+-- 22.Write a query in SQL to count the number of contacts for combination of each type and
+-- name. Filter the output for those who have 100 or more contacts. Return ContactTypeID and
+-- ContactTypeName and BusinessEntityContact. Sort the result set in descending order on
+-- number of contacts
+
+SELECT
+C.ContactTypeID,
+C.Name AS ContactTypeName,
+COUNT(*) AS NoContacts
+FROM Person.BusinessEntityContact BC
+INNER JOIN Person.ContactType C
+ON C.ContactTypeID = BC.ContactTypeID
+GROUP BY C.ContactTypeID, C.Name
+HAVING COUNT(*) >= 100
+ORDER BY NoContacts DESC;
+
+-- 23. Write a query in SQL to retrieve the RateChangeDate, full name (first name, middle name and
+-- last name) and weekly salary (40 hours in a week) of employees. In the output the
+-- RateChangeDate should appears in date format. Sort the output in ascending order on
+-- NameInFull
+SELECT
+CONVERT(date, ER.RateChangeDate) AS FromDate,
+P.LastName + ', ' +
+P.FirstName + 
+ISNULL(' ' + P.MiddleName, '') AS NameInFull,
+ER.Rate * 40 AS SalaryInAWeek
+FROM HumanResources.EmployeePayHistory ER
+INNER JOIN Person.Person P
+ON P.BusinessEntityID = ER.BusinessEntityID
+ORDER BY NameInFull ASC;
+
+
+-- 24. Write a query in SQL to calculate and display the latest weekly salary of each employee.
+-- Return RateChangeDate, full name (first name, middle name and last name) and weekly
+-- salary (40 hours in a week) of employees Sort the output in ascending order on NameInFull
+SELECT
+    CONVERT(date, ER.RateChangeDate) AS RateChangeDate,
+    P.LastName + ', ' + P.FirstName + 
+        ISNULL(' ' + P.MiddleName, '') AS NameInFull,
+    ER.Rate * 40 AS SalaryInAWeek
+FROM HumanResources.EmployeePayHistory ER
+INNER JOIN Person.Person P
+    ON P.BusinessEntityID = ER.BusinessEntityID
+ORDER BY NameInFull ASC;
+
+
+
+-- 25 Write a query in SQL to find the sum, average, count, minimum, and maximum order quentity
+-- for those orders whose id are 43659 and 43664. Return SalesOrderID, ProductID, OrderQty,
+-- sum, average, count, max, and min order quantity.
+SELECT
+SalesOrderID,
+ProductID,
+OrderQty,
+SUM(OrderQty) AS SumQty,
+AVG(OrderQty) AS AvgQty,
+COUNT(*)    AS CntQty,
+MAX(OrderQty) AS MaxQty,
+MIN(OrderQty) AS MinQty
+FROM Sales.SalesOrderDetail
+WHERE SalesOrderID = 99999
+;
